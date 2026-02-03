@@ -1,0 +1,20 @@
+{
+  "item.advanced_memory_card.advanced_memory_card": "Advanced Memory Card",
+
+  "itemGroup.advanced_memory_card_tab": "Advanced Memory Card",
+  "gui.advanced_memory_card.advanced_memory_card.tooltip.copy.info": "Copy Mode\n",
+  "gui.advanced_memory_card.advanced_memory_card.tooltip.copy.first_pos": "First position:%s\n",
+  "gui.advanced_memory_card.advanced_memory_card.tooltip.copy.second_pos": "Second position:%s\n",
+  "gui.advanced_memory_card.advanced_memory_card.tooltip.copy.ready": "Ready to paste",
+
+  "gui.advanced_memory_card.advanced_memory_card.player.config.show": "Config Mode",
+
+  "gui.advanced_memory_card.advanced_memory_card.player.copy.show": "Copy Mode",
+  "gui.advanced_memory_card.advanced_memory_card.player.copy.first_pos_marked": "First Position[%s] Marked",
+  "gui.advanced_memory_card.advanced_memory_card.player.copy.second_pos_marked": "Second Position[%s] Marked, Current area:[%s,%s,%s]",
+  "gui.advanced_memory_card.advanced_memory_card.player.copy.too_large": "Too large area,Max area is:%s,current area is:%s",
+  "gui.advanced_memory_card.advanced_memory_card.player.copy.completed": "Pasted %s blocks",
+  "gui.advanced_memory_card.advanced_memory_card.player.copy.failed": "You have not marked first or second position, please mark first",
+
+  "gui.advanced_memory_card.advanced_memory_card.tooltip.config.info": "Config Mode\n"
+}

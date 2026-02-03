@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "ae2:memory_card"
+    },
+    {
+      "item": "ae2:logic_processor"
+    },
+    {
+      "item": "ae2:calculation_processor"
+    },
+    {
+      "item": "ae2:engineering_processor"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "item": "advanced_memory_card:advanced_memory_card"
+  }
+}
