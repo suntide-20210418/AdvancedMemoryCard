@@ -1,0 +1,130 @@
+package com.suntide_20210418.advancedmemorycard.client.renderer;
+
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.suntide_20210418.advancedmemorycard.AdvancedMemoryCardMod;
+import com.suntide_20210418.advancedmemorycard.item.custom.AdvancedMemoryCardItem;
+import com.suntide_20210418.advancedmemorycard.item.custom.CardMode;
+import com.suntide_20210418.advancedmemorycard.item.custom.CopyMode;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.LevelRenderer;
+import net.minecraft.client.renderer.RenderType;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.client.event.RenderLevelStageEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+
+@OnlyIn(Dist.CLIENT)
+@Mod.EventBusSubscriber(modid = AdvancedMemoryCardMod.MOD_ID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
+public class CopyModeRenderer {
+
+    @SubscribeEvent
+    public static void onRenderLevelStage(RenderLevelStageEvent event) {
+        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRIPWIRE_BLOCKS) {
+            return;
+        }
+
+        Minecraft mc = Minecraft.getInstance();
+        Player player = mc.player;
+        if (player == null) return;
+
+        ItemStack mainHandItem = player.getMainHandItem();
+        ItemStack offHandItem = player.getOffhandItem();
+
+        // 检查主手或副手是否持有高级内存卡
+        CopyMode mainHand = getCopyModeFromStack(mainHandItem);
+        CopyMode offHand = getCopyModeFromStack(offHandItem);
+
+        if (mainHand != null && mainHand.hasValidSelection()) {
+            renderSelectionBox(event, mainHand);
+        } else if (offHand != null && offHand.hasValidSelection()) {
+            renderSelectionBox(event, offHand);
+        }
+    }
+
+    private static CopyMode getCopyModeFromStack(ItemStack stack) {
+        if (stack.getItem() instanceof AdvancedMemoryCardItem) {
+            return CardMode.of(stack) instanceof CopyMode ? (CopyMode) CardMode.of(stack) : null;
+        }
+        return null;
+    }
+
+    private static void renderSelectionBox(RenderLevelStageEvent event, CopyMode copyMode) {
+        PoseStack poseStack = event.getPoseStack();
+        AABB selectionBox = copyMode.getSelectionBox();
+
+        if (selectionBox == null) return;
+
+        poseStack.pushPose();
+
+        // 重要：将渲染位置转换到摄像机位置
+        Vec3 cameraPos = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
+        poseStack.translate(-cameraPos.x(), -cameraPos.y(), -cameraPos.z());
+
+        Minecraft mc = Minecraft.getInstance();
+
+        // 使用正确的 RenderType
+        VertexConsumer vertexConsumer = mc.renderBuffers().bufferSource()
+                .getBuffer(RenderType.LINES);
+
+        int color = copyMode.getSelectionColor();
+        float red = ((color >> 16) & 0xFF) / 255.0F;
+        float green = ((color >> 8) & 0xFF) / 255.0F;
+        float blue = (color & 0xFF) / 255.0F;
+        float alpha = 1.0F;
+
+        // 渲染线框
+        LevelRenderer.renderLineBox(
+                poseStack,
+                vertexConsumer,
+                selectionBox,
+                red, green, blue, alpha
+        );
+
+        // 结束批处理 - 关键步骤！
+
+        // 新增：渲染角落方块（如果存在）
+        BlockPos startPos = copyMode.getStartPos();
+        BlockPos endPos = copyMode.getEndPos();
+
+        if (startPos != null) {
+            renderBlock(poseStack, startPos, 0xFF0000);
+        }
+        if (endPos != null) {
+            renderBlock(poseStack, endPos, 0xFFFF00);
+        }
+
+        mc.renderBuffers().bufferSource().endBatch(RenderType.LINES);
+
+        poseStack.popPose();
+    }
+
+    private static void renderBlock(PoseStack poseStack, BlockPos firstPos, int color) {
+        Minecraft mc = Minecraft.getInstance();
+        VertexConsumer vertexConsumer = mc.renderBuffers().bufferSource()
+                .getBuffer(RenderType.LINES);
+
+        float red = ((color >> 16) & 0xFF) / 255.0F;
+        float green = ((color >> 8) & 0xFF) / 255.0F;
+        float blue = (color & 0xFF) / 255.0F;
+        float alpha = 1.0F;
+
+        // 使用与角落方块相同的渲染方法
+        renderCorner(poseStack, vertexConsumer, firstPos, red, green, blue, alpha);
+
+        // 结束批处理
+        mc.renderBuffers().bufferSource().endBatch(RenderType.LINES);
+    }
+
+    private static void renderCorner(PoseStack poseStack, VertexConsumer vertexConsumer,
+                                     BlockPos pos, float red, float green, float blue, float alpha) {
+        AABB cornerBox = new AABB(pos).inflate(0.1);
+        LevelRenderer.renderLineBox(poseStack, vertexConsumer, cornerBox, red, green, blue, alpha);
+    }
+}

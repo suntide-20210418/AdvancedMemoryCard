@@ -1,9 +1,11 @@
 package com.suntide_20210418.advancedmemorycard;
 
 import com.mojang.logging.LogUtils;
+import com.suntide_20210418.advancedmemorycard.client.renderer.CopyModeRenderer;
 import com.suntide_20210418.advancedmemorycard.item.ModCreativeModeTabs;
 import com.suntide_20210418.advancedmemorycard.item.ModItems;
 import com.suntide_20210418.advancedmemorycard.item.custom.CardMode;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
@@ -21,11 +23,13 @@ public class AdvancedMemoryCardMod
     {
         IEventBus modEventBus = context.getModEventBus();
         LOGGER.info("AdvancedMemoryCardMod is loading");
-        
+
         ModItems.register(modEventBus);
         ModCreativeModeTabs.register(modEventBus);
-        
+
         // 在公共设置事件中初始化模式
+        MinecraftForge.EVENT_BUS.register(this);
+        MinecraftForge.EVENT_BUS.register(CopyModeRenderer.class);
         modEventBus.addListener(this::commonSetup);
     }
     
@@ -34,4 +38,5 @@ public class AdvancedMemoryCardMod
         CardMode.initializeModes();
         LOGGER.info("Card modes initialized successfully");
     }
+
 }

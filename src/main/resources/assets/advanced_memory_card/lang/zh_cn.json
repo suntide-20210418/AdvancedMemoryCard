@@ -15,6 +15,7 @@
   "gui.advanced_memory_card.advanced_memory_card.player.copy.second_pos_marked": "第二个位置[%s]已标记，待复制区域大小:[%s,%s,%s]",
   "gui.advanced_memory_card.advanced_memory_card.player.copy.too_large": "范围过大(%s>%s)",
   "gui.advanced_memory_card.advanced_memory_card.player.copy.completed": "已粘贴%s个方块的配置",
+  "gui.advanced_memory_card.advanced_memory_card.player.copy.already_marked": "区域已标记",
   "gui.advanced_memory_card.advanced_memory_card.player.copy.failed": "你还没有标记第一个或第二个方块的位置，请先标记位置",
 
   "gui.advanced_memory_card.advanced_memory_card.tooltip.config.info": "配置模式\n"
