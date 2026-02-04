@@ -19,6 +19,8 @@ import net.minecraftforge.client.event.RenderLevelStageEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
+import static com.suntide_20210418.advancedmemorycard.utils.AreaHelper.*;
+
 @Mod.EventBusSubscriber(modid = AdvancedMemoryCardMod.MOD_ID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class CopyModeRenderer {
 
@@ -54,8 +56,16 @@ public class CopyModeRenderer {
     }
 
     private static void renderSelectionBox(RenderLevelStageEvent event, CopyMode copyMode) {
+        Minecraft mc = Minecraft.getInstance();
+        Player player = mc.player;
+
+        BlockPos startPos = copyMode.getStartPos();
+        BlockPos endPos = copyMode.getEndPos();
+        BlockPos targetedPos = copyMode.getTargetedBlockPos(player);
+
         PoseStack poseStack = event.getPoseStack();
-        AABB selectionBox = copyMode.getSelectionBox();
+        AABB selectionBox = createAABB(startPos, endPos);
+        AABB targetedBox = createAABB(startPos, targetedPos);
 
         poseStack.pushPose();
 
@@ -63,20 +73,13 @@ public class CopyModeRenderer {
         Vec3 cameraPos = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
         poseStack.translate(-cameraPos.x(), -cameraPos.y(), -cameraPos.z());
 
-        Minecraft mc = Minecraft.getInstance();
 
         // 使用正确的 RenderType
         VertexConsumer vertexConsumer = mc.renderBuffers().bufferSource()
                 .getBuffer(RenderType.LINES);
 
         int color = copyMode.getSelectionColor();
-        float red = ((color >> 16) & 0xFF) / 255.0F;
-        float green = ((color >> 8) & 0xFF) / 255.0F;
-        float blue = (color & 0xFF) / 255.0F;
         float alpha = 1.0F;
-
-        BlockPos startPos = copyMode.getStartPos();
-        BlockPos endPos = copyMode.getEndPos();
 
         if (startPos != null) {
             renderBlock(poseStack, startPos, 0xFF0000);
@@ -84,15 +87,28 @@ public class CopyModeRenderer {
 
         if (endPos != null) {
             renderBlock(poseStack, endPos, 0xFFFF00);
+        } else {
+            if (targetedPos != null) {
+                renderBlock(poseStack, targetedPos, 0x00FF00);
+            }
         }
 
         if (selectionBox != null) {
-            // 渲染线框
             LevelRenderer.renderLineBox(
                     poseStack,
                     vertexConsumer,
                     selectionBox,
-                    red, green, blue, alpha
+                    RGB(color)[0], RGB(color)[1], RGB(color)[2], alpha
+            );
+        } else if (targetedBox != null) {
+            if (calculateVolume(targetedBox) > CopyMode.getMaxVolume()) {
+                color = 0xFF0000;
+            }
+            LevelRenderer.renderLineBox(
+                    poseStack,
+                    vertexConsumer,
+                    targetedBox,
+                    RGB(color)[0], RGB(color)[1], RGB(color)[2], alpha
             );
         }
 
@@ -117,7 +133,7 @@ public class CopyModeRenderer {
 
     private static void renderCorner(PoseStack poseStack, VertexConsumer vertexConsumer,
                                      BlockPos pos, float red, float green, float blue, float alpha) {
-        AABB cornerBox = new AABB(pos).inflate(0.1);
+        AABB cornerBox = new AABB(pos);
         LevelRenderer.renderLineBox(poseStack, vertexConsumer, cornerBox, red, green, blue, alpha);
     }
 }

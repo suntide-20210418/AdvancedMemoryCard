@@ -19,11 +19,15 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
+
+import static com.suntide_20210418.advancedmemorycard.utils.AreaHelper.Area;
+import static com.suntide_20210418.advancedmemorycard.utils.AreaHelper.calculateVolume;
 
 public class CopyMode extends CardMode {
 
-    private static final int MAX_VOLUME = 16384;
+    private static final int MAX_VOLUME = 2048;
     private static final String START_POS = "start_pos";
     private static final String END_POS = "end_pos";
     private static final String IS_COPYING = "is_copying";
@@ -31,7 +35,6 @@ public class CopyMode extends CardMode {
     private BlockPos startPos;
     private BlockPos endPos;
     private boolean isCopying;
-    private AABB selectionBox; // 添加AABB用于区域表示
 
     public CopyMode() {}
 
@@ -54,9 +57,6 @@ public class CopyMode extends CardMode {
         // 处理 isCopying 为空的情况，默认为 false
         isCopying = tag.getBoolean(IS_COPYING);
         
-        // 重建AABB
-        updateSelectionBox();
-        
         return this;
     }
 
@@ -77,60 +77,15 @@ public class CopyMode extends CardMode {
         return data;
     }
 
-    // 更新选择框AABB
-    private void updateSelectionBox() {
-        if (startPos != null && endPos != null) {
-            // 创建标准化的AABB（确保min <= max）
-            double minX = Math.min(startPos.getX(), endPos.getX());
-            double minY = Math.min(startPos.getY(), endPos.getY());
-            double minZ = Math.min(startPos.getZ(), endPos.getZ());
-            double maxX = Math.max(startPos.getX(), endPos.getX()) + 1;
-            double maxY = Math.max(startPos.getY(), endPos.getY()) + 1;
-            double maxZ = Math.max(startPos.getZ(), endPos.getZ()) + 1;
-            
-            selectionBox = new AABB(minX, minY, minZ, maxX, maxY, maxZ);
-        } else {
-            selectionBox = null;
-        }
-    }
-
-    // 获取当前选择的AABB
-    public AABB getSelectionBox() {
-        return selectionBox;
-    }
-
-    // 检查位置是否在选择区域内
-    public boolean isInSelection(BlockPos pos) {
-        if (selectionBox == null) return false;
-        return selectionBox.contains(pos.getCenter());
-    }
-
-    // 获取选择区域的体积
-    public long getSelectionVolume() {
-        if (selectionBox == null) return 0;
-        return (long) (selectionBox.getXsize() * selectionBox.getYsize() * selectionBox.getZsize());
-    }
-
     // 获取渲染颜色（可以根据不同状态调整）
     public int getSelectionColor() {
         if (isCopying) {
             return 0x00FF00; // 绿色 - 准备粘贴状态
         } else if (endPos == null && startPos != null) {
-            return 0xFFFF00; // 黄色 - 选择第二个点状态
+            return 0xFFFFFF; // 白色 - 选择第二个点状态
         } else {
             return 0xFF0000; // 红色 - 选择第一个点状态
         }
-    }
-
-    // 获取线框的渲染位置（世界坐标）
-    public BlockPos getRenderMinPos() {
-        if (selectionBox == null) return null;
-        return BlockPos.containing(selectionBox.minX, selectionBox.minY, selectionBox.minZ);
-    }
-
-    public BlockPos getRenderMaxPos() {
-        if (selectionBox == null) return null;
-        return BlockPos.containing(selectionBox.maxX - 0.001, selectionBox.maxY - 0.001, selectionBox.maxZ - 0.001);
     }
 
     public BlockPos getStartPos() {
@@ -148,13 +103,9 @@ public class CopyMode extends CardMode {
             MemoryCardItem memoryCardItem = (MemoryCardItem) stack.getItem();
             CompoundTag data = memoryCardItem.getData(stack);
             int count = 0;
-            
-            // 使用AABB遍历区域内的所有方块
-            if (selectionBox != null) {
-                BlockPos minPos = BlockPos.containing(selectionBox.minX, selectionBox.minY, selectionBox.minZ);
-                BlockPos maxPos = BlockPos.containing(selectionBox.maxX - 1, selectionBox.maxY - 1, selectionBox.maxZ - 1);
-                
-                Iterable<BlockPos> positions = BlockPos.betweenClosed(minPos, maxPos);
+
+            if (startPos != null && endPos != null) {
+                Iterable<BlockPos> positions = BlockPos.betweenClosed(startPos, endPos);
                 for (BlockPos pos : positions) {
                     BlockEntity blockEntity = level.getBlockEntity(pos);
                     if (blockEntity instanceof AEBaseBlockEntity aeBlockEntity) {
@@ -185,7 +136,6 @@ public class CopyMode extends CardMode {
             this.isCopying = false;
             this.startPos = null;
             this.endPos = null;
-            this.selectionBox = null;
             this.save(stack.getOrCreateTag());
         } else {
             player.displayClientMessage(
@@ -227,10 +177,7 @@ public class CopyMode extends CardMode {
         } else {
             endPos = clickedPos;
             
-            // 更新AABB
-            updateSelectionBox();
-            
-            long currentVolume = getSelectionVolume();
+            long currentVolume = calculateVolume(startPos, endPos);
             if (currentVolume > MAX_VOLUME) {
                 if (player != null) {
                     player.displayClientMessage(
@@ -244,7 +191,6 @@ public class CopyMode extends CardMode {
                 // 重置选择
                 this.startPos = null;
                 this.endPos = null;
-                this.selectionBox = null;
                 this.save(stack.getOrCreateTag());
                 return InteractionResult.FAIL;
             }
@@ -257,10 +203,9 @@ public class CopyMode extends CardMode {
                         Component.translatable(
                                 "gui.advanced_memory_card.advanced_memory_card.player.copy.second_pos_marked",
                                 endPos.toShortString(),
-                                selectionBox.getXsize(),
-                                selectionBox.getYsize(),
-                                selectionBox.getZsize(),
-                                currentVolume
+                                Area(startPos, endPos)[0],
+                                Area(startPos, endPos)[1],
+                                Area(startPos, endPos)[2]
                         ),
                         true
                 );
@@ -268,6 +213,19 @@ public class CopyMode extends CardMode {
 
             return InteractionResult.SUCCESS;
         }
+    }
+
+    public BlockPos getTargetedBlockPos(Player player) {
+        if (player == null) return null;
+
+        // 使用内置的视线追踪方法
+        HitResult hitResult = player.pick(player.getBlockReach(), 1.0F, false);
+
+        if (hitResult.getType() == HitResult.Type.BLOCK) {
+            return ((BlockHitResult) hitResult).getBlockPos();
+        }
+
+        return null;
     }
 
     @Override
@@ -293,5 +251,9 @@ public class CopyMode extends CardMode {
                     .append(Component.translatable("gui.advanced_memory_card.advanced_memory_card.tooltip.copy.second_pos", endPos.toShortString()))
                     .append(Component.translatable("gui.advanced_memory_card.advanced_memory_card.tooltip.copy.ready"));
         }
+    }
+
+    public static int getMaxVolume() {
+        return MAX_VOLUME;
     }
 }
