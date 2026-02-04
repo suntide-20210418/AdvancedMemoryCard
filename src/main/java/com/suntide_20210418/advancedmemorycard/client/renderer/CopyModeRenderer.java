@@ -79,6 +79,7 @@ public class CopyModeRenderer {
                 .getBuffer(RenderType.LINES);
 
         int color = copyMode.getSelectionColor();
+        float[] rgb = RGB(color);
         float alpha = 1.0F;
 
         if (startPos != null) {
@@ -98,17 +99,18 @@ public class CopyModeRenderer {
                     poseStack,
                     vertexConsumer,
                     selectionBox,
-                    RGB(color)[0], RGB(color)[1], RGB(color)[2], alpha
+                    rgb[0], rgb[1], rgb[2], alpha
             );
         } else if (targetedBox != null) {
             if (calculateVolume(targetedBox) > CopyMode.getMaxVolume()) {
                 color = 0xFF0000;
+                rgb = RGB(color);
             }
             LevelRenderer.renderLineBox(
                     poseStack,
                     vertexConsumer,
                     targetedBox,
-                    RGB(color)[0], RGB(color)[1], RGB(color)[2], alpha
+                    rgb[0], rgb[1], rgb[2], alpha
             );
         }
 
