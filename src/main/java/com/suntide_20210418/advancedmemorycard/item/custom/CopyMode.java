@@ -23,7 +23,7 @@ import net.minecraft.world.phys.AABB;
 
 public class CopyMode extends CardMode {
 
-    private static final int MAX_VOLUME = 1024;
+    private static final int MAX_VOLUME = 16384;
     private static final String START_POS = "start_pos";
     private static final String END_POS = "end_pos";
     private static final String IS_COPYING = "is_copying";
@@ -109,11 +109,6 @@ public class CopyMode extends CardMode {
     public long getSelectionVolume() {
         if (selectionBox == null) return 0;
         return (long) (selectionBox.getXsize() * selectionBox.getYsize() * selectionBox.getZsize());
-    }
-
-    // 检查是否有有效的选择区域
-    public boolean hasValidSelection() {
-        return selectionBox != null && startPos != null && endPos != null;
     }
 
     // 获取渲染颜色（可以根据不同状态调整）
@@ -229,7 +224,7 @@ public class CopyMode extends CardMode {
 
             return InteractionResult.SUCCESS;
 
-        } else if (endPos == null) {
+        } else {
             endPos = clickedPos;
             
             // 更新AABB
@@ -272,18 +267,7 @@ public class CopyMode extends CardMode {
             }
 
             return InteractionResult.SUCCESS;
-        } else {
-            if (player != null) {
-                player.displayClientMessage(
-                        Component.translatable(
-                                "gui.advanced_memory_card.advanced_memory_card.player.copy.already_marked"
-                        ),
-                        true
-                );
-            }
         }
-
-        return InteractionResult.PASS;
     }
 
     @Override

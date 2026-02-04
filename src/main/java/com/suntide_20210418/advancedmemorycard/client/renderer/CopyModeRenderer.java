@@ -15,12 +15,10 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
-@OnlyIn(Dist.CLIENT)
 @Mod.EventBusSubscriber(modid = AdvancedMemoryCardMod.MOD_ID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class CopyModeRenderer {
 
@@ -41,9 +39,9 @@ public class CopyModeRenderer {
         CopyMode mainHand = getCopyModeFromStack(mainHandItem);
         CopyMode offHand = getCopyModeFromStack(offHandItem);
 
-        if (mainHand != null && mainHand.hasValidSelection()) {
+        if (mainHand != null) {
             renderSelectionBox(event, mainHand);
-        } else if (offHand != null && offHand.hasValidSelection()) {
+        } else if (offHand != null) {
             renderSelectionBox(event, offHand);
         }
     }
@@ -58,8 +56,6 @@ public class CopyModeRenderer {
     private static void renderSelectionBox(RenderLevelStageEvent event, CopyMode copyMode) {
         PoseStack poseStack = event.getPoseStack();
         AABB selectionBox = copyMode.getSelectionBox();
-
-        if (selectionBox == null) return;
 
         poseStack.pushPose();
 
@@ -79,25 +75,25 @@ public class CopyModeRenderer {
         float blue = (color & 0xFF) / 255.0F;
         float alpha = 1.0F;
 
-        // 渲染线框
-        LevelRenderer.renderLineBox(
-                poseStack,
-                vertexConsumer,
-                selectionBox,
-                red, green, blue, alpha
-        );
-
-        // 结束批处理 - 关键步骤！
-
-        // 新增：渲染角落方块（如果存在）
         BlockPos startPos = copyMode.getStartPos();
         BlockPos endPos = copyMode.getEndPos();
 
         if (startPos != null) {
             renderBlock(poseStack, startPos, 0xFF0000);
         }
+
         if (endPos != null) {
             renderBlock(poseStack, endPos, 0xFFFF00);
+        }
+
+        if (selectionBox != null) {
+            // 渲染线框
+            LevelRenderer.renderLineBox(
+                    poseStack,
+                    vertexConsumer,
+                    selectionBox,
+                    red, green, blue, alpha
+            );
         }
 
         mc.renderBuffers().bufferSource().endBatch(RenderType.LINES);
@@ -117,9 +113,6 @@ public class CopyModeRenderer {
 
         // 使用与角落方块相同的渲染方法
         renderCorner(poseStack, vertexConsumer, firstPos, red, green, blue, alpha);
-
-        // 结束批处理
-        mc.renderBuffers().bufferSource().endBatch(RenderType.LINES);
     }
 
     private static void renderCorner(PoseStack poseStack, VertexConsumer vertexConsumer,
