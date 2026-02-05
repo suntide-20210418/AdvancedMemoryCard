@@ -1,57 +1,55 @@
-name: Build and Test
+name: Release Mod
 
 on:
   push:
-    branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
+    branches:
+      - 1.20.1
 
 jobs:
-  build:
+  build-and-release:
+    if: "startsWith(github.event.head_commit.message, 'v1') || startsWith(github.event.head_commit.message, 'v2') || startsWith(github.event.head_commit.message, 'v3')"
+
     runs-on: ubuntu-latest
-    
-    strategy:
-      matrix:
-        java: [17]
-        
+
+    permissions:
+      contents: write
+
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
 
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
 
-    - uses: actions/checkout@v4
-    
-    - name: Set up JDK ${{ matrix.java }}
-      uses: actions/setup-java@v4
-      with:
-        java-version: ${{ matrix.java }}
-        distribution: 'temurin'
-        java-package: jdk
-        cache: 'gradle'
-        
-    - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@v3
-      
-    - name: Grant execute permission for gradlew
-      run: chmod +x gradlew
-      
-    - name: Build with Gradle
-      run: ./gradlew build
-      
-    - name: Run tests
-      run: ./gradlew test
-      
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: build-artifacts
-        path: |
-          build/libs/*.jar
-          !build/libs/*-sources.jar
-          !build/libs/*-dev.jar
-          
-    - name: Upload test reports
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: test-reports
-        path: build/reports/tests/
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      - name: Run Spotless Check
+        run: ./gradlew spotlessCheck
+
+      - name: Run Tests
+        run: ./gradlew runGameTestServer
+
+      - name: Build with Gradle
+        run: ./gradlew build
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/libs/*.jar
+
+          tag_name: ${{ github.event.head_commit.message }}
+
+          name: ${{ github.event.head_commit.message }}
+
+          body: |
+            Automated release based on commit message.
+
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
