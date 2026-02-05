@@ -8,6 +8,9 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.UseOnContext;
 
+import static com.suntide_20210418.advancedmemorycard.utils.TranslateHelper.ConfigMode.*;
+import static com.suntide_20210418.advancedmemorycard.utils.TranslateHelper.Tooltip.*;
+
 public class ConfigMode extends CardMode{
 
     @Override
@@ -22,15 +25,11 @@ public class ConfigMode extends CardMode{
 
     @Override
     protected Component getName() {
-        return Component.translatable(
-                "gui.advanced_memory_card.advanced_memory_card.player.config.show"
-        );
+        return show();
     }
 
     @Override
     protected Component getDescription() {
-        return Component.translatable(
-                "gui.advanced_memory_card.advanced_memory_card.tooltip.config.info"
-        );
+        return configInfo();
     }
 }

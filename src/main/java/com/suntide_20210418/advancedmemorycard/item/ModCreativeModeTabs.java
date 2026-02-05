@@ -9,6 +9,8 @@ import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.RegistryObject;
 
+import static com.suntide_20210418.advancedmemorycard.utils.TranslateHelper.Common;
+
 public class ModCreativeModeTabs {
     public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS =
             DeferredRegister.create(Registries.CREATIVE_MODE_TAB, AdvancedMemoryCardMod.MOD_ID);
@@ -16,7 +18,7 @@ public class ModCreativeModeTabs {
     public static final RegistryObject<CreativeModeTab> ADVANCED_MEMORY_CARD_TAB =
             CREATIVE_MODE_TABS.register("advanced_memory_card_tab", () -> CreativeModeTab.builder()
                         .icon(() -> new ItemStack(ModItems.ADVANCED_MEMORY_CARD.get()))
-                        .title(Component.translatable("itemGroup.advanced_memory_card_tab"))
+                        .title(Common.itemGroupName())
                         .displayItems((parameters, output) -> {
                             output.accept(ModItems.ADVANCED_MEMORY_CARD.get());
                         })

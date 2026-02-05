@@ -24,6 +24,8 @@ import net.minecraft.world.phys.HitResult;
 
 import static com.suntide_20210418.advancedmemorycard.utils.AreaHelper.Area;
 import static com.suntide_20210418.advancedmemorycard.utils.AreaHelper.calculateVolume;
+import static com.suntide_20210418.advancedmemorycard.utils.TranslateHelper.CopyMode.*;
+import static com.suntide_20210418.advancedmemorycard.utils.TranslateHelper.Tooltip.*;
 
 public class CopyMode extends CardMode {
 
@@ -128,9 +130,7 @@ public class CopyMode extends CardMode {
             }
             
             player.displayClientMessage(
-                    Component.translatable(
-                            "gui.advanced_memory_card.advanced_memory_card.player.copy.completed", count
-                    ),
+                    completed(count),
                     true
             );
             this.isCopying = false;
@@ -139,9 +139,7 @@ public class CopyMode extends CardMode {
             this.save(stack.getOrCreateTag());
         } else {
             player.displayClientMessage(
-                    Component.translatable(
-                            "gui.advanced_memory_card.advanced_memory_card.player.copy.failed"
-                    ),
+                    failed(),
                     true
             );
         }
@@ -164,10 +162,7 @@ public class CopyMode extends CardMode {
             // 向玩家发送信息
             if (player != null) {
                 player.displayClientMessage(
-                        Component.translatable(
-                                "gui.advanced_memory_card.advanced_memory_card.player.copy.first_pos_marked",
-                                startPos.toShortString()
-                        ),
+                        firstPosMarked(startPos.toShortString()),
                         true
                 );
             }
@@ -181,10 +176,7 @@ public class CopyMode extends CardMode {
             if (currentVolume > MAX_VOLUME) {
                 if (player != null) {
                     player.displayClientMessage(
-                            Component.translatable(
-                                    "gui.advanced_memory_card.advanced_memory_card.player.copy.too_large",
-                                    currentVolume, MAX_VOLUME
-                            ),
+                            tooLarge(currentVolume, MAX_VOLUME),
                             true
                     );
                 }
@@ -200,13 +192,10 @@ public class CopyMode extends CardMode {
 
             if (player != null) {
                 player.displayClientMessage(
-                        Component.translatable(
-                                "gui.advanced_memory_card.advanced_memory_card.player.copy.second_pos_marked",
-                                endPos.toShortString(),
+                        secondPosMarked(endPos.toShortString(), 
                                 Area(startPos, endPos)[0],
                                 Area(startPos, endPos)[1],
-                                Area(startPos, endPos)[2]
-                        ),
+                                Area(startPos, endPos)[2]),
                         true
                 );
             }
@@ -230,26 +219,24 @@ public class CopyMode extends CardMode {
 
     @Override
     protected Component getName() {
-        return Component.translatable(
-                "gui.advanced_memory_card.advanced_memory_card.player.copy.show"
-        );
+        return show();
     }
 
     @Override
     protected Component getDescription() {
         if (startPos == null) {
             // 没有选择任何位置，显示Copy Mode
-            return Component.translatable("gui.advanced_memory_card.advanced_memory_card.tooltip.copy.info");
+            return copyInfo();
         } else if (endPos == null) {
             // 已选择第一个位置，显示第一个位置信息
-            return Component.translatable("gui.advanced_memory_card.advanced_memory_card.tooltip.copy.info")
-                    .append(Component.translatable("gui.advanced_memory_card.advanced_memory_card.tooltip.copy.first_pos", startPos.toShortString()));
+            return copyInfo()
+                    .append(copyFirstPos(startPos.toShortString()));
         } else {
             // 已选择两个位置，显示完整信息并提示准备粘贴
-            return Component.translatable("gui.advanced_memory_card.advanced_memory_card.tooltip.copy.info")
-                    .append(Component.translatable("gui.advanced_memory_card.advanced_memory_card.tooltip.copy.first_pos", startPos.toShortString()))
-                    .append(Component.translatable("gui.advanced_memory_card.advanced_memory_card.tooltip.copy.second_pos", endPos.toShortString()))
-                    .append(Component.translatable("gui.advanced_memory_card.advanced_memory_card.tooltip.copy.ready"));
+            return copyInfo()
+                    .append(copyFirstPos(startPos.toShortString()))
+                    .append(copySecondPos(endPos.toShortString()))
+                    .append(copyReady());
         }
     }
 
