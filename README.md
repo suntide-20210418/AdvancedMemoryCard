@@ -4,7 +4,7 @@
 ![Forge Version](https://img.shields.io/badge/Forge-47.4.10-orange)
 ![License](https://img.shields.io/badge/License-GPL--3.0-green)
 
-一个强大的Applied Energistics 2扩展模组，为AE2内存卡添加批量复制和高级配置功能。
+一个Applied Energistics 2扩展模组，为AE2内存卡添加批量复制和高级配置功能。
 
 ## 🌟 功能特性
 
