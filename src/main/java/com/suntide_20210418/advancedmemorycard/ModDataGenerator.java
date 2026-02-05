@@ -11,20 +11,19 @@ import net.minecraftforge.data.event.GatherDataEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
-
 @Mod.EventBusSubscriber(modid = AdvancedMemoryCardMod.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD)
 public class ModDataGenerator {
-    @SubscribeEvent
-    public static void gatherData(GatherDataEvent event) {
-        DataGenerator generator = event.getGenerator();
-        PackOutput packOutput = generator.getPackOutput();
-        ExistingFileHelper existingFileHelper = event.getExistingFileHelper();
+  @SubscribeEvent
+  public static void gatherData(GatherDataEvent event) {
+    DataGenerator generator = event.getGenerator();
+    PackOutput packOutput = generator.getPackOutput();
+    ExistingFileHelper existingFileHelper = event.getExistingFileHelper();
 
-        generator.addProvider(event.includeServer(), new ModRecipesProvider(packOutput));
+    generator.addProvider(event.includeServer(), new ModRecipesProvider(packOutput));
 
-        generator.addProvider(event.includeClient(), new ModItemModelsProvider(packOutput, existingFileHelper));
-        generator.addProvider(event.includeClient(), new ModEnusLangProvider(packOutput));
-        generator.addProvider(event.includeClient(), new ModZhcnLangProvider(packOutput));
-
-    }
+    generator.addProvider(
+        event.includeClient(), new ModItemModelsProvider(packOutput, existingFileHelper));
+    generator.addProvider(event.includeClient(), new ModEnusLangProvider(packOutput));
+    generator.addProvider(event.includeClient(), new ModZhcnLangProvider(packOutput));
+  }
 }

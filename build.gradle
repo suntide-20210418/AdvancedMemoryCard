@@ -130,25 +130,21 @@ minecraft {
 spotless {
     java {
         target 'src/main/java/**/*.java'
-
         googleJavaFormat()
-
         removeUnusedImports()
-
         endWithNewline()
     }
-    groovyGradle {
+
+    // 完全替换原来的 groovyGradle 配置
+    format 'gradle', {
         target '*.gradle'
-
-        greclipse()
-
         trimTrailingWhitespace()
+        indentWithSpaces(4)
         endWithNewline()
     }
 
     format 'misc', {
         target '**/*.md', '.gitignore'
-
         trimTrailingWhitespace()
         endWithNewline()
     }

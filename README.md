@@ -39,4 +39,3 @@
 1. 下载最新版本的 [.jar](file://D:\mycode\ModDevelopment\forge-1.20.1-47.4.10-mdk\gradle\wrapper\gradle-wrapper.jar) 文件
 2. 将文件放入 Minecraft 的 `mods` 文件夹
 3. 启动游戏即可使用
-

@@ -13,30 +13,27 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.slf4j.Logger;
 
 @Mod(AdvancedMemoryCardMod.MOD_ID)
-public class AdvancedMemoryCardMod
-{
-    public static final String MOD_ID = "advanced_memory_card";
+public class AdvancedMemoryCardMod {
+  public static final String MOD_ID = "advanced_memory_card";
 
-    private static final Logger LOGGER = LogUtils.getLogger();
+  private static final Logger LOGGER = LogUtils.getLogger();
 
-    public AdvancedMemoryCardMod(FMLJavaModLoadingContext context)
-    {
-        IEventBus modEventBus = context.getModEventBus();
-        LOGGER.info("AdvancedMemoryCardMod is loading");
+  public AdvancedMemoryCardMod(FMLJavaModLoadingContext context) {
+    IEventBus modEventBus = context.getModEventBus();
+    LOGGER.info("AdvancedMemoryCardMod is loading");
 
-        ModItems.register(modEventBus);
-        ModCreativeModeTabs.register(modEventBus);
+    ModItems.register(modEventBus);
+    ModCreativeModeTabs.register(modEventBus);
 
-        // 在公共设置事件中初始化模式
-        MinecraftForge.EVENT_BUS.register(this);
-        MinecraftForge.EVENT_BUS.register(CopyModeRenderer.class);
-        modEventBus.addListener(this::commonSetup);
-    }
-    
-    private void commonSetup(final FMLCommonSetupEvent event) {
-        LOGGER.info("Initializing card modes...");
-        CardMode.initializeModes();
-        LOGGER.info("Card modes initialized successfully");
-    }
+    // 在公共设置事件中初始化模式
+    MinecraftForge.EVENT_BUS.register(this);
+    MinecraftForge.EVENT_BUS.register(CopyModeRenderer.class);
+    modEventBus.addListener(this::commonSetup);
+  }
 
+  private void commonSetup(final FMLCommonSetupEvent event) {
+    LOGGER.info("Initializing card modes...");
+    CardMode.initializeModes();
+    LOGGER.info("Card modes initialized successfully");
+  }
 }
