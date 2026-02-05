@@ -12,23 +12,23 @@ import net.minecraft.world.item.context.UseOnContext;
 
 public class ConfigMode extends CardMode {
 
-  @Override
-  public ResourceLocation getType() {
-    return ResourceLocation.fromNamespaceAndPath(AdvancedMemoryCardMod.MOD_ID, "config");
-  }
+    @Override
+    public ResourceLocation getType() {
+        return ResourceLocation.fromNamespaceAndPath(AdvancedMemoryCardMod.MOD_ID, "config");
+    }
 
-  @Override
-  public InteractionResult onItemUseFirst(ItemStack stack, UseOnContext context) {
-    return InteractionResult.PASS;
-  }
+    @Override
+    public InteractionResult onItemUseFirst(ItemStack stack, UseOnContext context) {
+        return InteractionResult.PASS;
+    }
 
-  @Override
-  protected Component getName() {
-    return show();
-  }
+    @Override
+    protected Component getName() {
+        return show();
+    }
 
-  @Override
-  protected Component getDescription() {
-    return configInfo();
-  }
+    @Override
+    protected Component getDescription() {
+        return configInfo();
+    }
 }

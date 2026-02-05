@@ -11,23 +11,23 @@ import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.RegistryObject;
 
 public class ModCreativeModeTabs {
-  public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS =
-      DeferredRegister.create(Registries.CREATIVE_MODE_TAB, AdvancedMemoryCardMod.MOD_ID);
+    public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS =
+            DeferredRegister.create(Registries.CREATIVE_MODE_TAB, AdvancedMemoryCardMod.MOD_ID);
 
-  public static final RegistryObject<CreativeModeTab> ADVANCED_MEMORY_CARD_TAB =
-      CREATIVE_MODE_TABS.register(
-          "advanced_memory_card_tab",
-          () ->
-              CreativeModeTab.builder()
-                  .icon(() -> new ItemStack(ModItems.ADVANCED_MEMORY_CARD.get()))
-                  .title(Common.itemGroupName())
-                  .displayItems(
-                      (parameters, output) -> {
-                        output.accept(ModItems.ADVANCED_MEMORY_CARD.get());
-                      })
-                  .build());
+    public static final RegistryObject<CreativeModeTab> ADVANCED_MEMORY_CARD_TAB =
+            CREATIVE_MODE_TABS.register(
+                    "advanced_memory_card_tab",
+                    () ->
+                            CreativeModeTab.builder()
+                                    .icon(() -> new ItemStack(ModItems.ADVANCED_MEMORY_CARD.get()))
+                                    .title(Common.itemGroupName())
+                                    .displayItems(
+                                            (parameters, output) -> {
+                                                output.accept(ModItems.ADVANCED_MEMORY_CARD.get());
+                                            })
+                                    .build());
 
-  public static void register(IEventBus eventBus) {
-    CREATIVE_MODE_TABS.register(eventBus);
-  }
+    public static void register(IEventBus eventBus) {
+        CREATIVE_MODE_TABS.register(eventBus);
+    }
 }

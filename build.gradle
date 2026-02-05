@@ -130,7 +130,7 @@ minecraft {
 spotless {
     java {
         target 'src/main/java/**/*.java'
-        googleJavaFormat()
+        eclipse().configFile('spotless.eclipseformat.xml')
         removeUnusedImports()
         endWithNewline()
     }
@@ -139,7 +139,7 @@ spotless {
     format 'gradle', {
         target '*.gradle'
         trimTrailingWhitespace()
-        indentWithSpaces(4)
+        leadingTabsToSpaces(4)
         endWithNewline()
     }
 
