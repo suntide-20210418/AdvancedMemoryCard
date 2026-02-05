@@ -128,9 +128,12 @@ minecraft {
 }
 
 spotless {
+    // 明确禁用Eclipse格式化器以避免寻找XML配置文件
+    enforceCheck = false
+    
     java {
         target 'src/main/java/**/*.java'
-        eclipse().configFile('spotless.eclipseformat.xml')
+        googleJavaFormat().aosp().reflowLongStrings()
         removeUnusedImports()
         endWithNewline()
     }
