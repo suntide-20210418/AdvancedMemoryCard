@@ -1,0 +1,52 @@
+name: Pull Request Validation
+
+on:
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  pr-validation:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Validate Gradle Wrapper
+      uses: gradle/wrapper-validation-action@v1
+      
+    - name: Check for merge conflicts
+      run: |
+        if git diff --check; then
+          echo "No whitespace errors found"
+        else
+          echo "Whitespace errors detected"
+          exit 1
+        fi
+        
+    - name: Validate mod metadata
+      run: |
+        # Check if mods.toml exists and is valid
+        if [ ! -f "src/main/resources/META-INF/mods.toml" ]; then
+          echo "Error: mods.toml not found"
+          exit 1
+        fi
+        
+        # Check if required properties are present
+        if ! grep -q "modId" "src/main/resources/META-INF/mods.toml"; then
+          echo "Error: modId not found in mods.toml"
+          exit 1
+        fi
+        
+    - name: Validate build files
+      run: |
+        # Check if build.gradle exists
+        if [ ! -f "build.gradle" ]; then
+          echo "Error: build.gradle not found"
+          exit 1
+        fi
+        
+        # Check if gradle.properties exists
+        if [ ! -f "gradle.properties" ]; then
+          echo "Error: gradle.properties not found"
+          exit 1
+        fi
