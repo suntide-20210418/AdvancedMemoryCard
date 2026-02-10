@@ -98,16 +98,6 @@ public class CopyMode extends CardMode {
         return endPos;
     }
 
-    public void setEndPos(ItemStack stack,BlockPos endPos) {
-        this.endPos = endPos;
-        this.save(stack.getOrCreateTag());
-    }
-
-    public void setStartPos(ItemStack stack,BlockPos startPos) {
-        this.startPos = startPos;
-        this.save(stack.getOrCreateTag());
-    }
-
     @Override
     public InteractionResultHolder<ItemStack> onItemUse(
             Level level, Player player, InteractionHand hand) {
@@ -217,7 +207,7 @@ public class CopyMode extends CardMode {
     }
 
     @Override
-    public Component getName() {
+    protected Component getName() {
         return show();
     }
 
@@ -236,14 +226,6 @@ public class CopyMode extends CardMode {
                     .append(copySecondPos(endPos.toShortString()))
                     .append(copyReady());
         }
-    }
-
-    public  void clearPos(ItemStack stack){
-        startPos = null;
-        endPos = null;
-        isCopying = false;
-        this.save(stack.getOrCreateTag());
-
     }
 
     public static int getMaxVolume() {

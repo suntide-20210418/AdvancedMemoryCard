@@ -23,7 +23,7 @@ public class ConfigMode extends CardMode {
     }
 
     @Override
-    public Component getName() {
+    protected Component getName() {
         return show();
     }
 

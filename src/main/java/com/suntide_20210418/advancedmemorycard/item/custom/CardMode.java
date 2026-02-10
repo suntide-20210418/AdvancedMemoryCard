@@ -96,7 +96,7 @@ public abstract class CardMode {
         return this;
     }
 
-    public abstract Component getName();
+    protected abstract Component getName();
 
     protected abstract Component getDescription();
 
