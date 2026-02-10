@@ -1,31 +1,18 @@
-package com.suntide_20210418.amc;
+package com.suntide_20210418.advancedmemorycard;
 
-import net.minecraft.client.Minecraft;
+import com.suntide_20210418.advancedmemorycard.client.renderer.CopyModeRenderer;
 import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
-import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
-import net.neoforged.neoforge.client.gui.ConfigurationScreen;
-import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
+import net.neoforged.neoforge.common.NeoForge;
 
-// This class will not load on dedicated servers. Accessing client side code from here is safe.
-@Mod(value = AdvancedMemoryCard.MODID, dist = Dist.CLIENT)
-// You can use EventBusSubscriber to automatically register all static methods in the class annotated with @SubscribeEvent
-@EventBusSubscriber(modid = AdvancedMemoryCard.MODID, value = Dist.CLIENT)
+@Mod(value = AdvancedMemoryCardMod.MOD_ID, dist = Dist.CLIENT)
 public class AdvancedMemoryCardClient {
     public AdvancedMemoryCardClient(ModContainer container) {
-        // Allows NeoForge to create a config screen for this mod's configs.
-        // The config screen is accessed by going to the Mods screen > clicking on your mod > clicking on config.
-        // Do not forget to add translations for your config options to the en_us.json file.
-        container.registerExtensionPoint(IConfigScreenFactory.class, ConfigurationScreen::new);
-    }
+        // 注册 CopyModeRenderer 中的事件
+        NeoForge.EVENT_BUS.addListener(CopyModeRenderer::onRenderLevelStage);
 
-    @SubscribeEvent
-    static void onClientSetup(FMLClientSetupEvent event) {
-        // Some client setup code
-        AdvancedMemoryCard.LOGGER.info("HELLO FROM CLIENT SETUP");
-        AdvancedMemoryCard.LOGGER.info("MINECRAFT NAME >> {}", Minecraft.getInstance().getUser().getName());
+        // 如果有其他客户端事件，也在这里注册
+        // NeoForge.EVENT_BUS.addListener(OtherClientClass::otherEvent);
     }
 }

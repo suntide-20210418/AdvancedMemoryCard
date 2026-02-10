@@ -19,6 +19,10 @@ group = mod_group_id
 
 repositories {
     // Add here additional repositories if required by some of the dependencies below.
+    maven {
+        name = 'cursemaven'
+        url = uri("https://www.cursemaven.com")
+    }
 }
 
 base {
@@ -123,10 +127,13 @@ dependencies {
     // This maps to ./libs/coolmod-${mc_version}-${coolmod_version}.jar
     // The group id is ignored when searching -- in this case, it is "blank"
     // implementation "blank:coolmod-${mc_version}:${coolmod_version}"
-
+    implementation "curse.maven:applied-energistics-2-223794:7027323"
+    implementation "curse.maven:guideme-1173950:7127444"
+    implementation "curse.maven:jade-324717:5427817"
+    implementation "curse.maven:ae2-jei-integration-1074338:5748513"
+    implementation "curse.maven:jei-238222:7420587"
     // Example mod dependency using a file as dependency
     // implementation files("libs/coolmod-${mc_version}-${coolmod_version}.jar")
-
     // Example project dependency using a sister or child project:
     // implementation project(":myproject")
 

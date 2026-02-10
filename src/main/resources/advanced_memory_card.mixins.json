@@ -1,12 +1,10 @@
 {
   "required": true,
-  "package": "com.suntide_20210418.amc.mixin",
-  "compatibilityLevel": "JAVA_21",
+  "package": "com.suntide_20210418.advancedmemorycard.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "minVersion": "0.8",
+  "refmap": "advancedmemorycard.refmap.json",
   "mixins": [],
-  "injectors": {
-    "defaultRequire": 1
-  },
-  "overwrites": {
-    "requireAnnotations": true
-  }
+  "client": [],
+  "server": []
 }

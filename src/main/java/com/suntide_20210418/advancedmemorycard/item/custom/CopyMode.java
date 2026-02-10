@@ -1,0 +1,253 @@
+package com.suntide_20210418.advancedmemorycard.item.custom;
+
+import static com.suntide_20210418.advancedmemorycard.utils.AreaHelper.Area;
+import static com.suntide_20210418.advancedmemorycard.utils.AreaHelper.calculateVolume;
+import static com.suntide_20210418.advancedmemorycard.utils.TranslateHelper.CopyMode.*;
+import static com.suntide_20210418.advancedmemorycard.utils.TranslateHelper.Tooltip.*;
+
+import appeng.api.parts.IPart;
+import appeng.api.parts.IPartHost;
+import appeng.blockentity.AEBaseBlockEntity;
+import appeng.util.SettingsFrom;
+import com.suntide_20210418.advancedmemorycard.AdvancedMemoryCardMod;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.component.DataComponentMap;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.context.UseOnContext;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
+
+public class CopyMode extends CardMode {
+
+    private static final int MAX_VOLUME = 2048;
+    private static final String START_POS = "start_pos";
+    private static final String END_POS = "end_pos";
+    private static final String IS_COPYING = "is_copying";
+
+    private BlockPos startPos;
+    private BlockPos endPos;
+    private boolean isCopying;
+
+    public CopyMode() {}
+
+    @Override
+    protected CardMode load(CompoundTag tag) {
+        // 处理 startPos 为空的情况
+        if (tag.contains(START_POS)) {
+            startPos = BlockPos.of(tag.getLong(START_POS));
+        } else {
+            startPos = null;
+        }
+
+        // 处理 endPos 为空的情况
+        if (tag.contains(END_POS)) {
+            endPos = BlockPos.of(tag.getLong(END_POS));
+        } else {
+            endPos = null;
+        }
+
+        // 处理 isCopying 为空的情况，默认为 false
+        isCopying = tag.getBoolean(IS_COPYING);
+
+        return this;
+    }
+
+    @Override
+    public CompoundTag save(CompoundTag tag) {
+        tag = super.save(tag); // 先调用父类保存类型信息
+
+        // 只有当值不为 null 时才保存
+        if (startPos != null) {
+            tag.putLong(START_POS, startPos.asLong());
+        }
+
+        if (endPos != null) {
+            tag.putLong(END_POS, endPos.asLong());
+        }
+
+        tag.putBoolean(IS_COPYING, isCopying);
+        return tag;
+    }
+
+    // 获取渲染颜色（可以根据不同状态调整）
+    public int getSelectionColor() {
+        if (isCopying) {
+            return 0x00FF00; // 绿色 - 准备粘贴状态
+        } else if (endPos == null && startPos != null) {
+            return 0xFFFFFF; // 白色 - 选择第二个点状态
+        } else {
+            return 0xFF0000; // 红色 - 选择第一个点状态
+        }
+    }
+
+    public BlockPos getStartPos() {
+        return startPos;
+    }
+
+    public BlockPos getEndPos() {
+        return endPos;
+    }
+
+    @Override
+    public InteractionResultHolder<ItemStack> onItemUse(
+            Level level, Player player, InteractionHand hand) {
+        ItemStack stack = player.getItemInHand(hand);
+        if (this.isCopying) {
+            // 1.21.1 方式：获取 DataComponentMap
+            DataComponentMap dataComponents = stack.getComponents();
+
+            int count = 0;
+
+            if (startPos != null && endPos != null) {
+                Iterable<BlockPos> positions = BlockPos.betweenClosed(startPos, endPos);
+                for (BlockPos pos : positions) {
+                    BlockEntity blockEntity = level.getBlockEntity(pos);
+                    if (blockEntity instanceof AEBaseBlockEntity aeBlockEntity) {
+                        // 注意：AE2 的 SettingsFrom 和 importSettings 可能也需要适配
+                        aeBlockEntity.importSettings(SettingsFrom.MEMORY_CARD, dataComponents, player);
+                        count++;
+                    }
+                    // 处理AE2部件宿主（IPartHost）
+                    if (blockEntity instanceof IPartHost partHost) {
+                        // 获取所有方向（包括内部）
+                        for (Direction direction : Direction.values()) {
+                            IPart part = partHost.getPart(direction);
+                            if (part != null) {
+                                // 尝试导入设置到部件
+                                part.onUseItemOn(stack, player, InteractionHand.MAIN_HAND, pos.getCenter());
+                                count++;
+                            }
+                        }
+                    }
+                }
+            }
+
+            player.displayClientMessage(completed(count), true);
+            this.isCopying = false;
+            this.startPos = null;
+            this.endPos = null;
+            // 使用新的保存方法
+            this.saveToStack(stack);
+
+        } else {
+            player.displayClientMessage(failed(), true);
+        }
+        return InteractionResultHolder.consume(stack);
+    }
+
+    @Override
+    public ResourceLocation getType() {
+        return ResourceLocation.fromNamespaceAndPath(AdvancedMemoryCardMod.MOD_ID, "copy");
+    }
+
+    @Override
+    public InteractionResult onItemUseFirst(ItemStack stack, UseOnContext context) {
+        Player player = context.getPlayer();
+        BlockPos clickedPos = context.getClickedPos();
+
+        if (startPos == null) {
+            startPos = clickedPos;
+            // 使用新的保存方法
+            this.saveToStack(stack);
+
+            // 向玩家发送信息
+            if (player != null) {
+                player.displayClientMessage(firstPosMarked(startPos.toShortString()), true);
+            }
+
+            return InteractionResult.SUCCESS;
+
+        } else {
+            endPos = clickedPos;
+
+            long currentVolume = calculateVolume(startPos, endPos);
+            if (currentVolume > MAX_VOLUME) {
+                if (player != null) {
+                    player.displayClientMessage(tooLarge(currentVolume, MAX_VOLUME), true);
+                }
+                // 重置选择
+                this.startPos = null;
+                this.endPos = null;
+                this.saveToStack(stack);
+                return InteractionResult.FAIL;
+            }
+
+            isCopying = true;
+            this.saveToStack(stack);
+
+            if (player != null) {
+                player.displayClientMessage(
+                        secondPosMarked(
+                                endPos.toShortString(),
+                                Area(startPos, endPos)[0],
+                                Area(startPos, endPos)[1],
+                                Area(startPos, endPos)[2]),
+                        true);
+            }
+
+            return InteractionResult.SUCCESS;
+        }
+    }
+
+    public BlockPos getTargetedBlockPos(Player player) {
+        if (player == null) return null;
+
+        // 使用内置的视线追踪方法 - 1.21.1 中方法可能保持一致
+        HitResult hitResult = player.pick(player.blockInteractionRange(), 1.0F, false);
+
+        if (hitResult.getType() == HitResult.Type.BLOCK) {
+            return ((BlockHitResult) hitResult).getBlockPos();
+        }
+
+        return null;
+    }
+
+    @Override
+    protected Component getName() {
+        return show();
+    }
+
+    @Override
+    protected Component getDescription() {
+        if (startPos == null) {
+            // 没有选择任何位置，显示Copy Mode
+            return copyInfo();
+        } else if (endPos == null) {
+            // 已选择第一个位置，显示第一个位置信息
+            return copyInfo().copy().append(copyFirstPos(startPos.toShortString()));
+        } else {
+            // 已选择两个位置，显示完整信息并提示准备粘贴
+            return copyInfo()
+                    .copy()
+                    .append(copyFirstPos(startPos.toShortString()))
+                    .append(copySecondPos(endPos.toShortString()))
+                    .append(copyReady());
+        }
+    }
+
+    public static int getMaxVolume() {
+        return MAX_VOLUME;
+    }
+
+    // 新增：检查模式是否有效的方法
+    public boolean isValid() {
+        return startPos != null && endPos != null && isCopying;
+    }
+
+    // 新增：重置模式状态
+    public void reset() {
+        startPos = null;
+        endPos = null;
+        isCopying = false;
+    }
+}
