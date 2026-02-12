@@ -8,17 +8,21 @@ import appeng.core.localization.Tooltips;
 import appeng.items.tools.MemoryCardItem;
 import appeng.util.InteractionUtil;
 import java.util.List;
+
+import com.suntide_20210418.advancedmemorycard.client.gui.menu.AdvancedMemoryCardMenu;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.HitResult;
 import org.jetbrains.annotations.Nullable;
 
 /*
@@ -48,23 +52,31 @@ public class AdvancedMemoryCardItem extends MemoryCardItem implements IMenuItem 
         return InteractionResult.sidedSuccess(level.isClientSide());
     }
 
+
+
     @Override
     public InteractionResultHolder<ItemStack> use(
             Level level, Player player, InteractionHand hand) {
         ItemStack handStack = player.getItemInHand(hand);
-        if (InteractionUtil.isInAlternateUseMode(player)) {
+
+        if (InteractionUtil.isInAlternateUseMode(player) ) {
             this.cycleMode(player, handStack, true);
             return InteractionResultHolder.consume(handStack);
         } else {
+            HitResult hitResult = player.pick(player.getBlockReach(), 1.0F, false);
+
+
             return CardMode.of(handStack).onItemUse(level, player, hand);
         }
+
     }
 
-    private void clearCard(Player player, Level level, InteractionHand hand) {
-        ItemStack stack = player.getItemInHand(hand);
+    public void clearCard(Player player, Level level) {
+//        ItemStack stack = this.getDefaultInstance();
+        ItemStack stack = player.getItemInHand(InteractionHand.MAIN_HAND);
+
         IMemoryCard mem = (IMemoryCard) stack.getItem();
         mem.notifyUser(player, MemoryCardMessages.SETTINGS_CLEARED);
-
         // 仅清除 Data 根下的所有数据
         CompoundTag tag = stack.getTag();
         if (tag != null && tag.contains("Data")) {
@@ -73,6 +85,11 @@ public class AdvancedMemoryCardItem extends MemoryCardItem implements IMenuItem 
             if (tag.isEmpty()) {
                 stack.setTag(null);
             }
+        }
+        //清楚copy模式下的数据
+        CardMode cardMode = CopyMode.of(stack);
+        if (cardMode instanceof CopyMode copyMode){
+            copyMode.clearPos(stack);
         }
     }
 
