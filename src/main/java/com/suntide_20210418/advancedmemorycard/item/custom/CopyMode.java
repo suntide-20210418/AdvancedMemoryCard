@@ -98,12 +98,12 @@ public class CopyMode extends CardMode {
         return endPos;
     }
 
-    public void setEndPos(ItemStack stack,BlockPos endPos) {
+    public void setEndPos(ItemStack stack, BlockPos endPos) {
         this.endPos = endPos;
         this.save(stack.getOrCreateTag());
     }
 
-    public void setStartPos(ItemStack stack,BlockPos startPos) {
+    public void setStartPos(ItemStack stack, BlockPos startPos) {
         this.startPos = startPos;
         this.save(stack.getOrCreateTag());
     }
@@ -238,7 +238,7 @@ public class CopyMode extends CardMode {
         }
     }
 
-    public  void clearPos(ItemStack stack){
+    public void clearPos(ItemStack stack){
         startPos = null;
         endPos = null;
         isCopying = false;

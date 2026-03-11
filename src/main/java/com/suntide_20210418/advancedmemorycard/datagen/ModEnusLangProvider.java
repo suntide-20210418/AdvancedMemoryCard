@@ -27,7 +27,7 @@ public class ModEnusLangProvider extends LanguageProvider {
         add(Keys.TOOLTIP_COPY_READY, "Ready to paste");
 
         // 配置模式显示
-        add(Keys.CONFIG_MODE_SHOW, "Config Mode");
+        add(Keys.CONFIG_MODE_SHOW, "ME P2P Tunnel Config Mode");
 
         // 复制模式显示
         add(Keys.COPY_MODE_SHOW, "Copy Mode");

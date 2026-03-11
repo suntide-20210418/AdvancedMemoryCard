@@ -1,6 +1,6 @@
 package com.suntide_20210418.advancedmemorycard.network;
 
-import com.suntide_20210418.advancedmemorycard.client.gui.menu.AdvancedMemoryCardMenu;
+import com.suntide_20210418.advancedmemorycard.client.gui.menu.CopyModeMenu;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -31,7 +31,7 @@ public class OpenGuiPacket {
             ServerPlayer player = ctx.get().getSender();
             if (player != null) {
                 // 打开 GUI
-                player.openMenu(new SimpleMenuProvider((wnd, inv, pl) -> new AdvancedMemoryCardMenu(wnd, inv, msg.hand), Component.empty()));
+                player.openMenu(new SimpleMenuProvider((wnd, inv, pl) -> new CopyModeMenu(wnd, inv, msg.hand), Component.empty()));
             }
         });
         ctx.get().setPacketHandled(true);

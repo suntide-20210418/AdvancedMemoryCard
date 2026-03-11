@@ -21,7 +21,7 @@ public class KeyEvent {
             ItemStack mainHandItem = player.getMainHandItem();
             if (mainHandItem.getItem().equals(ModItems.ADVANCED_MEMORY_CARD.get())){
                 NetworkHandler.sendToServer(new OpenGuiPacket(InteractionHand.MAIN_HAND));
-            }else if (offhandItem.getItem().equals(ModItems.ADVANCED_MEMORY_CARD.get())){
+            } else if (offhandItem.getItem().equals(ModItems.ADVANCED_MEMORY_CARD.get())){
                 NetworkHandler.sendToServer(new OpenGuiPacket(InteractionHand.OFF_HAND));
             }
         }

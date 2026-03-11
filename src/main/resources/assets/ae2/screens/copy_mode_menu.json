@@ -2,13 +2,10 @@
   "$schema": "../schema.json",
   "includes": ["common/common.json"],
   "background": {
-    "texture": "guis/advanced_memory_card.png",
+    "texture": "guis/copy_mode_menu.png",
     "srcRect": [0, 0, 201, 138]
   },
   "text": {
-    "mode": {
-      "position": { "left": 5, "top": 5 }
-    },
     "start_pos": {
       "position": { "left": 5, "top": 16 }
     },
