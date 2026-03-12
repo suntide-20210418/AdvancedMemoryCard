@@ -9,6 +9,7 @@ import appeng.parts.p2p.MEP2PTunnelPart;
 import appeng.parts.p2p.P2PTunnelPart;
 import appeng.util.CustomNameUtil;
 import appeng.util.SettingsFrom;
+import com.suntide_20210418.advancedmemorycard.client.renderer.P2PRenderer;
 import com.suntide_20210418.advancedmemorycard.mixin.P2PTunnelPartMixin;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
@@ -32,6 +33,7 @@ public class P2PManager {
         this.p2pDevices = new ArrayList<>(p2pDevicesMap.keySet());
         this.p2pTypes = new ArrayList<>(p2pDevicesMap.values());
         autoConfigP2PInputAndOutput();
+        renderP2P(p2pTunnelPartBinding);
     }
 
     public void analysisP2P() {
@@ -145,6 +147,17 @@ public class P2PManager {
     public static ResourceLocation getP2PType(P2PTunnelPart<?> p2pPart){
         IPartItem<?> partItem = p2pPart.getPartItem();
         return IPartItem.getId(partItem);
+    }
+
+    public void renderP2P(P2PTunnelPart<?> p2pPart) {
+        P2PRenderer p2pRenderer = P2PRenderer.getInstance();
+        p2pRenderer.clearAllRenders();
+        p2pRenderer.triggerRender(p2pPart, 0xFF0000);
+        p2pRenderer.triggerRender(p2pPart.getInput(), 0x00FF00);
+        for (P2PTunnelPart<?> output : p2pPart.getOutputs()) {
+            if (output == p2pPart) continue;
+            p2pRenderer.triggerRender(output, 0x0000FF);
+        }
     }
 
     public P2PTunnelPart<?> getP2PTunnelPart(){

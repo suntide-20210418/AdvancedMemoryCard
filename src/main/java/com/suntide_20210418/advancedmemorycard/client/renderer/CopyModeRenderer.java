@@ -85,14 +85,14 @@ public class CopyModeRenderer {
         float alpha = 1.0F;
 
         if (startPos != null) {
-            renderBlock(poseStack, startPos, 0xFF0000);
+            renderBlock(poseStack, vertexConsumer, startPos, 0xFF0000);
         }
 
         if (endPos != null) {
-            renderBlock(poseStack, endPos, 0xFFFF00);
+            renderBlock(poseStack, vertexConsumer, endPos, 0xFFFF00);
         } else {
             if (targetedPos != null) {
-                renderBlock(poseStack, targetedPos, 0x00FF00);
+                renderBlock(poseStack, vertexConsumer, targetedPos, 0x00FF00);
             }
         }
 
@@ -113,29 +113,14 @@ public class CopyModeRenderer {
         poseStack.popPose();
     }
 
-    private static void renderBlock(PoseStack poseStack, BlockPos firstPos, int color) {
-        Minecraft mc = Minecraft.getInstance();
-        VertexConsumer vertexConsumer =
-                mc.renderBuffers().bufferSource().getBuffer(RenderType.LINES);
-
+    private static void renderBlock(PoseStack poseStack, VertexConsumer vertexConsumer, BlockPos blockPos, int color) {
         float red = ((color >> 16) & 0xFF) / 255.0F;
         float green = ((color >> 8) & 0xFF) / 255.0F;
         float blue = (color & 0xFF) / 255.0F;
         float alpha = 1.0F;
 
-        // 使用与角落方块相同的渲染方法
-        renderCorner(poseStack, vertexConsumer, firstPos, red, green, blue, alpha);
-    }
-
-    private static void renderCorner(
-            PoseStack poseStack,
-            VertexConsumer vertexConsumer,
-            BlockPos pos,
-            float red,
-            float green,
-            float blue,
-            float alpha) {
-        AABB cornerBox = new AABB(pos);
+        AABB cornerBox = new AABB(blockPos);
         LevelRenderer.renderLineBox(poseStack, vertexConsumer, cornerBox, red, green, blue, alpha);
     }
+
 }

@@ -56,19 +56,18 @@ public class AdvancedMemoryCardMod {
 
     @SubscribeEvent
     public void clientSetup(FMLClientSetupEvent event) {
-        event.enqueueWork(() -> {
-            MenuScreens.register(
-                    ModMenu.COPY_MODE_MENU.get(),
-                    (CopyModeMenu menu,
-                     Inventory inv,
-                     Component title) ->
-                            new CopyModeScreen(
-                                    menu,
-                                    inv,
-                                    title,
-                                    StyleManager.loadStyleDoc("/screens/copy_mode_menu.json")
-                            )
-            );
-        });
+        P2PRenderer.getInstance();
+        event.enqueueWork(() -> MenuScreens.register(
+                ModMenu.COPY_MODE_MENU.get(),
+                (CopyModeMenu menu,
+                 Inventory inv,
+                 Component title) ->
+                        new CopyModeScreen(
+                                menu,
+                                inv,
+                                title,
+                                StyleManager.loadStyleDoc("/screens/copy_mode_menu.json")
+                        )
+        ));
     }
 }
