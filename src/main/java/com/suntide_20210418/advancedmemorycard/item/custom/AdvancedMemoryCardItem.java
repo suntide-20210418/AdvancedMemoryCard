@@ -37,13 +37,17 @@ public class AdvancedMemoryCardItem extends MemoryCardItem implements IMenuItem 
 
     @Override
     public InteractionResult onItemUseFirst(ItemStack stack, UseOnContext context) {
-        // copying/special tool use
-        if (context.isSecondaryUseActive()) {
-            return InteractionResult.PASS;
-        }
-
+        CardMode cardMode = CardMode.of(stack);
         Level level = context.getLevel();
+
         if (!level.isClientSide()) {
+            if (context.isSecondaryUseActive()) {
+                if (cardMode instanceof CopyMode) {
+                    return InteractionResult.PASS;
+                } else {
+                    return InteractionResult.CONSUME;
+                }
+            }
             return CardMode.of(stack).onItemUseFirst(stack, context);
         }
 
@@ -61,16 +65,11 @@ public class AdvancedMemoryCardItem extends MemoryCardItem implements IMenuItem 
             this.cycleMode(player, handStack, true);
             return InteractionResultHolder.consume(handStack);
         } else {
-            HitResult hitResult = player.pick(player.getBlockReach(), 1.0F, false);
-
-
             return CardMode.of(handStack).onItemUse(level, player, hand);
         }
-
     }
 
     public void clearCard(Player player, Level level) {
-//        ItemStack stack = this.getDefaultInstance();
         ItemStack stack = player.getItemInHand(InteractionHand.MAIN_HAND);
 
         IMemoryCard mem = (IMemoryCard) stack.getItem();
@@ -84,7 +83,7 @@ public class AdvancedMemoryCardItem extends MemoryCardItem implements IMenuItem 
                 stack.setTag(null);
             }
         }
-        //清楚copy模式下的数据
+        // 清除copy模式下的数据
         CardMode cardMode = CopyMode.of(stack);
         if (cardMode instanceof CopyMode copyMode){
             copyMode.clearPos(stack);

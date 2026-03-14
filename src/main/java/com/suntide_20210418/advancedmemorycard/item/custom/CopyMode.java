@@ -112,41 +112,43 @@ public class CopyMode extends CardMode {
     public InteractionResultHolder<ItemStack> onItemUse(
             Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
-        if (this.isCopying) {
-            MemoryCardItem memoryCardItem = (MemoryCardItem) stack.getItem();
-            CompoundTag data = memoryCardItem.getData(stack);
-            int count = 0;
+        if (!level.isClientSide()) {
+            if (this.isCopying) {
+                MemoryCardItem memoryCardItem = (MemoryCardItem) stack.getItem();
+                CompoundTag data = memoryCardItem.getData(stack);
+                int count = 0;
 
-            if (startPos != null && endPos != null) {
-                Iterable<BlockPos> positions = BlockPos.betweenClosed(startPos, endPos);
-                for (BlockPos pos : positions) {
-                    BlockEntity blockEntity = level.getBlockEntity(pos);
-                    if (blockEntity instanceof AEBaseBlockEntity aeBlockEntity) {
-                        aeBlockEntity.importSettings(SettingsFrom.MEMORY_CARD, data, player);
-                        count++;
-                    }
-                    // 处理AE2部件宿主（IPartHost）
-                    if (blockEntity instanceof IPartHost partHost) {
-                        // 获取所有方向（包括内部）
-                        for (Direction direction : Direction.values()) {
-                            IPart part = partHost.getPart(direction);
-                            if (part != null) {
-                                // 尝试导入设置到部件
-                                part.onActivate(player, InteractionHand.MAIN_HAND, pos.getCenter());
-                                count++;
+                if (startPos != null && endPos != null) {
+                    Iterable<BlockPos> positions = BlockPos.betweenClosed(startPos, endPos);
+                    for (BlockPos pos : positions) {
+                        BlockEntity blockEntity = level.getBlockEntity(pos);
+                        if (blockEntity instanceof AEBaseBlockEntity aeBlockEntity) {
+                            aeBlockEntity.importSettings(SettingsFrom.MEMORY_CARD, data, player);
+                            count++;
+                        }
+                        // 处理AE2部件宿主（IPartHost）
+                        if (blockEntity instanceof IPartHost partHost) {
+                            // 获取所有方向（包括内部）
+                            for (Direction direction : Direction.values()) {
+                                IPart part = partHost.getPart(direction);
+                                if (part != null) {
+                                    // 尝试导入设置到部件
+                                    part.onActivate(player, InteractionHand.MAIN_HAND, pos.getCenter());
+                                    count++;
+                                }
                             }
                         }
                     }
                 }
-            }
 
-            player.displayClientMessage(completed(count), true);
-            this.isCopying = false;
-            this.startPos = null;
-            this.endPos = null;
-            this.save(stack.getOrCreateTag());
-        } else {
-            player.displayClientMessage(failed(), true);
+                player.displayClientMessage(completed(count), true);
+                this.isCopying = false;
+                this.startPos = null;
+                this.endPos = null;
+                this.save(stack.getOrCreateTag());
+            } else {
+                player.displayClientMessage(failed(), true);
+            }
         }
         return InteractionResultHolder.consume(stack);
     }
@@ -160,47 +162,43 @@ public class CopyMode extends CardMode {
     public InteractionResult onItemUseFirst(ItemStack stack, UseOnContext context) {
         Player player = context.getPlayer();
         BlockPos clickedPos = context.getClickedPos();
-        if (startPos == null) {
-            startPos = clickedPos;
-            this.save(stack.getOrCreateTag());
-
-            // 向玩家发送信息
-            if (player != null) {
-                player.displayClientMessage(firstPosMarked(startPos.toShortString()), true);
-            }
-
-            return InteractionResult.SUCCESS;
-
-        } else {
-            endPos = clickedPos;
-
-            long currentVolume = calculateVolume(startPos, endPos);
-            if (currentVolume > MAX_VOLUME) {
-                if (player != null) {
-                    player.displayClientMessage(tooLarge(currentVolume, MAX_VOLUME), true);
-                }
-                // 重置选择
-                this.startPos = null;
-                this.endPos = null;
+        Level level = context.getLevel();
+        if (player != null && !level.isClientSide()) {
+            if (startPos == null) {
+                startPos = clickedPos;
                 this.save(stack.getOrCreateTag());
-                return InteractionResult.FAIL;
-            }
 
-            isCopying = true;
-            this.save(stack.getOrCreateTag());
+                // 向玩家发送信息
+                player.displayClientMessage(firstPosMarked(startPos.toShortString()), true);
 
-            if (player != null) {
+            } else {
+                endPos = clickedPos;
+
+                long currentVolume = calculateVolume(startPos, endPos);
+                if (currentVolume > MAX_VOLUME) {
+                    player.displayClientMessage(tooLarge(currentVolume, MAX_VOLUME), true);
+                    // 重置选择
+                    this.startPos = null;
+                    this.endPos = null;
+                    this.save(stack.getOrCreateTag());
+                    return InteractionResult.FAIL;
+                }
+
+                isCopying = true;
+                this.save(stack.getOrCreateTag());
+                int[] area = Area(startPos, endPos);
+
                 player.displayClientMessage(
                         secondPosMarked(
                                 endPos.toShortString(),
-                                Area(startPos, endPos)[0],
-                                Area(startPos, endPos)[1],
-                                Area(startPos, endPos)[2]),
+                                area[0],
+                                area[1],
+                                area[2]),
                         true);
-            }
 
-            return InteractionResult.SUCCESS;
+            }
         }
+        return InteractionResult.sidedSuccess(level.isClientSide());
     }
 
     public BlockPos getTargetedBlockPos(Player player) {

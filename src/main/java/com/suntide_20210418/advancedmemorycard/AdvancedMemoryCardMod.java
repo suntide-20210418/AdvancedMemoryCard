@@ -26,7 +26,7 @@ import org.slf4j.Logger;
 public class AdvancedMemoryCardMod {
     public static final String MOD_ID = "advanced_memory_card";
 
-    private static final Logger LOGGER = LogUtils.getLogger();
+    public static final Logger LOGGER = LogUtils.getLogger();
 
     public AdvancedMemoryCardMod(FMLJavaModLoadingContext context) {
         IEventBus modEventBus = context.getModEventBus();

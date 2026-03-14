@@ -51,7 +51,7 @@ public class CopyModeMenu extends AEBaseMenu {
     public CopyModeMenu(int id, Inventory playerInventory, InteractionHand hand) {
         this(id, playerInventory, (FriendlyByteBuf) null);
         this.stack = this.getPlayer().getItemInHand(hand);
-        mode = CardMode.of(stack).getName();
+        this.mode = CardMode.of(stack).getName();
         this.hand = hand;
         updateItemInf();
     }

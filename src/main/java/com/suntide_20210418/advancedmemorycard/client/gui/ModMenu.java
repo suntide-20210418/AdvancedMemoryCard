@@ -16,7 +16,7 @@ public class ModMenu {
     public static final RegistryObject<MenuType<CopyModeMenu>> COPY_MODE_MENU =
             MENU_TYPES.register("card_menu", () -> IForgeMenuType.create(CopyModeMenu::new));
 
-//    public static final RegistryObject<MenuType<ConfigModeMenu>> CONFIG_MODE_MENU =
-//            MENU_TYPES.register("config_menu", () -> IForgeMenuType.create(ConfigModeMenu::new));
+    public static final RegistryObject<MenuType<ConfigModeMenu>> CONFIG_MODE_MENU =
+            MENU_TYPES.register("config_menu", () -> IForgeMenuType.create(ConfigModeMenu::new));
 
 }

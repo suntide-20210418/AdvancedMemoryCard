@@ -44,13 +44,13 @@ public class P2PRenderer {
      * @param duration  持续时间（毫秒）
      * @param color     颜色
      */ // 渲染信息内部类
-        private record RenderInfo(long startTime, long duration, int color) {
+    private record RenderInfo(long startTime, long duration, int color) {
 
-            // 检查是否仍在渲染时间内
-            boolean isActive() {
-                return System.currentTimeMillis() - startTime < duration;
-            }
+        // 检查是否仍在渲染时间内
+        boolean isActive() {
+            return System.currentTimeMillis() - startTime < duration;
         }
+    }
 
     @SubscribeEvent
     public static void onRenderLevelStage(RenderLevelStageEvent event) {

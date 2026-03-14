@@ -21,24 +21,26 @@ public class P2PManager {
     private P2PTunnelPart<?> p2pTunnelPartBinding;
     private IGrid grid;
     private final Player player;
-    private final Map<P2PTunnelPart<?>, ResourceLocation> p2pDevicesMap;
-    private final List<P2PTunnelPart<?>> p2pDevices;
-    private final List<ResourceLocation> p2pTypes;
+    private final P2PService p2pService;
+    private final HashMap<P2PTunnelPart<?>, ResourceLocation> p2pDevicesMap;
+    private final HashMap<String, Short> p2pFrequencyAndAlias;
 
     public P2PManager(P2PTunnelPart<?> p2pTunnelPartBinding, Player player) {
         this.p2pTunnelPartBinding = p2pTunnelPartBinding;
         this.p2pDevicesMap = new HashMap<>();
+        this.p2pFrequencyAndAlias = new HashMap<>();
         this.player = player;
         analysisP2P();
-        this.p2pDevices = new ArrayList<>(p2pDevicesMap.keySet());
-        this.p2pTypes = new ArrayList<>(p2pDevicesMap.values());
-        autoConfigP2PInputAndOutput();
+        this.p2pService = P2PService.get(grid);
+        autoConfigP2PIO();
         renderP2P(p2pTunnelPartBinding);
     }
 
     public void analysisP2P() {
         // 直接通过 P2PTunnelPart 获取其所在的 GridNode
         IGridNode gridNode = p2pTunnelPartBinding.getGridNode();
+        p2pFrequencyAndAlias.clear();
+        p2pDevicesMap.clear();
         if (gridNode == null) {
             return;
         }
@@ -54,25 +56,27 @@ public class P2PManager {
             Object machine = node.getOwner();
             if (machine instanceof P2PTunnelPart<?> p2pPart) {
                 p2pDevicesMap.put(p2pPart, getP2PType(p2pPart));
+                short frequency = p2pPart.getFrequency();
+                if (!p2pFrequencyAndAlias.containsValue(frequency)) {
+                    p2pFrequencyAndAlias.put(String.valueOf(frequency), frequency);
+                }
             }
         }
     }
 
     public void bind(short frequency){
         if (grid != null) {
-            P2PService p2pService = P2PService.get(grid);
             p2pService.updateFreq(p2pTunnelPartBinding, frequency);
         }
     }
 
-    public void autoConfigP2PInputAndOutput() {
-        if (grid == null || grid.isEmpty() || p2pDevices == null) {
+    public void autoConfigP2PIO() {
+        if (grid == null || grid.isEmpty() || p2pDevicesMap.isEmpty()) {
             return;
         }
-        P2PService p2pService = P2PService.get(grid);
         if (p2pService == null) return;
 
-        for (P2PTunnelPart<?> p2pPart : p2pDevices) {
+        for (P2PTunnelPart<?> p2pPart : p2pDevicesMap.keySet()) {
             if (p2pPart == null) continue;
             processSingleP2PPart(p2pPart, p2pService);
         }
@@ -86,13 +90,13 @@ public class P2PManager {
         IGridNode externalNode = meP2PTunnelPart.getExternalFacingNode();
         if (externalNode == null) {
             // 节点已被破坏，默认设为输出
-            ((P2PTunnelPartMixin) p2pPart).invokeSetOutput(true);
+            ((P2PTunnelPartMixin) p2pPart).setOutput(true);
             return;
         }
 
         IGrid externalGrid = externalNode.getGrid();
         if (externalGrid == null || externalGrid.isEmpty()) {
-            ((P2PTunnelPartMixin) p2pPart).invokeSetOutput(true);
+            ((P2PTunnelPartMixin) p2pPart).setOutput(true);
             return;
         }
 
@@ -104,11 +108,11 @@ public class P2PManager {
                 short frequency = p2pService.newFrequency();
                 p2pService.updateFreq(p2pPart, frequency);
                 if (!isConnected) {
-                    ((P2PTunnelPartMixin) p2pPart).invokeSetOutput(false);
+                    ((P2PTunnelPartMixin) p2pPart).setOutput(false);
                 }
             }
         } else if (!hasController) {
-            ((P2PTunnelPartMixin) p2pPart).invokeSetOutput(true);
+            ((P2PTunnelPartMixin) p2pPart).setOutput(true);
         }
 
     }
@@ -160,28 +164,41 @@ public class P2PManager {
         }
     }
 
+    @SuppressWarnings("unchecked")
+    public void renderP2P(short frequency){
+        P2PRenderer p2pRenderer = P2PRenderer.getInstance();
+        p2pRenderer.clearAllRenders();
+        P2PTunnelPart<?> input = p2pService.getInput(frequency);
+        p2pRenderer.triggerRender(input, 0x00FF00);
+        p2pService.getOutputs(frequency, P2PTunnelPart.class)
+                .forEach(output -> {
+            p2pRenderer.triggerRender(output, 0x0000FF);
+        });
+    }
+
     public P2PTunnelPart<?> getP2PTunnelPart(){
         return p2pTunnelPartBinding;
     }
 
-    public Map<P2PTunnelPart<?>, ResourceLocation> getP2PDevicesMap() {
+    public HashMap<P2PTunnelPart<?>, ResourceLocation> getP2PDevicesMap() {
         return p2pDevicesMap;
-    }
-
-    public List<P2PTunnelPart<?>> getP2pDevices() {
-        return p2pDevices;
-    }
-
-    public List<ResourceLocation> getP2pTypes() {
-        return p2pTypes;
     }
 
     public void setP2PTunnelPart(P2PTunnelPart<?> p2pPart){
         this.p2pTunnelPartBinding = p2pPart;
     }
 
-    public Player getPlayer() {
-        return player;
+    public HashMap<String, Short> getP2PFrequencyAndAlias() {
+        return p2pFrequencyAndAlias;
     }
 
+    public void setP2PAlias(String alias, short frequency) {
+        for (HashMap.Entry<String, Short> entry : p2pFrequencyAndAlias.entrySet()) {
+            if (entry.getValue() == frequency) {
+                p2pFrequencyAndAlias.remove(entry.getKey());
+                p2pFrequencyAndAlias.put(alias, frequency);
+                break;
+            }
+        }
+    }
 }
