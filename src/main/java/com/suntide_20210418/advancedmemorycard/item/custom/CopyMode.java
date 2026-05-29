@@ -1,10 +1,5 @@
 package com.suntide_20210418.advancedmemorycard.item.custom;
 
-import static com.suntide_20210418.advancedmemorycard.utils.AreaHelper.Area;
-import static com.suntide_20210418.advancedmemorycard.utils.AreaHelper.calculateVolume;
-import static com.suntide_20210418.advancedmemorycard.utils.TranslateHelper.CopyMode.*;
-import static com.suntide_20210418.advancedmemorycard.utils.TranslateHelper.Tooltip.*;
-
 import appeng.api.parts.IPart;
 import appeng.api.parts.IPartHost;
 import appeng.blockentity.AEBaseBlockEntity;
@@ -26,6 +21,11 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
+
+import static com.suntide_20210418.advancedmemorycard.utils.AreaHelper.Area;
+import static com.suntide_20210418.advancedmemorycard.utils.AreaHelper.calculateVolume;
+import static com.suntide_20210418.advancedmemorycard.utils.TranslateHelper.CopyMode.*;
+import static com.suntide_20210418.advancedmemorycard.utils.TranslateHelper.Tooltip.*;
 
 public class CopyMode extends CardMode {
 
@@ -109,48 +109,46 @@ public class CopyMode extends CardMode {
     }
 
     @Override
-    public InteractionResultHolder<ItemStack> onItemUse(
-            Level level, Player player, InteractionHand hand) {
+    public InteractionResultHolder<ItemStack> onItemUse(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
-        if (!level.isClientSide()) {
-            if (this.isCopying) {
-                MemoryCardItem memoryCardItem = (MemoryCardItem) stack.getItem();
-                CompoundTag data = memoryCardItem.getData(stack);
-                int count = 0;
+        if (this.isCopying) {
+            MemoryCardItem memoryCardItem = (MemoryCardItem) stack.getItem();
+            CompoundTag data = memoryCardItem.getData(stack);
+            int count = 0;
 
-                if (startPos != null && endPos != null) {
-                    Iterable<BlockPos> positions = BlockPos.betweenClosed(startPos, endPos);
-                    for (BlockPos pos : positions) {
-                        BlockEntity blockEntity = level.getBlockEntity(pos);
-                        if (blockEntity instanceof AEBaseBlockEntity aeBlockEntity) {
-                            aeBlockEntity.importSettings(SettingsFrom.MEMORY_CARD, data, player);
-                            count++;
-                        }
-                        // 处理AE2部件宿主（IPartHost）
-                        if (blockEntity instanceof IPartHost partHost) {
-                            // 获取所有方向（包括内部）
-                            for (Direction direction : Direction.values()) {
-                                IPart part = partHost.getPart(direction);
-                                if (part != null) {
-                                    // 尝试导入设置到部件
-                                    part.onActivate(player, InteractionHand.MAIN_HAND, pos.getCenter());
-                                    count++;
-                                }
+            if (startPos != null && endPos != null) {
+                Iterable<BlockPos> positions = BlockPos.betweenClosed(startPos, endPos);
+                for (BlockPos pos : positions) {
+                    BlockEntity blockEntity = level.getBlockEntity(pos);
+                    if (blockEntity instanceof AEBaseBlockEntity aeBlockEntity) {
+                        aeBlockEntity.importSettings(SettingsFrom.MEMORY_CARD, data, player);
+                        count++;
+                    }
+                    // 处理AE2部件宿主（IPartHost）
+                    if (blockEntity instanceof IPartHost partHost) {
+                        // 获取所有方向（包括内部）
+                        for (Direction direction : Direction.values()) {
+                            IPart part = partHost.getPart(direction);
+                            if (part != null) {
+                                // 尝试导入设置到部件
+                                part.onActivate(player, InteractionHand.MAIN_HAND, pos.getCenter());
+                                count++;
                             }
                         }
                     }
                 }
-
-                player.displayClientMessage(completed(count), true);
-                this.isCopying = false;
-                this.startPos = null;
-                this.endPos = null;
-                this.save(stack.getOrCreateTag());
-            } else {
-                player.displayClientMessage(failed(), true);
             }
+
+            player.displayClientMessage(completed(count), true);
+            this.isCopying = false;
+            this.startPos = null;
+            this.endPos = null;
+            this.save(stack.getOrCreateTag());
+        } else {
+            player.displayClientMessage(failed(), true);
+            return InteractionResultHolder.fail(stack);
         }
-        return InteractionResultHolder.consume(stack);
+        return InteractionResultHolder.sidedSuccess(stack, level.isClientSide());
     }
 
     @Override
@@ -163,7 +161,7 @@ public class CopyMode extends CardMode {
         Player player = context.getPlayer();
         BlockPos clickedPos = context.getClickedPos();
         Level level = context.getLevel();
-        if (player != null && !level.isClientSide()) {
+        if (player != null) {
             if (startPos == null) {
                 startPos = clickedPos;
                 this.save(stack.getOrCreateTag());

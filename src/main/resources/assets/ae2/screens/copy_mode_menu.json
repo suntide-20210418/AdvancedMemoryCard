@@ -3,7 +3,13 @@
   "includes": ["common/common.json"],
   "background": {
     "texture": "guis/copy_mode_menu.png",
-    "srcRect": [0, 0, 201, 138]
+    "srcRect": [0, 0, 175, 141],
+    "border": {
+      "left": 7,
+      "right": 149,
+      "top": 14,
+      "bottom": 126
+    }
   },
   "text": {
     "start_pos": {
@@ -48,7 +54,6 @@
       },
       "position": { "left": 158, "top": 26 }
     }
-
   },
   "widgets": {
     "sX": {

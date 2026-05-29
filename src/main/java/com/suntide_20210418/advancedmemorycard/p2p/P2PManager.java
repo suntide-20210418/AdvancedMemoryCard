@@ -15,7 +15,8 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
 
 public class P2PManager {
     private P2PTunnelPart<?> p2pTunnelPartBinding;
@@ -90,13 +91,13 @@ public class P2PManager {
         IGridNode externalNode = meP2PTunnelPart.getExternalFacingNode();
         if (externalNode == null) {
             // 节点已被破坏，默认设为输出
-            ((P2PTunnelPartMixin) p2pPart).setOutput(true);
+            ((P2PTunnelPartMixin) p2pPart).invokeSetOutput(true);
             return;
         }
 
         IGrid externalGrid = externalNode.getGrid();
         if (externalGrid == null || externalGrid.isEmpty()) {
-            ((P2PTunnelPartMixin) p2pPart).setOutput(true);
+            ((P2PTunnelPartMixin) p2pPart).invokeSetOutput(true);
             return;
         }
 
@@ -108,11 +109,11 @@ public class P2PManager {
                 short frequency = p2pService.newFrequency();
                 p2pService.updateFreq(p2pPart, frequency);
                 if (!isConnected) {
-                    ((P2PTunnelPartMixin) p2pPart).setOutput(false);
+                    ((P2PTunnelPartMixin) p2pPart).invokeSetOutput(false);
                 }
             }
         } else if (!hasController) {
-            ((P2PTunnelPartMixin) p2pPart).setOutput(true);
+            ((P2PTunnelPartMixin) p2pPart).invokeSetOutput(true);
         }
 
     }
@@ -164,16 +165,12 @@ public class P2PManager {
         }
     }
 
-    @SuppressWarnings("unchecked")
     public void renderP2P(short frequency){
         P2PRenderer p2pRenderer = P2PRenderer.getInstance();
         p2pRenderer.clearAllRenders();
         P2PTunnelPart<?> input = p2pService.getInput(frequency);
         p2pRenderer.triggerRender(input, 0x00FF00);
-        p2pService.getOutputs(frequency, P2PTunnelPart.class)
-                .forEach(output -> {
-            p2pRenderer.triggerRender(output, 0x0000FF);
-        });
+        input.getOutputs().forEach(output -> p2pRenderer.triggerRender(output, 0x0000FF));
     }
 
     public P2PTunnelPart<?> getP2PTunnelPart(){
@@ -192,7 +189,7 @@ public class P2PManager {
         return p2pFrequencyAndAlias;
     }
 
-    public void setP2PAlias(String alias, short frequency) {
+    public void setFrequencyAlias(String alias, short frequency) {
         for (HashMap.Entry<String, Short> entry : p2pFrequencyAndAlias.entrySet()) {
             if (entry.getValue() == frequency) {
                 p2pFrequencyAndAlias.remove(entry.getKey());

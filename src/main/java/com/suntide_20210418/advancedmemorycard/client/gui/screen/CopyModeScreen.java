@@ -23,7 +23,7 @@ import java.util.regex.Pattern;
 
 public class CopyModeScreen extends AEBaseScreen<CopyModeMenu> {
 
-    //标识符，用于.setValue时不被监听器捕捉，重新定义数据
+    // 标识符，用于.setValue时不被监听器捕捉，重新定义数据
     private boolean suppressListener = true;
     private IconButton clearButton;
 
@@ -151,7 +151,7 @@ public class CopyModeScreen extends AEBaseScreen<CopyModeMenu> {
         }
     }
     private void onInputChange(String ignored) {
-        if (suppressListener){
+        if (suppressListener) {
             if (!isNullOrEmpty(sX.getValue()) && !isNullOrEmpty(sY.getValue()) && !isNullOrEmpty(sZ.getValue())) {
                 try {
                     int sx = Integer.parseInt(sX.getValue().trim());

@@ -11,5 +11,5 @@ public interface P2PTunnelPartMixin {
      * 公开 setOutput 方法
      */
     @Invoker(value = "setOutput", remap = false)
-    void setOutput(boolean output);
+    void invokeSetOutput(boolean output);
 }

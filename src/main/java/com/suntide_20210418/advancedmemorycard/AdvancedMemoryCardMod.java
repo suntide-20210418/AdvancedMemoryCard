@@ -3,7 +3,9 @@ package com.suntide_20210418.advancedmemorycard;
 import appeng.client.gui.style.StyleManager;
 import com.mojang.logging.LogUtils;
 import com.suntide_20210418.advancedmemorycard.client.gui.ModMenu;
+import com.suntide_20210418.advancedmemorycard.client.gui.menu.ConfigModeMenu;
 import com.suntide_20210418.advancedmemorycard.client.gui.menu.CopyModeMenu;
+import com.suntide_20210418.advancedmemorycard.client.gui.screen.ConfigModeScreen;
 import com.suntide_20210418.advancedmemorycard.client.gui.screen.CopyModeScreen;
 import com.suntide_20210418.advancedmemorycard.client.renderer.P2PRenderer;
 import com.suntide_20210418.advancedmemorycard.item.ModCreativeModeTabs;
@@ -50,24 +52,41 @@ public class AdvancedMemoryCardMod {
 
         event.enqueueWork(() -> {
             NetworkHandler.register();
-            System.out.println("Network packets registered!");
+            LOGGER.info("Network packets registered!");
         });
     }
 
     @SubscribeEvent
     public void clientSetup(FMLClientSetupEvent event) {
         P2PRenderer.getInstance();
-        event.enqueueWork(() -> MenuScreens.register(
-                ModMenu.COPY_MODE_MENU.get(),
-                (CopyModeMenu menu,
-                 Inventory inv,
-                 Component title) ->
-                        new CopyModeScreen(
-                                menu,
-                                inv,
-                                title,
-                                StyleManager.loadStyleDoc("/screens/copy_mode_menu.json")
-                        )
-        ));
+        event.enqueueWork(() -> {
+            // 注册复制模式屏幕
+            MenuScreens.register(
+                    ModMenu.COPY_MODE_MENU.get(),
+                    (CopyModeMenu menu,
+                     Inventory inv,
+                     Component title) ->
+                            new CopyModeScreen(
+                                    menu,
+                                    inv,
+                                    title,
+                                    StyleManager.loadStyleDoc("/screens/copy_mode_menu.json")
+                            )
+            );
+            
+            // 注册配置模式屏幕
+            MenuScreens.register(
+                    ModMenu.CONFIG_MODE_MENU.get(),
+                    (ConfigModeMenu menu,
+                     Inventory inv,
+                     Component title) ->
+                            new ConfigModeScreen(
+                                    menu,
+                                    inv,
+                                    title,
+                                    StyleManager.loadStyleDoc("/screens/config_mode_menu.json")
+                            )
+            );
+        });
     }
 }

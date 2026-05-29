@@ -1,8 +1,8 @@
 package com.suntide_20210418.advancedmemorycard.network;
 
-import com.suntide_20210418.advancedmemorycard.AdvancedMemoryCardMod;
 import com.suntide_20210418.advancedmemorycard.utils.ResourceLocationHelper;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.network.simple.SimpleChannel;
@@ -19,20 +19,32 @@ public class NetworkHandler {
 
     public static void register() {
         INSTANCE.registerMessage(packetId++,
+                ConfigModeSyncPacket.class,
+                ConfigModeSyncPacket::encode,
+                ConfigModeSyncPacket::decode,
+                ConfigModeSyncPacket::handle);
+
+        INSTANCE.registerMessage(packetId++,
                 OpenGuiPacket.class,
                 OpenGuiPacket::encode,
                 OpenGuiPacket::decode,
                 OpenGuiPacket::handle);
 
-        System.out.println("Registered " + packetId + " packets for " + AdvancedMemoryCardMod.MOD_ID);
+        INSTANCE.registerMessage(packetId++,
+                ModSwitchPacket.class,
+                ModSwitchPacket::encode,
+                ModSwitchPacket::decode,
+                ModSwitchPacket::handle);
     }
 
     public static <MSG> void sendToServer(MSG message) {
         INSTANCE.sendToServer(message);
     }
 
-    public static <MSG> void sendToPlayer(MSG message, ServerPlayer player) {
-        INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), message);
+    public static <MSG> void sendToPlayer(MSG message, Player player) {
+        if (player instanceof ServerPlayer serverPlayer) {
+            INSTANCE.send(PacketDistributor.PLAYER.with(() -> serverPlayer), message);
+        }
     }
 
     public static <MSG> void sendToAllPlayers(MSG message) {
