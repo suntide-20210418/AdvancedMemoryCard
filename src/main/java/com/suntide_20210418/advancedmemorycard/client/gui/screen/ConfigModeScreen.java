@@ -44,13 +44,15 @@ public class ConfigModeScreen extends AEBaseScreen<ConfigModeMenu> {
     }
 
     /**
-     * 将 P2PInfo 编码为位置字符串（格式：x|y|z|sideOrdinal），供服务端 parsingP2P 解析
+     * 将 P2PInfo 编码为位置字符串（格式：x|y|z|sideOrdinal|dimension），供服务端 parsingP2P 解析。
+     * dimension 使用完整 ResourceLocation 字符串（如 minecraft:overworld），确保跨维度定位。
      */
     private static String encodeP2PPosition(P2PInfo p2pInfo) {
         return p2pInfo.position().getX() + "|"
                 + p2pInfo.position().getY() + "|"
                 + p2pInfo.position().getZ() + "|"
-                + p2pInfo.direction().ordinal();
+                + p2pInfo.direction().ordinal() + "|"
+                + p2pInfo.dimension().location().toString();
     }
 
     private void initWidgets() {
