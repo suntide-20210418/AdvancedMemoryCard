@@ -96,7 +96,7 @@ public class ConfigModeSyncPacket {
         for (int i = 0; i < size2; i++) {
             BlockPos pos = buffer.readBlockPos();
             Direction direction = buffer.readEnum(Direction.class);
-            String dimension = buffer.readResourceLocation().getPath();
+            String dimension = buffer.readUtf();
             P2PPosition position = new P2PPosition(pos, direction, dimension);
             ResourceLocation location = buffer.readResourceLocation();
             p2pDevicesMap.put(position, location);
@@ -108,7 +108,7 @@ public class ConfigModeSyncPacket {
         for (int i = 0; i < size3; i++) {
             BlockPos pos = buffer.readBlockPos();
             Direction direction = buffer.readEnum(Direction.class);
-            String dimension = buffer.readResourceLocation().getPath();
+            String dimension = buffer.readUtf();
             P2PPosition position = new P2PPosition(pos, direction, dimension);
             P2PInfo info = readP2PInfo(buffer);
             p2pInfoMap.put(position, info);
