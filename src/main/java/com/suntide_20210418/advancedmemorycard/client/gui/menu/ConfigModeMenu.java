@@ -16,6 +16,7 @@ import com.suntide_20210418.advancedmemorycard.utils.TranslateHelper;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
@@ -164,7 +165,7 @@ public class ConfigModeMenu extends AEBaseMenu {
                 P2PPosition position = new P2PPosition(
                         p2p.getBlockEntity().getBlockPos(),
                         p2p.getSide(),
-                        p2p.getLevel().dimension().location().getPath()
+                        p2p.getLevel().dimension().location().toString()
                 );
                 positionDevicesMap.put(position, entry.getValue());
             }
@@ -174,7 +175,7 @@ public class ConfigModeMenu extends AEBaseMenu {
                 P2PPosition position = new P2PPosition(
                         p2p.getBlockEntity().getBlockPos(),
                         p2p.getSide(),
-                        p2p.getLevel().dimension().location().getPath()
+                        p2p.getLevel().dimension().location().toString()
                 );
                 positionInfoMap.put(position, entry.getValue());
             }
@@ -392,6 +393,12 @@ public class ConfigModeMenu extends AEBaseMenu {
         }
     }
 
+    /**
+     * 解析位置数据字符串，从对应维度的世界中重新获取 P2P 部件。
+     * 支持两种格式：
+     *   - 旧格式（向后兼容）: x|y|z|side
+     *   - 新格式:            x|y|z|side|dimension （dimension 为完整 ResourceLocation，如 minecraft:overworld）
+     */
     private P2PTunnelPart<?> parsingP2P(String data) {
         String[] posParts = data.split("\\|");
         BlockPos pos = new BlockPos(Integer.parseInt(posParts[0]),
@@ -399,9 +406,25 @@ public class ConfigModeMenu extends AEBaseMenu {
                 Integer.parseInt(posParts[2]));
         Direction side = Direction.values()[Integer.parseInt(posParts[3])];
 
-        // 从世界中重新获取 P2P 部件
         Player player = getPlayer();
-        BlockEntity blockEntity = player.level().getBlockEntity(pos);
+
+        // 确定目标维度：优先使用编码中的维度，否则回退到玩家当前维度（向后兼容旧格式）
+        Level targetLevel;
+        if (posParts.length >= 5) {
+            String dimStr = posParts[4];
+            ResourceLocation dimLocation = new ResourceLocation(dimStr);
+            ResourceKey<Level> dimKey = ResourceKey.create(Registries.DIMENSION, dimLocation);
+            targetLevel = player.getServer() != null ? player.getServer().getLevel(dimKey) : null;
+            if (targetLevel == null) {
+                // 目标维度不存在，回退到玩家维度
+                targetLevel = player.level();
+            }
+        } else {
+            // 旧格式无维度信息，使用玩家当前维度
+            targetLevel = player.level();
+        }
+
+        BlockEntity blockEntity = targetLevel.getBlockEntity(pos);
         if (blockEntity instanceof IPartHost partHost) {
             IPart part = partHost.getPart(side);
             if (part instanceof P2PTunnelPart<?> p2pPart) {

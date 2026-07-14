@@ -25,7 +25,7 @@ public class ServerConfig {
         sendHighlightToChat = builder
                 .comment("高亮 P2P 设备时是否在聊天栏发送位置信息和传送链接",
                         "Set to false to disable chat messages when highlighting a P2P device.")
-                .define("sendHighlightToChat", false);
+                .define("sendHighlightToChat", true);
 
         builder.pop();
     }
