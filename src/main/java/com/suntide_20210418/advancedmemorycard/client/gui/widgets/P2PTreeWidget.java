@@ -1,6 +1,8 @@
 package com.suntide_20210418.advancedmemorycard.client.gui.widgets;
 
+import com.suntide_20210418.advancedmemorycard.config.ModConfigs;
 import com.suntide_20210418.advancedmemorycard.p2p.*;
+import com.suntide_20210418.advancedmemorycard.utils.TranslateHelper;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -18,20 +20,29 @@ import java.util.function.Consumer;
  */
 public class P2PTreeWidget extends AbstractWidget {
 
-    // 颜色常量
-    private static final int COLOR_BG = 0xFFADB0C4;
-    private static final int COLOR_SELECTED = 0xFF4A6EA9;
-    private static final int COLOR_HOVER = 0xFF3A5A8A;
-
-    // 缩进像素
-    private static final int INDENT_WIDTH = 2;
-    // 行高
+    // 行高（通过配置动态读取，保留静态常量以兼容外部引用）
     private static final int ROW_HEIGHT = 12;
-    // 图标和文本间距
-    private static final int ICON_TEXT_SPACING = 4;
-    // 展开/收起图标宽度
-    private static final int EXPAND_ICON_WIDTH = 2;
+    public P2PTreeWidget(int x, int y, int width, int height) {
+        super(x, y, width, height, Component.empty());
+    }
 
+    public static int getRowHeight() {
+        return ModConfigs.getClientConfig().treeRowHeight.get();
+    }
+
+    // 颜色从配置动态读取
+    private int getColorBg() { return ModConfigs.getClientConfig().treeColorBg.get(); }
+
+    private int getColorSelected() { return ModConfigs.getClientConfig().treeColorSelected.get(); }
+
+    private int getColorHover() { return ModConfigs.getClientConfig().treeColorHover.get(); }
+
+    // 布局从配置动态读取
+    private int getIndentWidth() { return ModConfigs.getClientConfig().treeIndentWidth.get(); }
+
+    private int getIconTextSpacing() { return ModConfigs.getClientConfig().treeIconTextSpacing.get(); }
+
+    private int getExpandIconWidth() { return ModConfigs.getClientConfig().treeExpandIconWidth.get(); }
     // 数据源
     private Map<String, P2PTypeInfo> p2pTypeInfoMap;
     // 持久化展开状态缓存：即使父节点收起，子节点的展开状态也会被保留，
@@ -68,14 +79,9 @@ public class P2PTreeWidget extends AbstractWidget {
     // 重建标志：rebuildTree 期间抑制 listener 通知，防止重建过程中不必要的 navigateToP2P 触发滚动重置
     private boolean isRebuilding = false;
 
+    private int getChannelWarningThreshold() { return ModConfigs.getClientConfig().treeChannelWarningThreshold.get(); }
 
-    public P2PTreeWidget(int x, int y, int width, int height) {
-        super(x, y, width, height, Component.literal("P2P Tree"));
-    }
-
-    public static int getRowHeight() {
-        return ROW_HEIGHT;
-    }
+    private int getP2PNameMaxLength() { return ModConfigs.getClientConfig().treeP2PNameMaxLength.get(); }
 
     /**
      * 更新数据并重建树
@@ -208,11 +214,11 @@ public class P2PTreeWidget extends AbstractWidget {
         int index = flatNodes.indexOf(selectedNode);
         if (index < 0) return;
 
-        int nodeY = index * ROW_HEIGHT;
+        int nodeY = index * getRowHeight();
         int visibleHeight = getHeight();
 
         // 将选中节点置于可见区域中部偏上
-        int targetScroll = nodeY - visibleHeight / 2 + ROW_HEIGHT / 2;
+        int targetScroll = nodeY - visibleHeight / 2 + getRowHeight() / 2;
         targetScroll = Math.max(0,
                 Math.min(targetScroll, Math.max(0, getTotalContentHeight() - visibleHeight)));
 
@@ -325,7 +331,7 @@ public class P2PTreeWidget extends AbstractWidget {
 
     // 添加获取总内容高度的方法
     public int getTotalContentHeight() {
-        return flatNodes.size() * ROW_HEIGHT;
+        return flatNodes.size() * getRowHeight();
     }
 
     /**
@@ -481,8 +487,8 @@ public class P2PTreeWidget extends AbstractWidget {
      * 格式化搜索结果头
      */
     private Component formatSearchHeader() {
-        return Component.literal(String.format("共找到%d个结果", searchResultCount))
-                .withStyle(ChatFormatting.YELLOW);
+        return TranslateHelper.P2PTree.searchResultCount(searchResultCount)
+                .copy().withStyle(ChatFormatting.YELLOW);
     }
 
     /**
@@ -566,6 +572,7 @@ public class P2PTreeWidget extends AbstractWidget {
         String freq = channelInfo.frequency();
         int channelRemaining = channelInfo.channelRemaining();
         int p2pCount = channelInfo.p2pCount();
+        boolean isMEP2P = channelInfo.p2pType().equals("me_p2p_tunnel");
 
         MutableComponent freqComponent;
 
@@ -576,13 +583,26 @@ public class P2PTreeWidget extends AbstractWidget {
             freqComponent = Component.literal(freq).withStyle(ChatFormatting.AQUA);
         }
 
-        // 剩余频道数量颜色
-        ChatFormatting channelColor = channelRemaining > 0 ? ChatFormatting.GREEN : ChatFormatting.RED;
+        MutableComponent result = Component.literal("📡 ")
+                .append(freqComponent);
 
-        return Component.literal("📡 ")
-                .append(freqComponent)
-                .append(Component.literal(String.format(" [%d P2P | ⚡%d]", p2pCount, channelRemaining))
-                        .withStyle(channelColor));
+        if (isMEP2P) {
+            // ME P2P：显示 P2P 数量和剩余频道数，颜色根据剩余频道数动态变化
+            ChatFormatting channelColor = ChatFormatting.GREEN;
+            if (channelRemaining <= 0) {
+                channelColor = ChatFormatting.RED;
+            } else if (channelRemaining < getChannelWarningThreshold()) {
+                channelColor = ChatFormatting.YELLOW;
+            }
+            result.append(Component.literal(String.format(" [%d P2P | ⚡%d]", p2pCount, channelRemaining))
+                    .withStyle(channelColor));
+        } else {
+            // 非 ME P2P：不显示频道数，恒定绿色
+            result.append(Component.literal(String.format(" [%d P2P]", p2pCount))
+                    .withStyle(ChatFormatting.GREEN));
+        }
+
+        return result;
     }
 
     /**
@@ -613,13 +633,13 @@ public class P2PTreeWidget extends AbstractWidget {
         // 名称颜色（待绑定的特殊标记）
         MutableComponent nameComponent;
         if (isPendingBind) {
-            nameComponent = Component.literal(truncateString(name, 20))
+            nameComponent = Component.literal(truncateString(name, getP2PNameMaxLength()))
                     .withStyle(ChatFormatting.LIGHT_PURPLE, ChatFormatting.BOLD);
         } else if (isActive && isConnected) {
-            nameComponent = Component.literal(truncateString(name, 20))
+            nameComponent = Component.literal(truncateString(name, getP2PNameMaxLength()))
                     .withStyle(ChatFormatting.WHITE);
         } else {
-            nameComponent = Component.literal(truncateString(name, 20))
+            nameComponent = Component.literal(truncateString(name, getP2PNameMaxLength()))
                     .withStyle(ChatFormatting.YELLOW);
         }
 
@@ -652,7 +672,7 @@ public class P2PTreeWidget extends AbstractWidget {
         }
 
         int relativeY = (int) (mouseY - getY() + currentScrollOffset);
-        int index = relativeY / ROW_HEIGHT;
+        int index = relativeY / getRowHeight();
 
         if (index >= 0 && index < flatNodes.size()) {
             return flatNodes.get(index);
@@ -699,6 +719,10 @@ public class P2PTreeWidget extends AbstractWidget {
     @Override
     public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
 
+        // 更新原生 isHovered 状态（MC 依赖此字段判断 isHoveredOrFocused()）
+        this.isHovered = mouseX >= getX() && mouseX <= getX() + width
+                && mouseY >= getY() && mouseY <= getY() + height;
+
         // 更新悬停项
         hoveredNode = getNodeAt(mouseX, mouseY);
 
@@ -721,7 +745,7 @@ public class P2PTreeWidget extends AbstractWidget {
     private void renderBackground(GuiGraphics guiGraphics) {
         // 使用 GUI 默认背景色（透明或半透明，让 JSON 定义的背景透出）
         // 这里绘制半透明深色作为基础背景
-        guiGraphics.fill(getX(), getY(), getX() + width, getY() + height, COLOR_BG);
+        guiGraphics.fill(getX(), getY(), getX() + width, getY() + height, getColorBg());
     }
 
     /**
@@ -729,8 +753,8 @@ public class P2PTreeWidget extends AbstractWidget {
      */
     private void renderTreeContent(GuiGraphics guiGraphics, int mouseX, int mouseY) {
         if (flatNodes.isEmpty()) {
-            Component emptyText = Component.translatable("gui.advancedmemorycard.p2p_tree.empty")
-                    .withStyle(ChatFormatting.BLACK);
+            Component emptyText = TranslateHelper.P2PTree.empty()
+                    .copy().withStyle(ChatFormatting.BLACK);
             int textWidth = Minecraft.getInstance().font.width(emptyText);
             guiGraphics.drawString(Minecraft.getInstance().font, emptyText,
                     getX() + (width - textWidth) / 2,
@@ -739,30 +763,31 @@ public class P2PTreeWidget extends AbstractWidget {
             return;
         }
 
-        int startIndex = currentScrollOffset / ROW_HEIGHT;
-        int endIndex = Math.min(flatNodes.size(), startIndex + (height + ROW_HEIGHT - 1) / ROW_HEIGHT + 1);
-        int yOffset = getY() - currentScrollOffset + startIndex * ROW_HEIGHT;
+        int rowHeight = getRowHeight();
+        int startIndex = currentScrollOffset / rowHeight;
+        int endIndex = Math.min(flatNodes.size(), startIndex + (height + rowHeight - 1) / rowHeight + 1);
+        int yOffset = getY() - currentScrollOffset + startIndex * rowHeight;
 
         int clickableWidth = width;
 
         for (int i = startIndex; i < endIndex; i++) {
             TreeNode node = flatNodes.get(i);
-            int rowY = yOffset + (i - startIndex) * ROW_HEIGHT;
+            int rowY = yOffset + (i - startIndex) * rowHeight;
 
-            if (rowY + ROW_HEIGHT < getY() || rowY > getY() + height) {
+            if (rowY + rowHeight < getY() || rowY > getY() + height) {
                 continue;
             }
 
             int indent = getIndent(node);
             int iconX = getX() + indent;
-            int textX = getX() + indent + EXPAND_ICON_WIDTH + ICON_TEXT_SPACING;
-            int textY = rowY + (ROW_HEIGHT - 8) / 2;
+            int textX = getX() + indent + getExpandIconWidth() + getIconTextSpacing();
+            int textY = rowY + (rowHeight - 8) / 2;
 
             // 绘制选中背景
             if (node == selectedNode) {
-                guiGraphics.fill(getX(), rowY, getX() + clickableWidth, rowY + ROW_HEIGHT, COLOR_SELECTED);
+                guiGraphics.fill(getX(), rowY, getX() + clickableWidth, rowY + rowHeight, getColorSelected());
             } else if (node == hoveredNode) {
-                guiGraphics.fill(getX(), rowY, getX() + clickableWidth, rowY + ROW_HEIGHT, COLOR_HOVER);
+                guiGraphics.fill(getX(), rowY, getX() + clickableWidth, rowY + rowHeight, getColorHover());
             }
 
             // 绘制展开/收起图标（对于可展开的节点）
@@ -771,7 +796,7 @@ public class P2PTreeWidget extends AbstractWidget {
                 MutableComponent iconComponent = Component.literal(iconSymbol)
                         .withStyle(ChatFormatting.GOLD);
                 guiGraphics.drawString(Minecraft.getInstance().font, iconComponent,
-                        iconX, rowY + (ROW_HEIGHT - 8) / 2, -1, false);
+                        iconX, rowY + (rowHeight - 8) / 2, -1, false);
             }
 
             // 绘制文本（scissor 已启用，无需手动截断，直接绘制以保留颜色样式）
@@ -799,11 +824,11 @@ public class P2PTreeWidget extends AbstractWidget {
                 if (node.p2pInfo != null) {
                     yield formatP2PDisplayName(node.p2pInfo);
                 }
-                yield Component.literal("Unknown P2P");
+                yield TranslateHelper.P2PTree.unknownP2P();
             }
             case SEARCH_HEADER -> node.displayComponent != null
                     ? node.displayComponent
-                    : Component.literal("Search Results");
+                    : TranslateHelper.P2PTree.searchResults();
         };
     }
 
@@ -817,7 +842,7 @@ public class P2PTreeWidget extends AbstractWidget {
             depth++;
             current = current.parent;
         }
-        return depth * INDENT_WIDTH;
+        return depth * getIndentWidth();
     }
 
     @Override

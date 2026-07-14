@@ -7,10 +7,12 @@ import appeng.menu.guisync.GuiSync;
 import appeng.parts.p2p.MEP2PTunnelPart;
 import appeng.parts.p2p.P2PTunnelPart;
 import com.suntide_20210418.advancedmemorycard.client.gui.ModMenu;
+import com.suntide_20210418.advancedmemorycard.config.ModConfigs;
 import com.suntide_20210418.advancedmemorycard.item.custom.CardMode;
 import com.suntide_20210418.advancedmemorycard.network.ConfigModeSyncPacket;
 import com.suntide_20210418.advancedmemorycard.network.NetworkHandler;
 import com.suntide_20210418.advancedmemorycard.p2p.*;
+import com.suntide_20210418.advancedmemorycard.utils.TranslateHelper;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -48,6 +50,7 @@ public class ConfigModeMenu extends AEBaseMenu {
     private static final String SET_P2P_ALIAS = "set_p2p_alias";
     private static final String SET_PENDING_BIND = "set_pending_bind";
     private static final String AUTO_CONFIG_IO = "auto_config_io";
+    private static final String ASSIGN_FREQ = "assign_freq";
     private static final String HIGHLIGHT_P2P = "highlight_p2p";
     private static final String HIGHLIGHT_P2P_TUNNEL = "highlight_p2p_tunnel";
     private static final String UPDATE_ITEM_INFO = "update_item_info";
@@ -85,6 +88,7 @@ public class ConfigModeMenu extends AEBaseMenu {
         registerClientAction(SET_P2P_ALIAS, String.class, this::handleSetP2PAlias);
         registerClientAction(SET_PENDING_BIND, String.class, this::handleSetPendingBind);
         registerClientAction(AUTO_CONFIG_IO, this::handleAutoConfigIO);
+        registerClientAction(ASSIGN_FREQ, this::handleAssignFreq);
         registerClientAction(HIGHLIGHT_P2P, String.class, this::handleHighlightP2P);
         registerClientAction(HIGHLIGHT_P2P_TUNNEL, String.class, this::handleHighlightP2PTunnel);
         registerClientAction(UPDATE_ITEM_INFO, this::handleUpdateItemInfo);
@@ -130,6 +134,10 @@ public class ConfigModeMenu extends AEBaseMenu {
 
     private void handleAutoConfigIO() {
         autoConfigIO();
+    }
+
+    private void handleAssignFreq() {
+        assignFreq();
     }
 
     // 接收时解析 P2P 位置字符串并重新获取 P2P 部件（格式：x|y|z|side）
@@ -343,7 +351,7 @@ public class ConfigModeMenu extends AEBaseMenu {
         String p2pType = p2pList.isEmpty() ? "unknown" : p2pList.get(0).p2pType();
 
         return new ChannelInfo(frequency, alias, p2pList.size(),
-                channelRemaining, p2pType, p2pList);
+                totalChannels, channelRemaining, p2pType, p2pList);
     }
 
     // 接收时解析
@@ -411,10 +419,21 @@ public class ConfigModeMenu extends AEBaseMenu {
         p2pManager.autoConfigP2PIO();
     }
 
+    private void assignFreq() {
+        if (p2pManager != null) {
+            p2pManager.assignNewFrequency();
+            updateItemInfo();
+        }
+    }
+
     private void highlightP2P(P2PTunnelPart<?> p2pPart) {
         p2pManager.renderP2P(p2pPart);
 
-        // 在聊天栏输出 P2P 位置信息及传送链接
+        // 根据服务端配置决定是否在聊天栏输出 P2P 位置信息及传送链接
+        if (!ModConfigs.getServerConfig().sendHighlightToChat.get()) {
+            return;
+        }
+
         if (p2pPart == null) {
             return;
         }
@@ -429,14 +448,13 @@ public class ConfigModeMenu extends AEBaseMenu {
         // 构建传送命令
         String tpCommand = "/execute in " + dimId + " run tp @p " + pos.getX() + " " + pos.getY() + " " + pos.getZ();
 
-        // 构建聊天消息
-        Component locationInfo = Component.literal(p2pName + " 在 " + dimId + " - (" + coords + ") ");
-        Component clickHere = Component.literal("【点击此处来传送】")
-                .setStyle(Style.EMPTY
+        // 构建聊天消息（使用翻译键）
+        Component locationInfo = TranslateHelper.Chat.locationInfo(p2pName, dimId, coords);
+        Component clickHere = TranslateHelper.Chat.clickToTeleport()
+                .copy().setStyle(Style.EMPTY
                         .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, tpCommand))
                         .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                                Component.literal("点击传送到 " + dimId + " - (" + coords + ")")
-                                        .append("\n需要开启作弊模式或拥有OP权限")))
+                                TranslateHelper.Chat.teleportHover(dimId, coords)))
                         .withColor(ChatFormatting.AQUA));
 
         player.sendSystemMessage(Component.empty().append(locationInfo).append("\n").append(clickHere));
@@ -445,7 +463,11 @@ public class ConfigModeMenu extends AEBaseMenu {
     private void highlightP2PTunnel(String frequencyHex) {
         p2pManager.renderP2P(frequencyHex);
 
-        // 在聊天栏输出该频段下所有输入端 P2P 的位置信息及传送链接
+        // 根据服务端配置决定是否在聊天栏输出该频段下所有输入端 P2P 的位置信息及传送链接
+        if (!ModConfigs.getServerConfig().sendHighlightToChat.get()) {
+            return;
+        }
+
         Player player = getPlayer();
         if (player == null) return;
 
@@ -459,7 +481,7 @@ public class ConfigModeMenu extends AEBaseMenu {
         String freqAlias = getFrequencyAlias(frequencyHex);
         String freqDisplay = freqAlias.equals("frequency " + frequencyHex) ? frequencyHex : freqAlias + " (" + frequencyHex + ")";
 
-        player.sendSystemMessage(Component.literal("=== 频段 " + freqDisplay + " 高亮 ==="));
+        player.sendSystemMessage(TranslateHelper.Chat.freqHighlightHeader(freqDisplay));
 
         int index = 1;
         for (P2PInfo info : p2pList) {
@@ -472,13 +494,12 @@ public class ConfigModeMenu extends AEBaseMenu {
             String p2pName = info.name().isEmpty() ? info.toShortString() : info.name();
             String tpCommand = "/execute in " + dimId + " run tp @p " + pos.getX() + " " + pos.getY() + " " + pos.getZ();
 
-            Component locationInfo = Component.literal("[" + index + "] " + p2pName + " 在 " + dimId + " - (" + coords + ") ");
-            Component clickHere = Component.literal("【传送】")
-                    .setStyle(Style.EMPTY
+            Component locationInfo = TranslateHelper.Chat.locationInfo("[" + index + "] " + p2pName, dimId, coords);
+            Component clickHere = TranslateHelper.Chat.teleportButton()
+                    .copy().setStyle(Style.EMPTY
                             .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, tpCommand))
                             .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                                    Component.literal("点击传送到 " + dimId + " - (" + coords + ")")
-                                            .append("\n需要开启作弊模式或拥有OP权限")))
+                                    TranslateHelper.Chat.teleportHover(dimId, coords)))
                             .withColor(ChatFormatting.AQUA));
 
             player.sendSystemMessage(Component.empty().append(locationInfo).append(clickHere));

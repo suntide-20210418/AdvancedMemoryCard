@@ -9,9 +9,11 @@ import appeng.client.gui.widgets.Scrollbar;
 import com.suntide_20210418.advancedmemorycard.client.gui.menu.ConfigModeMenu;
 import com.suntide_20210418.advancedmemorycard.client.gui.widgets.DetailPanelWidget;
 import com.suntide_20210418.advancedmemorycard.client.gui.widgets.P2PTreeWidget;
+import com.suntide_20210418.advancedmemorycard.config.ModConfigs;
 import com.suntide_20210418.advancedmemorycard.p2p.NodeType;
 import com.suntide_20210418.advancedmemorycard.p2p.P2PInfo;
 import com.suntide_20210418.advancedmemorycard.p2p.TreeNode;
+import com.suntide_20210418.advancedmemorycard.utils.TranslateHelper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.Rect2i;
@@ -63,7 +65,7 @@ public class ConfigModeScreen extends AEBaseScreen<ConfigModeMenu> {
 
         // 创建搜索框
         searchField = new AETextField(this.style, this.font, 0, 0, 0, 0);
-        searchField.setPlaceholder(Component.literal("搜索..."));
+        searchField.setPlaceholder(Component.translatable(TranslateHelper.Keys.CONFIG_MODE_SCREEN_SEARCH_PLACEHOLDER));
         searchField.setBordered(false);
         searchField.setResponder(text -> {
             if (p2pTree != null) {
@@ -99,7 +101,9 @@ public class ConfigModeScreen extends AEBaseScreen<ConfigModeMenu> {
             public void onHighlight(P2PInfo p2pInfo) {
                 // 在客户端旋转玩家视角使其面向目标 P2P 设备
                 actionHighlightP2P(p2pInfo);
-                rotatePlayerTowardsP2P(p2pInfo);
+                if (ModConfigs.getClientConfig().rotateHeadOnHighlight.get()) {
+                    rotatePlayerTowardsP2P(p2pInfo);
+                }
             }
 
             @Override
@@ -110,6 +114,11 @@ public class ConfigModeScreen extends AEBaseScreen<ConfigModeMenu> {
             @Override
             public void onAutoAssign() {
                 actionAutoConfigIO();
+            }
+
+            @Override
+            public void onAssignFreq(P2PInfo p2pInfo) {
+                actionAssignFreq();
             }
 
             // ========== 频段模式回调 ==========
@@ -167,6 +176,10 @@ public class ConfigModeScreen extends AEBaseScreen<ConfigModeMenu> {
         this.widgets.add("p2p_tree", p2pTree);
 
         updateTreeData();
+    }
+
+    private void actionAssignFreq() {
+        menu.dispatchClientAction("assign_freq");
     }
 
     /**
@@ -405,63 +418,86 @@ public class ConfigModeScreen extends AEBaseScreen<ConfigModeMenu> {
 
         super.render(guiGraphics, mouseX, mouseY, partialTicks);
 
-        setTextContent("title", Component.translatable("gui.advancedmemorycard.config_mode.title"));
-        setTextContent("info",  Component.translatable("gui.advancedmemorycard.config_mode.info"));
+        setTextContent("title", Component.translatable(TranslateHelper.Keys.CONFIG_MODE_SCREEN_TITLE));
+        setTextContent("info",  Component.translatable(TranslateHelper.Keys.CONFIG_MODE_SCREEN_INFO));
     }
 
-    // 新增：判断鼠标是否在滚动条上
+    // 判断鼠标是否在树控件可见区域内（基于屏幕绝对坐标）
+    private boolean isMouseOverTreeArea(double mouseX, double mouseY) {
+        if (p2pTree == null) return false;
+        return mouseX >= p2pTree.getX() && mouseX <= p2pTree.getX() + p2pTree.getWidth()
+                && mouseY >= p2pTree.getY() && mouseY <= p2pTree.getY() + p2pTree.getHeight();
+    }
+
+    // 判断鼠标是否在滚动条上
     private boolean isMouseOverScrollbar(double mouseX, double mouseY) {
         if (scrollbar == null || !scrollbar.isVisible()) {
             return false;
         }
 
         Rect2i bounds = scrollbar.getBounds();
-        // 滚动条的实际位置需要加上屏幕的绝对位置
-        // 注意：scrollbar.getBounds() 返回的已经是绝对坐标（因为 setPosition 设置了 displayX/displayY）
         return mouseX >= bounds.getX() &&
                 mouseX <= bounds.getX() + bounds.getWidth() &&
                 mouseY >= bounds.getY() &&
                 mouseY <= bounds.getY() + bounds.getHeight();
     }
 
-    // 修改 mouseDragged 方法
-    @Override
-    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
-        // 使用辅助方法判断鼠标是否在滚动条上
-        if (scrollbar != null && isMouseOverScrollbar(mouseX, mouseY)) {
-            Point mousePoint = new Point((int)mouseX, (int)mouseY);
-            scrollbar.onMouseDrag(mousePoint, button);
-            syncScrollOffset();
-            return true;
-        }
-        return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
-    }
+    // ==================== 鼠标事件处理 ====================
+    // 核心思路：让 AEBaseScreen -> WidgetContainer 的事件分发链正常运作，
+    // 同时补充对 Scrollbar 的正确同步。
 
-    // 修改 mouseReleased 方法（可选，优化）
-    @Override
-    public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        if (scrollbar != null) {
-            Point mousePoint = new Point((int)mouseX, (int)mouseY);
-            scrollbar.onMouseUp(mousePoint, button);
-        }
-        return super.mouseReleased(mouseX, mouseY, button);
-    }
-
-    // 修改 mouseScrolled 方法（优化）
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
-        // 检查鼠标是否在树控件区域内
-        if (p2pTree != null && p2pTree.isHoveredOrFocused()) {
-            // 让滚动条处理滚轮
+        // 只有当鼠标在树控件区域或滚动条区域内时，才让 scrollbar 处理滚轮
+        // 否则让 super 处理（AEBaseScreen 会将事件分发给 WidgetContainer，Scrollbar 因 captureMouseWheel=true 也能收到）
+        if (isMouseOverTreeArea(mouseX, mouseY) || isMouseOverScrollbar(mouseX, mouseY)) {
             if (scrollbar != null && scrollbar.isVisible()) {
-                Point mousePoint = new Point((int)mouseX, (int)mouseY);
+                Point mousePoint = new Point((int) mouseX, (int) mouseY);
                 if (scrollbar.onMouseWheel(mousePoint, delta)) {
                     syncScrollOffset();
                     return true;
                 }
             }
         }
+        // 始终调用父类，确保 WidgetContainer 也能收到事件（例如当 captureMouseWheel=true 时）
         return super.mouseScrolled(mouseX, mouseY, delta);
+    }
+
+    @Override
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+        // 拖拽事件：先让 WidgetContainer 处理（Scrollbar 的 onMouseDrag 需要全局捕获）
+        // 但如果 super 不处理，我们手动处理 Scrollbar 的拖拽
+        boolean superResult = super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+        if (superResult) {
+            // WidgetContainer 已处理拖拽（包括 Scrollbar），同步滚动偏移
+            syncScrollOffset();
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        // 让 WidgetContainer 处理 Scrollbar.onMouseUp（停止拖拽状态）
+        boolean superResult = super.mouseReleased(mouseX, mouseY, button);
+        if (superResult) {
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        // 先让父类（WidgetContainer）处理，Scrollbar 会作为 ICompositeWidget 收到事件
+        boolean superResult = super.mouseClicked(mouseX, mouseY, button);
+        if (superResult) {
+            // 如果 Scrollbar 消费了点击，同步滚动偏移
+            if (isMouseOverScrollbar(mouseX, mouseY)) {
+                syncScrollOffset();
+            }
+            return true;
+        }
+        return false;
     }
 
     @Override
@@ -480,18 +516,5 @@ public class ConfigModeScreen extends AEBaseScreen<ConfigModeMenu> {
             return true;
         }
         return super.charTyped(codePoint, modifiers);
-    }
-
-    @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        // 如果点击在滚动条上，让滚动条处理
-        if (isMouseOverScrollbar(mouseX, mouseY)) {
-            Point mousePoint = new Point((int)mouseX, (int)mouseY);
-            scrollbar.onMouseDown(mousePoint, button);
-            return true;
-        }
-
-        // 否则让父类处理（text field 已注册为 children，MC 会自动路由点击）
-        return super.mouseClicked(mouseX, mouseY, button);
     }
 }

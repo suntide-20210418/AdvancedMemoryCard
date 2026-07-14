@@ -6,6 +6,7 @@ import appeng.blockentity.AEBaseBlockEntity;
 import appeng.items.tools.MemoryCardItem;
 import appeng.util.SettingsFrom;
 import com.suntide_20210418.advancedmemorycard.AdvancedMemoryCardMod;
+import com.suntide_20210418.advancedmemorycard.config.ModConfigs;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
@@ -29,7 +30,6 @@ import static com.suntide_20210418.advancedmemorycard.utils.TranslateHelper.Tool
 
 public class CopyMode extends CardMode {
 
-    private static final int MAX_VOLUME = 2048;
     private static final String START_POS = "start_pos";
     private static final String END_POS = "end_pos";
     private static final String IS_COPYING = "is_copying";
@@ -79,15 +79,8 @@ public class CopyMode extends CardMode {
         return data;
     }
 
-    // 获取渲染颜色（可以根据不同状态调整）
-    public int getSelectionColor() {
-        if (isCopying) {
-            return 0x00FF00; // 绿色 - 准备粘贴状态
-        } else if (endPos == null && startPos != null) {
-            return 0xFFFFFF; // 白色 - 选择第二个点状态
-        } else {
-            return 0xFF0000; // 红色 - 选择第一个点状态
-        }
+    public static int getMaxVolume() {
+        return ModConfigs.getServerConfig().maxCopyVolume.get();
     }
 
     public BlockPos getStartPos() {
@@ -156,47 +149,15 @@ public class CopyMode extends CardMode {
         return ResourceLocation.fromNamespaceAndPath(AdvancedMemoryCardMod.MOD_ID, "copy");
     }
 
-    @Override
-    public InteractionResult onItemUseFirst(ItemStack stack, UseOnContext context) {
-        Player player = context.getPlayer();
-        BlockPos clickedPos = context.getClickedPos();
-        Level level = context.getLevel();
-        if (player != null) {
-            if (startPos == null) {
-                startPos = clickedPos;
-                this.save(stack.getOrCreateTag());
-
-                // 向玩家发送信息
-                player.displayClientMessage(firstPosMarked(startPos.toShortString()), true);
-
-            } else {
-                endPos = clickedPos;
-
-                long currentVolume = calculateVolume(startPos, endPos);
-                if (currentVolume > MAX_VOLUME) {
-                    player.displayClientMessage(tooLarge(currentVolume, MAX_VOLUME), true);
-                    // 重置选择
-                    this.startPos = null;
-                    this.endPos = null;
-                    this.save(stack.getOrCreateTag());
-                    return InteractionResult.FAIL;
-                }
-
-                isCopying = true;
-                this.save(stack.getOrCreateTag());
-                int[] area = Area(startPos, endPos);
-
-                player.displayClientMessage(
-                        secondPosMarked(
-                                endPos.toShortString(),
-                                area[0],
-                                area[1],
-                                area[2]),
-                        true);
-
-            }
+    // 获取渲染颜色（可以从客户端配置调整）
+    public int getSelectionColor() {
+        if (isCopying) {
+            return ModConfigs.getClientConfig().copySelectionReady.get(); // 绿色 - 准备粘贴状态
+        } else if (endPos == null && startPos != null) {
+            return ModConfigs.getClientConfig().copySelectionSecond.get(); // 白色 - 选择第二个点状态
+        } else {
+            return ModConfigs.getClientConfig().copySelectionFirst.get(); // 红色 - 选择第一个点状态
         }
-        return InteractionResult.sidedSuccess(level.isClientSide());
     }
 
     public BlockPos getTargetedBlockPos(Player player) {
@@ -242,7 +203,47 @@ public class CopyMode extends CardMode {
 
     }
 
-    public static int getMaxVolume() {
-        return MAX_VOLUME;
+    @Override
+    public InteractionResult onItemUseFirst(ItemStack stack, UseOnContext context) {
+        Player player = context.getPlayer();
+        BlockPos clickedPos = context.getClickedPos();
+        Level level = context.getLevel();
+        if (player != null) {
+            if (startPos == null) {
+                startPos = clickedPos;
+                this.save(stack.getOrCreateTag());
+
+                // 向玩家发送信息
+                player.displayClientMessage(firstPosMarked(startPos.toShortString()), true);
+
+            } else {
+                endPos = clickedPos;
+
+                long currentVolume = calculateVolume(startPos, endPos);
+                int maxVolume = getMaxVolume();
+                if (currentVolume > maxVolume) {
+                    player.displayClientMessage(tooLarge(currentVolume, maxVolume), true);
+                    // 重置选择
+                    this.startPos = null;
+                    this.endPos = null;
+                    this.save(stack.getOrCreateTag());
+                    return InteractionResult.FAIL;
+                }
+
+                isCopying = true;
+                this.save(stack.getOrCreateTag());
+                int[] area = Area(startPos, endPos);
+
+                player.displayClientMessage(
+                        secondPosMarked(
+                                endPos.toShortString(),
+                                area[0],
+                                area[1],
+                                area[2]),
+                        true);
+
+            }
+        }
+        return InteractionResult.sidedSuccess(level.isClientSide());
     }
 }
