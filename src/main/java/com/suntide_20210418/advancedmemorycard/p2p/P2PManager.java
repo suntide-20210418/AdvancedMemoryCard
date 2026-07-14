@@ -10,6 +10,7 @@ import appeng.parts.p2p.P2PTunnelPart;
 import appeng.util.CustomNameUtil;
 import appeng.util.SettingsFrom;
 import com.suntide_20210418.advancedmemorycard.client.renderer.P2PRenderer;
+import com.suntide_20210418.advancedmemorycard.config.ModConfigs;
 import com.suntide_20210418.advancedmemorycard.mixin.P2PTunnelPartMixin;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
@@ -88,6 +89,26 @@ public class P2PManager {
         }
 
         short freq = (short) Integer.parseInt(frequencyHex, 16);
+
+        // 非 ME P2P 设备：智能判断输入/输出端角色
+        // 检查目标频段中是否已有输入端：
+        //   - 如果有输入端：当前设备作为输出端（setOutput(true)）
+        //   - 如果没有输入端：当前设备作为输入端（setOutput(false)）
+        if (!(p2pTunnelPartBinding instanceof MEP2PTunnelPart)) {
+            P2PTunnelPart<?> existingInput = currentP2PService.getInput(freq);
+            if (existingInput != null) {
+                // 频段中已有输入端，当前设备作为输出端
+                if (!p2pTunnelPartBinding.isOutput()) {
+                    ((P2PTunnelPartMixin) p2pTunnelPartBinding).invokeSetOutput(true);
+                }
+            } else {
+                // 频段中没有输入端，当前设备作为输入端
+                if (p2pTunnelPartBinding.isOutput()) {
+                    ((P2PTunnelPartMixin) p2pTunnelPartBinding).invokeSetOutput(false);
+                }
+            }
+        }
+
         currentP2PService.updateFreq(p2pTunnelPartBinding, freq);
 
         // 更新内部缓存引用
@@ -163,6 +184,8 @@ public class P2PManager {
 
             // 重置为输出端模式
             ((P2PTunnelPartMixin) p2pPart).invokeSetOutput(true);
+            // 重新用当前频段(0)调用 updateFreq，确保 P2PService 的 inputs/outputs map 被正确同步
+            currentP2PService.updateFreq(p2pPart, (short) 0);
         }
 
         // 验证：重新扫描网格中的P2P设备，刷新映射，确保异常状态已被彻底清除
@@ -204,12 +227,16 @@ public class P2PManager {
         if (externalNode == null) {
             // 节点已被破坏，默认设为输出
             ((P2PTunnelPartMixin) p2pPart).invokeSetOutput(true);
+            // 同步 P2PService 的 inputs/outputs map
+            p2pService.updateFreq(p2pPart, p2pPart.getFrequency());
             return;
         }
 
         IGrid externalGrid = externalNode.getGrid();
         if (externalGrid == null || externalGrid.isEmpty()) {
             ((P2PTunnelPartMixin) p2pPart).invokeSetOutput(true);
+            // 同步 P2PService 的 inputs/outputs map
+            p2pService.updateFreq(p2pPart, p2pPart.getFrequency());
             return;
         }
 
@@ -226,11 +253,15 @@ public class P2PManager {
             // 确保设为输入端（如果当前不是输入端）
             if (p2pPart.isOutput()) {
                 ((P2PTunnelPartMixin) p2pPart).invokeSetOutput(false);
+                // 同步 P2PService 的 inputs/outputs map
+                p2pService.updateFreq(p2pPart, p2pPart.getFrequency());
             }
         } else {
             // 外部网络没有控制器：应该设为输出端
             if (!p2pPart.isOutput()) {
                 ((P2PTunnelPartMixin) p2pPart).invokeSetOutput(true);
+                // 同步 P2PService 的 inputs/outputs map
+                p2pService.updateFreq(p2pPart, p2pPart.getFrequency());
             }
         }
 
@@ -267,6 +298,43 @@ public class P2PManager {
         p2pPart.importSettings(SettingsFrom.MEMORY_CARD, tag, player);
     }
 
+    /**
+     * 为当前待绑定的非 ME P2P 设备分配一个新频段并设置为输入端。
+     * 操作的是 p2pTunnelPartBinding（即 Memory Card 当前关联的 P2P 设备），而非外部传入的任意 P2P。
+     * 流程：
+     * 1. 断开当前频段连接（设置为频段 0）
+     * 2. 确保该 P2P 为输入端（setOutput(false)）
+     * 3. 通过 p2pService.newFrequency() 获取新频段
+     * 4. 绑定到新频段
+     */
+    public void assignNewFrequency() {
+        if (p2pTunnelPartBinding == null) return;
+
+        // 运行时重新获取 grid 和 p2pService
+        IGrid currentGrid = getCurrentGrid();
+        if (currentGrid == null) return;
+        P2PService currentP2PService = P2PService.get(currentGrid);
+        if (currentP2PService == null) return;
+
+        // 先断开当前频段连接（设置为频段 0）
+        currentP2PService.updateFreq(p2pTunnelPartBinding, (short) 0);
+
+        // 确保设为输入端（非 ME P2P 需要手动管理输入/输出端）
+        if (p2pTunnelPartBinding.isOutput()) {
+            ((P2PTunnelPartMixin) p2pTunnelPartBinding).invokeSetOutput(false);
+            // 用当前频段(0)同步 P2PService 的 inputs/outputs map，
+            // 确保从 outputs map 移到 inputs map
+            currentP2PService.updateFreq(p2pTunnelPartBinding, (short) 0);
+        }
+
+        // 获取一个新频段并绑定
+        short newFreq = currentP2PService.newFrequency();
+        currentP2PService.updateFreq(p2pTunnelPartBinding, newFreq);
+
+        // 刷新内部映射
+        analysisP2P();
+    }
+
     public static ResourceLocation getP2PType(P2PTunnelPart<?> p2pPart){
         IPartItem<?> partItem = p2pPart.getPartItem();
         return IPartItem.getId(partItem);
@@ -276,13 +344,13 @@ public class P2PManager {
         if (p2pPart == null) return;
         P2PRenderer p2pRenderer = P2PRenderer.getInstance();
         p2pRenderer.clearAllRenders();
-        p2pRenderer.triggerRender(p2pPart, 0xFF0000);
+        p2pRenderer.triggerRender(p2pPart, ModConfigs.getClientConfig().highlightColorSelf.get());
         if (p2pPart.getInput() != null) {
-            p2pRenderer.triggerRender(p2pPart.getInput(), 0x00FF00);
+            p2pRenderer.triggerRender(p2pPart.getInput(), ModConfigs.getClientConfig().highlightColorInput.get());
         }
         for (P2PTunnelPart<?> output : p2pPart.getOutputs()) {
             if (output == p2pPart || output == null) continue;
-            p2pRenderer.triggerRender(output, 0x0000FF);
+            p2pRenderer.triggerRender(output, ModConfigs.getClientConfig().highlightColorOutput.get());
         }
     }
 
@@ -298,8 +366,8 @@ public class P2PManager {
         short freq = (short) Integer.parseInt(frequencyHex, 16);
         P2PTunnelPart<?> input = currentP2PService.getInput(freq);
         if (input == null) return;
-        p2pRenderer.triggerRender(input, 0x00FF00);
-        input.getOutputs().forEach(output -> p2pRenderer.triggerRender(output, 0x0000FF));
+        p2pRenderer.triggerRender(input, ModConfigs.getClientConfig().highlightColorInput.get());
+        input.getOutputs().forEach(output -> p2pRenderer.triggerRender(output, ModConfigs.getClientConfig().highlightColorOutput.get()));
     }
 
     /**

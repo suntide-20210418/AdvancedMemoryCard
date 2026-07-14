@@ -8,6 +8,7 @@ import com.suntide_20210418.advancedmemorycard.client.gui.menu.CopyModeMenu;
 import com.suntide_20210418.advancedmemorycard.client.gui.screen.ConfigModeScreen;
 import com.suntide_20210418.advancedmemorycard.client.gui.screen.CopyModeScreen;
 import com.suntide_20210418.advancedmemorycard.client.renderer.P2PRenderer;
+import com.suntide_20210418.advancedmemorycard.config.ModConfigs;
 import com.suntide_20210418.advancedmemorycard.item.ModCreativeModeTabs;
 import com.suntide_20210418.advancedmemorycard.item.ModItems;
 import com.suntide_20210418.advancedmemorycard.item.custom.CardMode;
@@ -33,6 +34,9 @@ public class AdvancedMemoryCardMod {
     public AdvancedMemoryCardMod(FMLJavaModLoadingContext context) {
         IEventBus modEventBus = context.getModEventBus();
         LOGGER.info("AdvancedMemoryCardMod is loading");
+
+        // 注册配置文件（需在最早时机注册）
+        ModConfigs.register();
 
         ModItems.register(modEventBus);
         ModCreativeModeTabs.register(modEventBus);

@@ -10,6 +10,7 @@ public record ChannelInfo(
         String frequency,
         String alias,
         int p2pCount,
+        int maxChannel,
         int channelRemaining,
         String p2pType,
         ArrayList<P2PInfo> p2pInfoList

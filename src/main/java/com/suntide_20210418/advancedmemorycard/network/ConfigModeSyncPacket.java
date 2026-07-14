@@ -179,6 +179,7 @@ public class ConfigModeSyncPacket {
         buffer.writeUtf(info.frequency());
         buffer.writeUtf(info.alias());
         buffer.writeInt(info.p2pCount());
+        buffer.writeInt(info.maxChannel());
         buffer.writeInt(info.channelRemaining());
         buffer.writeUtf(info.p2pType());
 
@@ -193,6 +194,7 @@ public class ConfigModeSyncPacket {
         String frequency = buffer.readUtf();
         String alias = buffer.readUtf();
         int p2pCount = buffer.readInt();
+        int maxChannel = buffer.readInt();
         int channelRemaining = buffer.readInt();
         String p2pType = buffer.readUtf();
 
@@ -202,7 +204,7 @@ public class ConfigModeSyncPacket {
             p2pList.add(readP2PInfo(buffer));
         }
 
-        return new ChannelInfo(frequency, alias, p2pCount, channelRemaining, p2pType, p2pList);
+        return new ChannelInfo(frequency, alias, p2pCount, maxChannel, channelRemaining, p2pType, p2pList);
     }
 
     private static void writeP2PTypeInfo(FriendlyByteBuf buffer, P2PTypeInfo info) {

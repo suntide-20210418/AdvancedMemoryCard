@@ -61,7 +61,7 @@ public class CopyModeScreen extends AEBaseScreen<CopyModeMenu> {
             }
         };
 
-        clearButton.setTooltip(Tooltip.create(Component.translatable("clearmode.tooltip")));
+        clearButton.setTooltip(Tooltip.create(Component.translatable(com.suntide_20210418.advancedmemorycard.utils.TranslateHelper.Keys.COPY_MODE_SCREEN_CLEAR_TOOLTIP)));
         this.addToLeftToolbar(clearButton);
         updateFieldsFromHeldItem();
     }
@@ -82,8 +82,8 @@ public class CopyModeScreen extends AEBaseScreen<CopyModeMenu> {
         getPos();
         updateFieldsFromHeldItem();
 
-        setTextContent("start_pos", Component.translatable("开始坐标").append(": "));
-        setTextContent("end_pos", Component.translatable("结束坐标").append(": "));
+        setTextContent("start_pos", Component.translatable(com.suntide_20210418.advancedmemorycard.utils.TranslateHelper.Keys.COPY_MODE_SCREEN_START_POS));
+        setTextContent("end_pos", Component.translatable(com.suntide_20210418.advancedmemorycard.utils.TranslateHelper.Keys.COPY_MODE_SCREEN_END_POS));
 
     }
 

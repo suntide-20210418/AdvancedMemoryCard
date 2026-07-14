@@ -5,6 +5,7 @@ import appeng.parts.p2p.P2PTunnelPart;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.suntide_20210418.advancedmemorycard.AdvancedMemoryCardMod;
+import com.suntide_20210418.advancedmemorycard.config.ModConfigs;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.RenderType;
@@ -29,9 +30,6 @@ import java.util.WeakHashMap;
 public class P2PRenderer {
     // 存储每个P2P部件的渲染开始时间和持续时间
     private final Map<P2PTunnelPart<?>, RenderInfo> renderTimes = new WeakHashMap<>();
-
-    // 默认渲染持续时间（5秒 = 5000毫秒）
-    private static final long DEFAULT_DURATION_MS = 5000;
 
     private static P2PRenderer INSTANCE;
 
@@ -61,12 +59,13 @@ public class P2PRenderer {
 
 
     /**
-     * 触发P2P渲染，持续5秒
+     * 触发P2P渲染，持续时间从客户端配置读取
      * @param p2pPart P2P隧道部件
      * @param color 颜色
      */
     public void triggerRender(P2PTunnelPart<?> p2pPart, int color) {
-        triggerRender(p2pPart, color, DEFAULT_DURATION_MS);
+        long durationMs = ModConfigs.getClientConfig().p2pHighlightDurationSec.get() * 1000L;
+        triggerRender(p2pPart, color, durationMs);
     }
 
     /**

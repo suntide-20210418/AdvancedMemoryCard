@@ -1,5 +1,6 @@
 package com.suntide_20210418.advancedmemorycard.client.gui.widgets;
 
+import com.suntide_20210418.advancedmemorycard.config.ModConfigs;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -10,17 +11,28 @@ import net.minecraft.network.chat.Component;
 /**
  * 扁平风格按钮控件<br/>
  * 与 P2PTreeWidget 列表项风格一致：扁平色块 + 白色文字，悬停时蓝色高亮。<br/>
- * 供 DetailPanelWidget 和 P2PTreeWidget 共用，保持视觉风格统一。
+ * 供 DetailPanelWidget 和 P2PTreeWidget 共用，保持视觉风格统一。<br/>
+ * 颜色从客户端配置读取，可在配置文件中自定义。
  */
 public class FlatButton extends AbstractWidget {
 
-    /** 按钮默认背景色 */
+    // 颜色从配置动态读取，保留静态常量引用以兼容旧代码
+    // 向后兼容的静态常量（通过 getter 访问配置）
     public static final int COLOR_BG = 0xFF7E8299;
-    /** 按钮/列表行悬停背景色 */
     public static final int COLOR_HOVER = 0xFF3A5A8A;
-    /** 按钮点击按下时的背景色 */
     public static final int COLOR_CLICK = 0xFF2A4A7A;
+
+    /** 按钮默认背景色 */
+    public static int getColorBg() { return ModConfigs.getClientConfig().buttonColorBg.get(); }
+
+    /** 按钮/列表行悬停背景色 */
+    public static int getColorHover() { return ModConfigs.getClientConfig().buttonColorHover.get(); }
+
+    /** 按钮点击按下时的背景色 */
+    public static int getColorClick() { return ModConfigs.getClientConfig().buttonColorClick.get(); }
+
     /** 按钮/列表行文字颜色 */
+    public static int getColorText() { return ModConfigs.getClientConfig().buttonColorText.get(); }
     public static final int COLOR_TEXT = 0xFFFFFFFF;
     private final Runnable onClickAction;
     private Component label;
@@ -50,7 +62,7 @@ public class FlatButton extends AbstractWidget {
         }
 
         // 绘制按钮背景（扁平色块，无边框），优先级：点击 > 悬停 > 默认
-        int bgColor = pressed ? COLOR_CLICK : (hovered ? COLOR_HOVER : COLOR_BG);
+        int bgColor = pressed ? getColorClick() : (hovered ? getColorHover() : getColorBg());
         guiGraphics.fill(getX(), getY(), getX() + width, getY() + height, bgColor);
 
         // 绘制按钮文字（居中）
@@ -58,7 +70,7 @@ public class FlatButton extends AbstractWidget {
         int textWidth = font.width(label);
         int textX = getX() + (width - textWidth) / 2;
         int textY = getY() + (height - 8) / 2;
-        guiGraphics.drawString(font, label, textX, textY, COLOR_TEXT, false);
+        guiGraphics.drawString(font, label, textX, textY, getColorText(), false);
     }
 
     @Override

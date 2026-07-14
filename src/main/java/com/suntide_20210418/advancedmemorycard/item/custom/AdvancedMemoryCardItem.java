@@ -6,6 +6,7 @@ import appeng.api.implementations.menuobjects.IMenuItem;
 import appeng.api.implementations.menuobjects.ItemMenuHost;
 import appeng.core.localization.Tooltips;
 import appeng.items.tools.MemoryCardItem;
+import com.suntide_20210418.advancedmemorycard.config.ModConfigs;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -97,12 +98,12 @@ public class AdvancedMemoryCardItem extends MemoryCardItem implements IMenuItem 
         super.appendHoverText(stack, level, lines, advancedTooltips);
     }
 
-    @Override
-    public int getColor(ItemStack stack) {
-        return 0xFF0000;
+    public static int getTintColor(ItemStack stack, int index) {
+        return ModConfigs.getClientConfig().itemTintColor.get();
     }
 
-    public static int getTintColor(ItemStack stack, int index) {
-        return 0xFFFFFF;
+    @Override
+    public int getColor(ItemStack stack) {
+        return ModConfigs.getClientConfig().itemColor.get();
     }
 }
