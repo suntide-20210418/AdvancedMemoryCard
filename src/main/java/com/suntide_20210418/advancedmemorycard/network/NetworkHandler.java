@@ -31,10 +31,10 @@ public class NetworkHandler {
                 OpenGuiPacket::handle);
 
         INSTANCE.registerMessage(packetId++,
-                ModSwitchPacket.class,
-                ModSwitchPacket::encode,
-                ModSwitchPacket::decode,
-                ModSwitchPacket::handle);
+                ModeSwitchPacket.class,
+                ModeSwitchPacket::encode,
+                ModeSwitchPacket::decode,
+                ModeSwitchPacket::handle);
     }
 
     public static <MSG> void sendToServer(MSG message) {

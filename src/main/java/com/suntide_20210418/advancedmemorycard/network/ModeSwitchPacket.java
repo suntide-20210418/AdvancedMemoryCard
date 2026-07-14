@@ -9,23 +9,23 @@ import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
-public class ModSwitchPacket {
+public class ModeSwitchPacket {
     InteractionHand hand;
-    public ModSwitchPacket(InteractionHand hand) {
+    public ModeSwitchPacket(InteractionHand hand) {
         this.hand = hand;
     }
 
-    public static void encode(ModSwitchPacket msg, FriendlyByteBuf buffer) {
+    public static void encode(ModeSwitchPacket msg, FriendlyByteBuf buffer) {
         buffer.writeInt(msg.hand.ordinal());
     }
 
-    public static ModSwitchPacket decode(FriendlyByteBuf buffer) {
+    public static ModeSwitchPacket decode(FriendlyByteBuf buffer) {
         int handOrdinal = buffer.readInt();
         InteractionHand hand = InteractionHand.values()[handOrdinal];
-        return new ModSwitchPacket(hand);
+        return new ModeSwitchPacket(hand);
     }
 
-    public static void handle(ModSwitchPacket msg, Supplier<NetworkEvent.Context> ctx) {
+    public static void handle(ModeSwitchPacket msg, Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
             ServerPlayer player = ctx.get().getSender();
             if (player != null) {

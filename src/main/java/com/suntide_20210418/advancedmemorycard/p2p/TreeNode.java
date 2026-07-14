@@ -10,7 +10,7 @@ import java.util.Objects;
 public class TreeNode {
     public NodeType type;
     public String typeName;      // P2P 类型名称
-    public short frequency;      // 频道频率
+    public String frequency;      // 频道频率（十六进制字符串格式）
     public Component displayComponent;
     public boolean expanded = true;
     public Object data;          // P2PTypeInfo 或 ChannelInfo
@@ -30,7 +30,8 @@ public class TreeNode {
         TreeNode other = (TreeNode) obj;
         if (type != other.type) return false;
         if (type == NodeType.P2P_TYPE) return Objects.equals(typeName, other.typeName);
-        if (type == NodeType.CHANNEL) return frequency == other.frequency;
+        if (type == NodeType.CHANNEL) return Objects.equals(frequency, other.frequency);
+        if (type == NodeType.SEARCH_HEADER) return true;
         return Objects.equals(p2pInfo, other.p2pInfo);
     }
 
@@ -47,6 +48,7 @@ public class TreeNode {
             case P2P_TYPE -> "type:" + typeName;
             case CHANNEL -> "channel:" + frequency;
             case P2P -> "p2p:" + (p2pInfo != null ? p2pInfo.hashCode() : "null") + ":" + frequency;
+            case SEARCH_HEADER -> "search_header";
         };
     }
 }

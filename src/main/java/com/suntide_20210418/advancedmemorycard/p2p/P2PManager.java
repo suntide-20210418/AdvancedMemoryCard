@@ -15,6 +15,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
@@ -22,9 +23,9 @@ public class P2PManager {
     private P2PTunnelPart<?> p2pTunnelPartBinding;
     private IGrid grid;
     private final Player player;
-    private final P2PService p2pService;
+    private final HashMap<String, String> p2pFrequencyAndAlias;
     private final HashMap<P2PTunnelPart<?>, ResourceLocation> p2pDevicesMap;
-    private final HashMap<String, Short> p2pFrequencyAndAlias;
+    private P2PService p2pService;
 
     public P2PManager(P2PTunnelPart<?> p2pTunnelPartBinding, Player player) {
         this.p2pTunnelPartBinding = p2pTunnelPartBinding;
@@ -33,8 +34,8 @@ public class P2PManager {
         this.player = player;
         analysisP2P();
         this.p2pService = P2PService.get(grid);
-        autoConfigP2PIO();
-        renderP2P(p2pTunnelPartBinding);
+        // 初始化时立即处理频段为0但仍连接了设备的异常P2P
+        fixZeroFrequencyAnomalies();
     }
 
     public void analysisP2P() {
@@ -57,34 +58,145 @@ public class P2PManager {
             Object machine = node.getOwner();
             if (machine instanceof P2PTunnelPart<?> p2pPart) {
                 p2pDevicesMap.put(p2pPart, getP2PType(p2pPart));
-                short frequency = p2pPart.getFrequency();
+                short rawFreq = p2pPart.getFrequency();
+                String frequency = String.format("%04X", rawFreq & 0xFFFF);
                 if (!p2pFrequencyAndAlias.containsValue(frequency)) {
-                    p2pFrequencyAndAlias.put(String.valueOf(frequency), frequency);
+                    p2pFrequencyAndAlias.put(frequency, frequency);
                 }
             }
         }
     }
 
-    public void bind(short frequency){
-        if (grid != null) {
-            p2pService.updateFreq(p2pTunnelPartBinding, frequency);
+    public void bind(String frequencyHex){
+        if (p2pTunnelPartBinding == null) {
+            return;
         }
+
+        // 运行时重新获取 grid 和 p2pService，避免因构造时网络未就绪导致绑定失败
+        IGrid currentGrid = null;
+        IGridNode gridNode = p2pTunnelPartBinding.getGridNode();
+        if (gridNode != null) {
+            currentGrid = gridNode.getGrid();
+        }
+        if (currentGrid == null) {
+            return;
+        }
+
+        P2PService currentP2PService = P2PService.get(currentGrid);
+        if (currentP2PService == null) {
+            return;
+        }
+
+        short freq = (short) Integer.parseInt(frequencyHex, 16);
+        currentP2PService.updateFreq(p2pTunnelPartBinding, freq);
+
+        // 更新内部缓存引用
+        this.grid = currentGrid;
+        this.p2pService = currentP2PService;
     }
 
     public void autoConfigP2PIO() {
-        if (grid == null || grid.isEmpty() || p2pDevicesMap.isEmpty()) {
+        // 运行时重新获取 grid 和 p2pService，避免因构造时网络未就绪导致失败
+        IGrid currentGrid = getCurrentGrid();
+        if (currentGrid == null || currentGrid.isEmpty()) {
             return;
         }
-        if (p2pService == null) return;
+        P2PService currentP2PService = P2PService.get(currentGrid);
+        if (currentP2PService == null) return;
 
+        // 确保 p2pDevicesMap 是最新的
+        if (p2pDevicesMap.isEmpty()) {
+            analysisP2P();
+        }
+
+        // 复制一份 key 列表后再遍历，避免 processSingleP2PPart 中调用 analysisP2P()
+        // 导致 p2pDevicesMap.clear() 引发的 ConcurrentModificationException，
+        // 进而导致只处理第一个 P2P 就中断循环的问题。
+        List<P2PTunnelPart<?>> p2pParts = new ArrayList<>(p2pDevicesMap.keySet());
+        for (P2PTunnelPart<?> p2pPart : p2pParts) {
+            if (p2pPart == null) continue;
+            processSingleP2PPart(p2pPart, currentP2PService);
+        }
+    }
+
+    /**
+     * 尝试从 p2pTunnelPartBinding 重新获取当前 grid。
+     * 如果 p2pTunnelPartBinding 为 null，则回退到内部缓存的 grid。
+     */
+    private IGrid getCurrentGrid() {
+        if (p2pTunnelPartBinding != null) {
+            IGridNode gridNode = p2pTunnelPartBinding.getGridNode();
+            if (gridNode != null) {
+                IGrid currentGrid = gridNode.getGrid();
+                if (currentGrid != null) {
+                    this.grid = currentGrid;
+                    return currentGrid;
+                }
+            }
+        }
+        return grid;
+    }
+
+    private void fixZeroFrequencyAnomalies() {
+        // 运行时重新获取 grid 和 p2pService
+        IGrid currentGrid = getCurrentGrid();
+        if (currentGrid == null) return;
+        P2PService currentP2PService = P2PService.get(currentGrid);
+        if (currentP2PService == null) return;
+
+        // 收集所有频段为0但仍处于连接状态的异常P2P设备
+        List<P2PTunnelPart<?>> anomalousP2Ps = new ArrayList<>();
         for (P2PTunnelPart<?> p2pPart : p2pDevicesMap.keySet()) {
             if (p2pPart == null) continue;
-            processSingleP2PPart(p2pPart, p2pService);
+            if (p2pPart.getFrequency() == 0 && isConnected(p2pPart)) {
+                anomalousP2Ps.add(p2pPart);
+            }
+        }
+
+        if (anomalousP2Ps.isEmpty()) return;
+
+        // 处理每个异常P2P设备
+        for (P2PTunnelPart<?> p2pPart : anomalousP2Ps) {
+            // 强制断开连接：通过P2PService将频段更新为0，
+            // 这会从旧频段的inputs/outputs映射中移除该设备
+            currentP2PService.updateFreq(p2pPart, (short) 0);
+
+            // 重置为输出端模式
+            ((P2PTunnelPartMixin) p2pPart).invokeSetOutput(true);
+        }
+
+        // 验证：重新扫描网格中的P2P设备，刷新映射，确保异常状态已被彻底清除
+        refreshP2PDevicesMap();
+    }
+
+    /**
+     * 重新扫描网格中的P2P设备并刷新 p2pDevicesMap 和 p2pFrequencyAndAlias。
+     * 与 analysisP2P() 不同，此方法不会调用 fixZeroFrequencyAnomalies()，避免递归。
+     */
+    private void refreshP2PDevicesMap() {
+        p2pFrequencyAndAlias.clear();
+        p2pDevicesMap.clear();
+        if (grid == null) return;
+
+        for (IGridNode node : grid.getNodes()) {
+            Object machine = node.getOwner();
+            if (machine instanceof P2PTunnelPart<?> p2pPart) {
+                p2pDevicesMap.put(p2pPart, getP2PType(p2pPart));
+                short rawFreq = p2pPart.getFrequency();
+                String frequency = String.format("%04X", rawFreq & 0xFFFF);
+                if (!p2pFrequencyAndAlias.containsValue(frequency)) {
+                    p2pFrequencyAndAlias.put(frequency, frequency);
+                }
+            }
         }
     }
 
     private void processSingleP2PPart(P2PTunnelPart<?> p2pPart, P2PService p2pService) {
         if (!(p2pPart instanceof MEP2PTunnelPart meP2PTunnelPart)) {
+            return;
+        }
+
+        if (p2pPart.getFrequency() != 0) {
             return;
         }
 
@@ -102,18 +214,24 @@ public class P2PManager {
         }
 
         boolean hasController = checkForController(externalGrid);
-        boolean isConnected = isConnected(p2pPart);
 
-        if (hasController && p2pPart.getFrequency() == 0) {
-            if (!p2pPart.isOutput()) {
+        if (hasController) {
+            // 外部网络有控制器：应该设为输入端
+            if (p2pPart.getFrequency() == 0) {
+                // 尚未分配频率，分配一个新频率
                 short frequency = p2pService.newFrequency();
                 p2pService.updateFreq(p2pPart, frequency);
-                if (!isConnected) {
-                    ((P2PTunnelPartMixin) p2pPart).invokeSetOutput(false);
-                }
+                analysisP2P();
             }
-        } else if (!hasController) {
-            ((P2PTunnelPartMixin) p2pPart).invokeSetOutput(true);
+            // 确保设为输入端（如果当前不是输入端）
+            if (p2pPart.isOutput()) {
+                ((P2PTunnelPartMixin) p2pPart).invokeSetOutput(false);
+            }
+        } else {
+            // 外部网络没有控制器：应该设为输出端
+            if (!p2pPart.isOutput()) {
+                ((P2PTunnelPartMixin) p2pPart).invokeSetOutput(true);
+            }
         }
 
     }
@@ -155,24 +273,39 @@ public class P2PManager {
     }
 
     public void renderP2P(P2PTunnelPart<?> p2pPart) {
+        if (p2pPart == null) return;
         P2PRenderer p2pRenderer = P2PRenderer.getInstance();
         p2pRenderer.clearAllRenders();
         p2pRenderer.triggerRender(p2pPart, 0xFF0000);
-        p2pRenderer.triggerRender(p2pPart.getInput(), 0x00FF00);
+        if (p2pPart.getInput() != null) {
+            p2pRenderer.triggerRender(p2pPart.getInput(), 0x00FF00);
+        }
         for (P2PTunnelPart<?> output : p2pPart.getOutputs()) {
-            if (output == p2pPart) continue;
+            if (output == p2pPart || output == null) continue;
             p2pRenderer.triggerRender(output, 0x0000FF);
         }
     }
 
-    public void renderP2P(short frequency){
+    public void renderP2P(String frequencyHex){
+        // 运行时重新获取 p2pService，避免因构造时网络未就绪导致渲染失败
+        IGrid currentGrid = getCurrentGrid();
+        if (currentGrid == null) return;
+        P2PService currentP2PService = P2PService.get(currentGrid);
+        if (currentP2PService == null) return;
+
         P2PRenderer p2pRenderer = P2PRenderer.getInstance();
         p2pRenderer.clearAllRenders();
-        P2PTunnelPart<?> input = p2pService.getInput(frequency);
+        short freq = (short) Integer.parseInt(frequencyHex, 16);
+        P2PTunnelPart<?> input = currentP2PService.getInput(freq);
+        if (input == null) return;
         p2pRenderer.triggerRender(input, 0x00FF00);
         input.getOutputs().forEach(output -> p2pRenderer.triggerRender(output, 0x0000FF));
     }
 
+    /**
+     * 获取当前绑定的 P2P 设备（即 Memory Card 当前关联的目标 P2P）。
+     * 可能返回 null（尚未绑定或绑定已清除时）。
+     */
     public P2PTunnelPart<?> getP2PTunnelPart(){
         return p2pTunnelPartBinding;
     }
@@ -181,21 +314,61 @@ public class P2PManager {
         return p2pDevicesMap;
     }
 
+    /**
+     * 设置当前绑定的 P2P 设备。
+     * 注意：调用后需要由上层（如 ConfigModeMenu）手动调用 analysisP2P() 刷新网络数据。
+     */
     public void setP2PTunnelPart(P2PTunnelPart<?> p2pPart){
         this.p2pTunnelPartBinding = p2pPart;
     }
 
-    public HashMap<String, Short> getP2PFrequencyAndAlias() {
+    public HashMap<String, String> getP2PFrequencyAndAlias() {
         return p2pFrequencyAndAlias;
     }
 
-    public void setFrequencyAlias(String alias, short frequency) {
-        for (HashMap.Entry<String, Short> entry : p2pFrequencyAndAlias.entrySet()) {
-            if (entry.getValue() == frequency) {
-                p2pFrequencyAndAlias.remove(entry.getKey());
-                p2pFrequencyAndAlias.put(alias, frequency);
-                break;
+    /**
+     * 设置频段别名：将频段中第一个输入端 P2P 的名称设置为指定名称。
+     * 频段别名现在指向该频段中输入端 P2P 设备的名称。
+     *
+     * @param newName   新的输入端名称
+     * @param frequency 目标频段 hex
+     */
+    public void setFrequencyAlias(String newName, String frequency) {
+        // 运行时重新获取 p2pService
+        IGrid currentGrid = getCurrentGrid();
+        if (currentGrid == null) return;
+        P2PService currentP2PService = P2PService.get(currentGrid);
+        if (currentP2PService == null) return;
+
+        short freq = (short) Integer.parseInt(frequency, 16);
+        P2PTunnelPart<?> input = currentP2PService.getInput(freq);
+        if (input != null) {
+            renameP2P(input, newName);
+        }
+    }
+
+    /**
+     * 获取频段别名（即该频段中第一个输入端 P2P 的名称）。
+     * 如果没有输入端或输入端没有自定义名称，返回频段 hex。
+     *
+     * @param frequency 目标频段 hex
+     * @return 输入端名称或频段 hex
+     */
+    public String getFrequencyAlias(String frequency) {
+        // 运行时重新获取 p2pService
+        IGrid currentGrid = getCurrentGrid();
+        if (currentGrid == null) return frequency;
+        P2PService currentP2PService = P2PService.get(currentGrid);
+        if (currentP2PService == null) return frequency;
+
+        short freq = (short) Integer.parseInt(frequency, 16);
+        P2PTunnelPart<?> input = currentP2PService.getInput(freq);
+        if (input != null && input.getCustomName() != null) {
+            String name = input.getCustomName().getString();
+            if (!name.isEmpty()) {
+                return name;
             }
         }
+        return frequency;
     }
 }

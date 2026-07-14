@@ -85,7 +85,7 @@ public class P2PRenderer {
      * @param p2pPart P2P隧道部件
      */
     public void clearRender(P2PTunnelPart<?> p2pPart) {
-        if (p2pPart == null || renderTimes.containsKey(p2pPart)) return;
+        if (p2pPart == null || !renderTimes.containsKey(p2pPart)) return;
         renderTimes.remove(p2pPart);
     }
 
@@ -120,26 +120,27 @@ public class P2PRenderer {
         VertexConsumer vertexConsumer =
                 mc.renderBuffers().bufferSource().getBuffer(RenderType.LINES);
 
-        // 遍历所有需要渲染的P2P
-        renderTimes.entrySet().removeIf(entry -> {
+        // 先复制一份条目快照，避免遍历时 WeakHashMap 被其他线程修改导致 ConcurrentModificationException
+        List<Map.Entry<P2PTunnelPart<?>, RenderInfo>> entries = new ArrayList<>(renderTimes.entrySet());
+        for (Map.Entry<P2PTunnelPart<?>, RenderInfo> entry : entries) {
             P2PTunnelPart<?> p2pPart = entry.getKey();
             RenderInfo info = entry.getValue();
 
             // 检查P2P部件是否仍然有效
             if (p2pPart == null || p2pPart.getBlockEntity() == null || p2pPart.getBlockEntity().isRemoved()) {
-                return true; // 移除无效的部件
+                renderTimes.remove(p2pPart); // 移除无效的部件
+                continue;
             }
 
             // 检查是否超过持续时间
             if (currentTime - info.startTime >= info.duration) {
-                return true; // 超过时间，移除
+                renderTimes.remove(p2pPart); // 超过时间，移除
+                continue;
             }
 
             // 执行渲染 - 传入已经应用了相机变换的 poseStack
             performRender(poseStack, vertexConsumer, p2pPart, info.color);
-
-            return false; // 保留仍在渲染时间内的部件
-        });
+        }
 
         // 恢复原始的 PoseStack 状态
         poseStack.popPose();

@@ -45,12 +45,14 @@ public class ConfigMode extends CardMode {
 
                 // 检查选中的是否是 P2P 部件
                 if (selectedPart.part instanceof P2PTunnelPart<?> hitP2P) {
+                    // 先创建 P2PManager 并分配所有 P2P 频段
                     currentP2PManager = new P2PManager(hitP2P, player);
                     player.openMenu(new SimpleMenuProvider((id, inv, p) -> {
                         ConfigModeMenu menu = new ConfigModeMenu(id, inv, hand);
                         menu.setP2PManager(currentP2PManager);
                         return menu;
                     }, getName()));
+                    return InteractionResult.CONSUME;
                 }
             }
         }

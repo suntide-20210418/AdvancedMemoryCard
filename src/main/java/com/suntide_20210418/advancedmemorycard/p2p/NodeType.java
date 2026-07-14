@@ -6,5 +6,6 @@ package com.suntide_20210418.advancedmemorycard.p2p;
 public enum NodeType {
     P2P_TYPE,       // 普通 P2P 类型
     CHANNEL,        // 普通频道
-    P2P             // P2P 设备
+    P2P,            // P2P 设备
+    SEARCH_HEADER   // 搜索结果标题头
 }

@@ -16,6 +16,12 @@
     }
   },
   "widgets": {
+    "search_field": {
+      "left": 7,
+      "top": 25,
+      "width": 120,
+      "height": 12
+    },
     "p2p_tree": {
       "left": 15,
       "top": 53,
@@ -31,7 +37,7 @@
       "left": 184,
       "top": 53,
       "width": 152,
-      "height": 200
+      "height": 210
     }
   }
 }

@@ -1,7 +1,7 @@
 package com.suntide_20210418.advancedmemorycard.client.key;
 
 import com.suntide_20210418.advancedmemorycard.item.ModItems;
-import com.suntide_20210418.advancedmemorycard.network.ModSwitchPacket;
+import com.suntide_20210418.advancedmemorycard.network.ModeSwitchPacket;
 import com.suntide_20210418.advancedmemorycard.network.NetworkHandler;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
@@ -20,9 +20,9 @@ public class KeyEvent {
             ItemStack offhandItem = player.getOffhandItem();
             ItemStack mainHandItem = player.getMainHandItem();
             if (mainHandItem.getItem().equals(ModItems.ADVANCED_MEMORY_CARD.get())){
-                NetworkHandler.sendToServer(new ModSwitchPacket(InteractionHand.MAIN_HAND));
+                NetworkHandler.sendToServer(new ModeSwitchPacket(InteractionHand.MAIN_HAND));
             } else if (offhandItem.getItem().equals(ModItems.ADVANCED_MEMORY_CARD.get())){
-                NetworkHandler.sendToServer(new ModSwitchPacket(InteractionHand.OFF_HAND));
+                NetworkHandler.sendToServer(new ModeSwitchPacket(InteractionHand.OFF_HAND));
             }
         }
     }

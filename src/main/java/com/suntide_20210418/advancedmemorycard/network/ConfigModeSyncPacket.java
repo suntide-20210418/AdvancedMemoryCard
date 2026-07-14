@@ -20,17 +20,17 @@ import java.util.HashMap;
 import java.util.function.Supplier;
 
 public class ConfigModeSyncPacket {
-    private final HashMap<String, Short> p2pFrequencyAndAlias;
+    private final HashMap<String, String> p2pFrequencyAndAlias;
     private final HashMap<P2PPosition, ResourceLocation> p2pDevicesMap;
     private final HashMap<P2PPosition, P2PInfo> p2pInfoMap;
-    private final HashMap<Short, ChannelInfo> channelInfoMap;
+    private final HashMap<String, ChannelInfo> channelInfoMap;
     private final HashMap<String, P2PTypeInfo> p2pTypeInfoMap;
 
     public ConfigModeSyncPacket(
-            HashMap<String, Short> p2pFrequencyAndAlias,
+            HashMap<String, String> p2pFrequencyAndAlias,
             HashMap<P2PPosition, ResourceLocation> p2pDevicesMap,
             HashMap<P2PPosition, P2PInfo> p2pInfoMap,
-            HashMap<Short, ChannelInfo> channelInfoMap,
+            HashMap<String, ChannelInfo> channelInfoMap,
             HashMap<String, P2PTypeInfo> p2pTypeInfoMap) {
         this.p2pFrequencyAndAlias = p2pFrequencyAndAlias;
         this.p2pDevicesMap = p2pDevicesMap;
@@ -44,7 +44,7 @@ public class ConfigModeSyncPacket {
         buffer.writeInt(msg.p2pFrequencyAndAlias.size());
         for (var entry : msg.p2pFrequencyAndAlias.entrySet()) {
             buffer.writeUtf(entry.getKey());
-            buffer.writeShort(entry.getValue());
+            buffer.writeUtf(entry.getValue());
         }
 
         // Encode p2pDevicesMap
@@ -68,7 +68,7 @@ public class ConfigModeSyncPacket {
         // Encode channelInfoMap
         buffer.writeInt(msg.channelInfoMap.size());
         for (var entry : msg.channelInfoMap.entrySet()) {
-            buffer.writeShort(entry.getKey());
+            buffer.writeUtf(entry.getKey());
             writeChannelInfo(buffer, entry.getValue());
         }
 
@@ -82,11 +82,11 @@ public class ConfigModeSyncPacket {
 
     public static ConfigModeSyncPacket decode(FriendlyByteBuf buffer) {
         // Decode p2pFrequencyAndAlias
-        HashMap<String, Short> p2pFrequencyAndAlias = new HashMap<>();
+        HashMap<String, String> p2pFrequencyAndAlias = new HashMap<>();
         int size1 = buffer.readInt();
         for (int i = 0; i < size1; i++) {
             String key = buffer.readUtf();
-            short value = buffer.readShort();
+            String value = buffer.readUtf();
             p2pFrequencyAndAlias.put(key, value);
         }
 
@@ -115,10 +115,10 @@ public class ConfigModeSyncPacket {
         }
 
         // Decode channelInfoMap
-        HashMap<Short, ChannelInfo> channelInfoMap = new HashMap<>();
+        HashMap<String, ChannelInfo> channelInfoMap = new HashMap<>();
         int size4 = buffer.readInt();
         for (int i = 0; i < size4; i++) {
-            short frequency = buffer.readShort();
+            String frequency = buffer.readUtf();
             ChannelInfo info = readChannelInfo(buffer);
             channelInfoMap.put(frequency, info);
         }
@@ -147,7 +147,7 @@ public class ConfigModeSyncPacket {
         buffer.writeBoolean(info.isPendingBind());
         buffer.writeInt(info.channel());
         buffer.writeInt(info.maxChannel());
-        buffer.writeShort(info.frequency());
+        buffer.writeUtf(info.frequency());
         buffer.writeUtf(info.name());
         buffer.writeUtf(info.p2pType());
         buffer.writeResourceKey(info.dimension());
@@ -163,7 +163,7 @@ public class ConfigModeSyncPacket {
         boolean isPendingBind = buffer.readBoolean();
         int channel = buffer.readInt();
         int maxChannel = buffer.readInt();
-        short frequency = buffer.readShort();
+        String frequency = buffer.readUtf();
         String name = buffer.readUtf();
         String p2pType = buffer.readUtf();
         ResourceKey<Level> dimension = buffer.readResourceKey(Registries.DIMENSION);
@@ -176,7 +176,7 @@ public class ConfigModeSyncPacket {
     }
 
     private static void writeChannelInfo(FriendlyByteBuf buffer, ChannelInfo info) {
-        buffer.writeShort(info.frequency());
+        buffer.writeUtf(info.frequency());
         buffer.writeUtf(info.alias());
         buffer.writeInt(info.p2pCount());
         buffer.writeInt(info.channelRemaining());
@@ -190,7 +190,7 @@ public class ConfigModeSyncPacket {
     }
 
     private static ChannelInfo readChannelInfo(FriendlyByteBuf buffer) {
-        short frequency = buffer.readShort();
+        String frequency = buffer.readUtf();
         String alias = buffer.readUtf();
         int p2pCount = buffer.readInt();
         int channelRemaining = buffer.readInt();
@@ -258,7 +258,7 @@ public class ConfigModeSyncPacket {
     }
 
     // getter 方法
-    public HashMap<String, Short> getP2PFrequencyAndAlias() {
+    public HashMap<String, String> getP2PFrequencyAndAlias() {
         return p2pFrequencyAndAlias;
     }
 
@@ -270,7 +270,7 @@ public class ConfigModeSyncPacket {
         return p2pInfoMap;
     }
 
-    public HashMap<Short, ChannelInfo> getChannelInfoMap() {
+    public HashMap<String, ChannelInfo> getChannelInfoMap() {
         return channelInfoMap;
     }
 

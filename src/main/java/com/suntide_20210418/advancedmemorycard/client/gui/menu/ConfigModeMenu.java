@@ -11,10 +11,14 @@ import com.suntide_20210418.advancedmemorycard.item.custom.CardMode;
 import com.suntide_20210418.advancedmemorycard.network.ConfigModeSyncPacket;
 import com.suntide_20210418.advancedmemorycard.network.NetworkHandler;
 import com.suntide_20210418.advancedmemorycard.p2p.*;
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
@@ -52,38 +56,38 @@ public class ConfigModeMenu extends AEBaseMenu {
     private ItemStack stack;
     private InteractionHand hand;
     private P2PManager p2pManager;
-    private final HashMap<String, Short> p2pFrequencyAndAlias = new HashMap<>();
+    private final HashMap<String, String> p2pFrequencyAndAlias = new HashMap<>();
     private final HashMap<P2PTunnelPart<?>, ResourceLocation> p2pDevicesMap = new HashMap<>();
     private final HashMap<P2PTunnelPart<?>, P2PInfo> p2pInfoMap = new HashMap<>();
-    private final HashMap<Short, ChannelInfo> channelInfoMap = new HashMap<>();
+    private final HashMap<String, ChannelInfo> channelInfoMap = new HashMap<>();
     private final HashMap<String, P2PTypeInfo> p2pTypeInfoMap = new HashMap<>();
 
     // 客户端缓存数据（用于渲染）
-    private final HashMap<String, Short> clientP2PFrequencyAndAlias = new HashMap<>();
+    private final HashMap<String, String> clientP2PFrequencyAndAlias = new HashMap<>();
     private final HashMap<P2PPosition, ResourceLocation> clientP2PDevicesMap = new HashMap<>();
     private final HashMap<P2PPosition, P2PInfo> clientP2PInfoMap = new HashMap<>();
-    private final HashMap<Short, ChannelInfo> clientChannelInfoMap = new HashMap<>();
+    private final HashMap<String, ChannelInfo> clientChannelInfoMap = new HashMap<>();
     private final HashMap<String, P2PTypeInfo> clientP2PTypeInfoMap = new HashMap<>();
 
-
+    // 客户端缓存的当前待绑定 P2P 信息（从同步数据中提取，isPendingBind=true 的那一个）
+    private P2PInfo clientPendingBindP2PInfo = null;
 
     @GuiSync(3)
     private Component mode;
-
 
     public ConfigModeMenu(int id, Inventory playerInventory, FriendlyByteBuf host) {
         super(ModMenu.CONFIG_MODE_MENU.get(), id, playerInventory, host);
 
         //action 注册，注意只能在这个构造函数注册
-        registerClientAction(REFRESH_P2P, this::sendRefreshP2P);
-        registerClientAction(BIND_FREQUENCY, Short.class, this::sendBindFrequency);
-        registerClientAction(SET_CHANNEL_ALIAS, String.class, this::sendSetChannelAlias);
-        registerClientAction(SET_P2P_ALIAS, String.class, this::sendSetP2PAlias);
-        registerClientAction(SET_PENDING_BIND, P2PTunnelPart.class, this::sendSetPendingBind);
-        registerClientAction(AUTO_CONFIG_IO, this::sendAutoConfigIO);
-        registerClientAction(HIGHLIGHT_P2P, P2PTunnelPart.class, this::sendHighlightP2P);
-        registerClientAction(HIGHLIGHT_P2P_TUNNEL, Short.class, this::sendHighlightP2PTunnel);
-        registerClientAction(UPDATE_ITEM_INFO, this::sendUpdateItemInfo);
+        registerClientAction(REFRESH_P2P, this::handleRefreshP2P);
+        registerClientAction(BIND_FREQUENCY, String.class, this::handleBindFrequency);
+        registerClientAction(SET_CHANNEL_ALIAS, String.class, this::handleSetChannelAlias);
+        registerClientAction(SET_P2P_ALIAS, String.class, this::handleSetP2PAlias);
+        registerClientAction(SET_PENDING_BIND, String.class, this::handleSetPendingBind);
+        registerClientAction(AUTO_CONFIG_IO, this::handleAutoConfigIO);
+        registerClientAction(HIGHLIGHT_P2P, String.class, this::handleHighlightP2P);
+        registerClientAction(HIGHLIGHT_P2P_TUNNEL, String.class, this::handleHighlightP2PTunnel);
+        registerClientAction(UPDATE_ITEM_INFO, this::handleUpdateItemInfo);
     }
 
     public ConfigModeMenu(int id, Inventory playerInventory, InteractionHand hand) {
@@ -94,77 +98,48 @@ public class ConfigModeMenu extends AEBaseMenu {
         updateItemInfo();
     }
 
-    public void sendRefreshP2P() {
-        if (this.isClientSide()) {
-            sendClientAction(REFRESH_P2P);
-        } else {
-            p2pManager.analysisP2P();
-        }
+    // ==================== 服务端 Action 处理（由 registerClientAction 回调触发） ====================
+
+    private void handleRefreshP2P() {
+        p2pManager.analysisP2P();
     }
 
-    public void sendUpdateItemInfo() {
-        if (this.isClientSide()) {
-            sendClientAction(UPDATE_ITEM_INFO);
-        } else {
-            updateItemInfo();
-        }
+    private void handleUpdateItemInfo() {
+        updateItemInfo();
     }
 
-    public void sendBindFrequency(short frequency) {
-        if (this.isClientSide()) {
-            sendClientAction(BIND_FREQUENCY, frequency);
-        } else {
-            p2pManager.bind(frequency);
-        }
+    private void handleBindFrequency(String frequencyHex) {
+        p2pManager.bind(frequencyHex);
     }
 
-    // 发送时传递复合参数
-    public void sendSetChannelAlias(String data) {
-        if (this.isClientSide()) {
-            sendClientAction(SET_CHANNEL_ALIAS, data);
-        } else {
-            setChannelAlias(data);
-        }
+    // 发送时传递复合参数（格式：frequency|alias）
+    private void handleSetChannelAlias(String data) {
+        setChannelAlias(data);
     }
 
-    public void sendSetP2PAlias(String data) {
-        if (this.isClientSide()) {
-            sendClientAction(SET_P2P_ALIAS, data);
-        } else {
-            setP2PAlias(data);
-        }
+    // 接收时解析并重新获取 P2P 部件（格式：x|y|z|side::alias）
+    private void handleSetP2PAlias(String data) {
+        setP2PAlias(data);
     }
 
-    public void sendSetPendingBind(P2PTunnelPart<?> p2p) {
-        if (this.isClientSide()) {
-            sendClientAction(SET_PENDING_BIND, p2p);
-        } else {
-            setPendingBind(p2p);
-        }
+    // 接收时解析 P2P 位置字符串并重新获取 P2P 部件（格式：x|y|z|side）
+    private void handleSetPendingBind(String positionData) {
+        P2PTunnelPart<?> p2p = parsingP2P(positionData);
+        setPendingBind(p2p);
     }
 
-    public void sendAutoConfigIO() {
-        if (this.isClientSide()) {
-            sendClientAction(AUTO_CONFIG_IO);
-        } else {
-            autoConfigIO();
-        }
+    private void handleAutoConfigIO() {
+        autoConfigIO();
     }
 
-    public void sendHighlightP2P(P2PTunnelPart<?> p2pPart) {
-        if (this.isClientSide()) {
-            sendClientAction(HIGHLIGHT_P2P, p2pPart);
-        } else {
-            highlightP2P(p2pPart);
-        }
+    // 接收时解析 P2P 位置字符串并重新获取 P2P 部件（格式：x|y|z|side）
+    private void handleHighlightP2P(String positionData) {
+        P2PTunnelPart<?> p2pPart = parsingP2P(positionData);
+        highlightP2P(p2pPart);
     }
 
-    public void sendHighlightP2PTunnel(short frequency) {
-        if (this.isClientSide()) {
-            sendClientAction(HIGHLIGHT_P2P_TUNNEL);
-        } else {
-            highlightP2PTunnel(frequency);
-        }
+    private void handleHighlightP2PTunnel(String frequencyHex) {
+        highlightP2PTunnel(frequencyHex);
     }
 
     /**
@@ -228,6 +203,15 @@ public class ConfigModeMenu extends AEBaseMenu {
 
             this.clientP2PTypeInfoMap.clear();
             this.clientP2PTypeInfoMap.putAll(packet.getP2PTypeInfoMap());
+
+            // 从同步数据中提取当前待绑定的 P2P 信息（isPendingBind=true 的）
+            this.clientPendingBindP2PInfo = null;
+            for (P2PInfo info : clientP2PInfoMap.values()) {
+                if (info.isPendingBind()) {
+                    this.clientPendingBindP2PInfo = info;
+                    break;
+                }
+            }
         }
     }
 
@@ -247,7 +231,7 @@ public class ConfigModeMenu extends AEBaseMenu {
         p2pTypeInfoMap.clear();
 
         // 1. 填充 p2pFrequencyAndAlias 和 p2pDevicesMap
-        HashMap<String, Short> managerFrequencyAlias = p2pManager.getP2PFrequencyAndAlias();
+        HashMap<String, String> managerFrequencyAlias = p2pManager.getP2PFrequencyAndAlias();
         HashMap<P2PTunnelPart<?>, ResourceLocation> managerP2PDevices = p2pManager.getP2PDevicesMap();
             
         p2pFrequencyAndAlias.putAll(managerFrequencyAlias);
@@ -265,13 +249,13 @@ public class ConfigModeMenu extends AEBaseMenu {
             boolean isPendingBind = Objects.equals(p2p, p2pManager.getP2PTunnelPart());
             int channel = isMEP2P ? p2p.getExternalFacingNode().getUsedChannels() : 0;
             int maxChannel = isMEP2P ? p2p.getExternalFacingNode().getMaxChannels() : 0;
-            short frequency = p2p.getFrequency();
+            short rawFrequency = p2p.getFrequency();
+            String frequency = String.format("%04X", rawFrequency & 0xFFFF);
             String name = p2p.getCustomName() == null ? "" : p2p.getCustomName().getString();
             String p2pTypeName = p2pType != null ? p2pType.getPath() : "unknown";
             BlockPos pos = p2p.getBlockEntity().getBlockPos();
             Direction side = p2p.getSide();
             ResourceKey<Level> dimension = p2p.getBlockEntity().getLevel().dimension();
-                
             P2PInfo info = new P2PInfo(isActive, isOutput, isConnected, isMEP2P, 
                     isPendingBind, channel, maxChannel, frequency, name, p2pTypeName,
                     dimension, pos, side);
@@ -280,13 +264,13 @@ public class ConfigModeMenu extends AEBaseMenu {
         }
 
         // 3. 按频率分组，构建 channelInfoMap
-        HashMap<Short, ArrayList<P2PInfo>> frequencyGrouped = new HashMap<>();
+        HashMap<String, ArrayList<P2PInfo>> frequencyGrouped = new HashMap<>();
         for (P2PInfo info : p2pInfoMap.values()) {
             frequencyGrouped.computeIfAbsent(info.frequency(), k -> new ArrayList<>()).add(info);
         }
 
-        for (HashMap.Entry<Short, ArrayList<P2PInfo>> entry : frequencyGrouped.entrySet()) {
-            short frequency = entry.getKey();
+        for (HashMap.Entry<String, ArrayList<P2PInfo>> entry : frequencyGrouped.entrySet()) {
+            String frequency = entry.getKey();
             ChannelInfo channelInfo = getChannelInfo(entry, frequency);
             channelInfoMap.put(frequency, channelInfo);
         }
@@ -322,25 +306,35 @@ public class ConfigModeMenu extends AEBaseMenu {
         sendSyncPacketToClient();
     }
 
-    private @NotNull ChannelInfo getChannelInfo(Map.Entry<Short, ArrayList<P2PInfo>> entry, short frequency) {
+    private @NotNull ChannelInfo getChannelInfo(Map.Entry<String, ArrayList<P2PInfo>> entry, String frequency) {
         ArrayList<P2PInfo> p2pList = entry.getValue();
 
-        // 获取该频段的别名
-        String alias = "frequency " + frequency;
-        for (HashMap.Entry<String, Short> freqEntry : p2pFrequencyAndAlias.entrySet()) {
-            if (freqEntry.getValue() == frequency) {
-                alias = freqEntry.getKey();
-                break;
+        // 获取该频段的别名（即该频段中输入端 P2P 的名称）
+        String alias;
+        if ("0000".equals(frequency)) {
+            alias = "unconnected";
+        } else {
+            // 查找该频段中第一个输入端 P2P 的名称作为别名
+            String inputName = null;
+            for (P2PInfo info : p2pList) {
+                if (!info.isOutput()) {
+                    inputName = info.name();
+                    if (inputName != null && !inputName.isEmpty()) {
+                        break;
+                    }
+                }
             }
+            alias = (inputName != null && !inputName.isEmpty()) ? inputName : frequency;
         }
 
         int usedChannels = 0;
         int totalChannels = 0;
 
         for (P2PInfo info : p2pList) {
-            if (info.isMEP2P() || !info.isOutput()) {
+            if (info.isMEP2P() && !info.isOutput()) {
                  usedChannels = info.channel();
                  totalChannels = info.maxChannel();
+                 break;
             }
         }
         int channelRemaining = totalChannels - usedChannels;
@@ -352,21 +346,23 @@ public class ConfigModeMenu extends AEBaseMenu {
                 channelRemaining, p2pType, p2pList);
     }
 
-    // ==================== 以下方法需要具体实现 ====================
-
     // 接收时解析
     private void setChannelAlias(String data) {
         String[] parts = data.split("\\|");
-        short frequency = Short.parseShort(parts[0]);
+        String frequency = parts[0];
         String alias = parts[1];
 
         // 调用实际逻辑
         setChannelAlias(frequency, alias);
     }
 
-    private void setChannelAlias(short frequency, String alias) {
+    /**
+     * 设置频段别名：将该频段中第一个输入端 P2P 的名称改为指定名称。
+     * 频段别名现在指向该频段中输入端 P2P 设备的名称。
+     */
+    private void setChannelAlias(String frequency, String newName) {
         if (p2pManager != null) {
-            p2pManager.setFrequencyAlias(alias, frequency);
+            p2pManager.setFrequencyAlias(newName, frequency);
             updateItemInfo();
         }
     }
@@ -417,19 +413,87 @@ public class ConfigModeMenu extends AEBaseMenu {
 
     private void highlightP2P(P2PTunnelPart<?> p2pPart) {
         p2pManager.renderP2P(p2pPart);
+
+        // 在聊天栏输出 P2P 位置信息及传送链接
+        if (p2pPart == null) {
+            return;
+        }
+
+        Player player = getPlayer();
+        BlockPos pos = p2pPart.getBlockEntity().getBlockPos();
+        ResourceKey<Level> dimension = p2pPart.getBlockEntity().getLevel().dimension();
+        String p2pName = p2pPart.getCustomName() != null ? p2pPart.getCustomName().getString() : "P2P";
+        String dimId = dimension.location().toString();
+        String coords = pos.getX() + ", " + pos.getY() + ", " + pos.getZ();
+
+        // 构建传送命令
+        String tpCommand = "/execute in " + dimId + " run tp @p " + pos.getX() + " " + pos.getY() + " " + pos.getZ();
+
+        // 构建聊天消息
+        Component locationInfo = Component.literal(p2pName + " 在 " + dimId + " - (" + coords + ") ");
+        Component clickHere = Component.literal("【点击此处来传送】")
+                .setStyle(Style.EMPTY
+                        .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, tpCommand))
+                        .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                                Component.literal("点击传送到 " + dimId + " - (" + coords + ")")
+                                        .append("\n需要开启作弊模式或拥有OP权限")))
+                        .withColor(ChatFormatting.AQUA));
+
+        player.sendSystemMessage(Component.empty().append(locationInfo).append("\n").append(clickHere));
     }
 
-    private void highlightP2PTunnel(short frequency) {
-        p2pManager.renderP2P(frequency);
+    private void highlightP2PTunnel(String frequencyHex) {
+        p2pManager.renderP2P(frequencyHex);
+
+        // 在聊天栏输出该频段下所有输入端 P2P 的位置信息及传送链接
+        Player player = getPlayer();
+        if (player == null) return;
+
+        ChannelInfo channelInfo = channelInfoMap.get(frequencyHex);
+        if (channelInfo == null) return;
+
+        ArrayList<P2PInfo> p2pList = channelInfo.p2pInfoList();
+        if (p2pList == null || p2pList.isEmpty()) return;
+
+        // 获取频段别名
+        String freqAlias = getFrequencyAlias(frequencyHex);
+        String freqDisplay = freqAlias.equals("frequency " + frequencyHex) ? frequencyHex : freqAlias + " (" + frequencyHex + ")";
+
+        player.sendSystemMessage(Component.literal("=== 频段 " + freqDisplay + " 高亮 ==="));
+
+        int index = 1;
+        for (P2PInfo info : p2pList) {
+            // 只输出输入端
+            if (info.isOutput()) continue;
+
+            BlockPos pos = info.position();
+            String dimId = info.dimension().location().toString();
+            String coords = pos.getX() + ", " + pos.getY() + ", " + pos.getZ();
+            String p2pName = info.name().isEmpty() ? info.toShortString() : info.name();
+            String tpCommand = "/execute in " + dimId + " run tp @p " + pos.getX() + " " + pos.getY() + " " + pos.getZ();
+
+            Component locationInfo = Component.literal("[" + index + "] " + p2pName + " 在 " + dimId + " - (" + coords + ") ");
+            Component clickHere = Component.literal("【传送】")
+                    .setStyle(Style.EMPTY
+                            .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, tpCommand))
+                            .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                                    Component.literal("点击传送到 " + dimId + " - (" + coords + ")")
+                                            .append("\n需要开启作弊模式或拥有OP权限")))
+                            .withColor(ChatFormatting.AQUA));
+
+            player.sendSystemMessage(Component.empty().append(locationInfo).append(clickHere));
+            index++;
+        }
     }
 
     /**
-     * 获取频段的别名
+     * 获取频段的别名（即该频段中第一个输入端 P2P 的名称）。
      */
-    private String getFrequencyAlias(short frequency) {
-        for (HashMap.Entry<String, Short> entry : p2pFrequencyAndAlias.entrySet()) {
-            if (entry.getValue() == frequency) {
-                return entry.getKey();
+    private String getFrequencyAlias(String frequency) {
+        if (p2pManager != null) {
+            String alias = p2pManager.getFrequencyAlias(frequency);
+            if (!alias.equals(frequency)) {
+                return alias;
             }
         }
         return "frequency " + frequency;
@@ -444,7 +508,7 @@ public class ConfigModeMenu extends AEBaseMenu {
         return clientP2PInfoMap;
     }
 
-    public HashMap<Short, ChannelInfo> getClientChannelInfoMap() {
+    public HashMap<String, ChannelInfo> getClientChannelInfoMap() {
         return clientChannelInfoMap;
     }
 
@@ -452,8 +516,29 @@ public class ConfigModeMenu extends AEBaseMenu {
         return clientP2PTypeInfoMap;
     }
 
-    public HashMap<String, Short> getClientP2PFrequencyAndAlias() {
+    public HashMap<String, String> getClientP2PFrequencyAndAlias() {
         return clientP2PFrequencyAndAlias;
+    }
+
+    /**
+     * 获取客户端缓存中当前待绑定（isPendingBind=true）的 P2P 信息。
+     * 对应服务端 P2PManager.getP2PTunnelPart() 所指向的那个 P2P 设备。
+     * 返回 null 表示当前没有待绑定的 P2P。
+     */
+    public P2PInfo getClientPendingBindP2PInfo() {
+        return clientPendingBindP2PInfo;
+    }
+
+    /**
+     * 供 Screen 调用的客户端 action 分发方法。
+     * 将 action 从客户端发送到服务端，服务端收到后会触发对应的 registerClientAction 回调。
+     */
+    public void dispatchClientAction(String action) {
+        sendClientAction(action);
+    }
+
+    public <T> void dispatchClientAction(String action, T param) {
+        sendClientAction(action, param);
     }
 
     // 在类内部添加（例如靠近字段列表或方法末尾）

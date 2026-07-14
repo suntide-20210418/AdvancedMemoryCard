@@ -16,7 +16,7 @@ public record P2PInfo(
         boolean isPendingBind,
         int channel,
         int maxChannel,
-        short frequency,
+        String frequency,
         String name,
         String p2pType,
         ResourceKey<Level> dimension,
