@@ -2,10 +2,12 @@ package com.suntide_20210418.advancedmemorycard;
 
 import appeng.client.gui.style.StyleManager;
 import com.mojang.logging.LogUtils;
-import com.suntide_20210418.advancedmemorycard.client.renderer.CopyModeRenderer;
 import com.suntide_20210418.advancedmemorycard.client.gui.ModMenu;
-import com.suntide_20210418.advancedmemorycard.client.gui.menu.AdvancedMemoryCardMenu;
-import com.suntide_20210418.advancedmemorycard.client.gui.screen.AdvancedMemoryCardScreen;
+import com.suntide_20210418.advancedmemorycard.client.gui.menu.ConfigModeMenu;
+import com.suntide_20210418.advancedmemorycard.client.gui.menu.CopyModeMenu;
+import com.suntide_20210418.advancedmemorycard.client.gui.screen.ConfigModeScreen;
+import com.suntide_20210418.advancedmemorycard.client.gui.screen.CopyModeScreen;
+import com.suntide_20210418.advancedmemorycard.client.renderer.P2PRenderer;
 import com.suntide_20210418.advancedmemorycard.item.ModCreativeModeTabs;
 import com.suntide_20210418.advancedmemorycard.item.ModItems;
 import com.suntide_20210418.advancedmemorycard.item.custom.CardMode;
@@ -26,7 +28,7 @@ import org.slf4j.Logger;
 public class AdvancedMemoryCardMod {
     public static final String MOD_ID = "advanced_memory_card";
 
-    private static final Logger LOGGER = LogUtils.getLogger();
+    public static final Logger LOGGER = LogUtils.getLogger();
 
     public AdvancedMemoryCardMod(FMLJavaModLoadingContext context) {
         IEventBus modEventBus = context.getModEventBus();
@@ -35,10 +37,8 @@ public class AdvancedMemoryCardMod {
         ModItems.register(modEventBus);
         ModCreativeModeTabs.register(modEventBus);
 
-        // 在公共设置事件中初始化模式
+        // 注册事件监听器
         MinecraftForge.EVENT_BUS.register(this);
-        MinecraftForge.EVENT_BUS.register(CopyModeRenderer.class);
-
         ModMenu.MENU_TYPES.register(modEventBus);
 
         modEventBus.addListener(this::clientSetup);
@@ -52,23 +52,39 @@ public class AdvancedMemoryCardMod {
 
         event.enqueueWork(() -> {
             NetworkHandler.register();
-            System.out.println("Network packets registered!");
+            LOGGER.info("Network packets registered!");
         });
     }
 
     @SubscribeEvent
     public void clientSetup(FMLClientSetupEvent event) {
+        P2PRenderer.getInstance();
         event.enqueueWork(() -> {
+            // 注册复制模式屏幕
             MenuScreens.register(
-                    ModMenu.ADVANCED_MEMORY_CARD_MENU.get(),
-                    (AdvancedMemoryCardMenu menu,
+                    ModMenu.COPY_MODE_MENU.get(),
+                    (CopyModeMenu menu,
                      Inventory inv,
                      Component title) ->
-                            new AdvancedMemoryCardScreen(
+                            new CopyModeScreen(
                                     menu,
                                     inv,
                                     title,
-                                    StyleManager.loadStyleDoc("/screens/advanced_memory_card_menu.json")
+                                    StyleManager.loadStyleDoc("/screens/copy_mode_menu.json")
+                            )
+            );
+            
+            // 注册配置模式屏幕
+            MenuScreens.register(
+                    ModMenu.CONFIG_MODE_MENU.get(),
+                    (ConfigModeMenu menu,
+                     Inventory inv,
+                     Component title) ->
+                            new ConfigModeScreen(
+                                    menu,
+                                    inv,
+                                    title,
+                                    StyleManager.loadStyleDoc("/screens/config_mode_menu.json")
                             )
             );
         });

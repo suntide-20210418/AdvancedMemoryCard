@@ -29,6 +29,9 @@ public class TranslateHelper {
         // GUI相关
         public static final String GUI_PREFIX = "gui." + BASE_KEY + ".";
 
+        // 屏幕相关
+        public static final String SCREEN_PREFIX = "screen." + BASE_KEY + ".";
+
         // 复制模式相关
         public static final String COPY_MODE_PREFIX =
                 GUI_PREFIX + "advanced_memory_card.player.copy.";
@@ -42,9 +45,16 @@ public class TranslateHelper {
         public static final String COPY_MODE_ALREADY_MARKED = COPY_MODE_PREFIX + "already_marked";
         public static final String COPY_MODE_FAILED = COPY_MODE_PREFIX + "failed";
 
+        public static final String COPY_MODE_SCREEN_PREFIX = SCREEN_PREFIX + "advanced_memory_card.player.copy.";
+        public static final String COPY_MODE_SCREEN_START_POS = COPY_MODE_SCREEN_PREFIX + "start_pos";
+        public static final String COPY_MODE_SCREEN_END_POS = COPY_MODE_SCREEN_PREFIX + "end_pos";
+
+        public static final String CONFIG_MODE_SCREEN_PREFIX = SCREEN_PREFIX + "advanced_memory_card.player.config.";
+        public static final String CONFIG_MODE_SCREEN_TITLE = CONFIG_MODE_SCREEN_PREFIX + "title";
+
+
         // 配置模式相关
-        public static final String CONFIG_MODE_PREFIX =
-                GUI_PREFIX + "advanced_memory_card.player.config.";
+        public static final String CONFIG_MODE_PREFIX = GUI_PREFIX + "advanced_memory_card.player.config.";
         public static final String CONFIG_MODE_SHOW = CONFIG_MODE_PREFIX + "show";
 
         // 工具提示相关
@@ -288,6 +298,15 @@ public class TranslateHelper {
         public static MutableComponent failed() {
             return errorMessage(Keys.COPY_MODE_FAILED);
         }
+
+        public static MutableComponent screenStartPos() {
+            return errorMessage(Keys.COPY_MODE_SCREEN_START_POS);
+        }
+
+        public static MutableComponent screenEndPos() {
+            return errorMessage(Keys.COPY_MODE_SCREEN_END_POS);
+        }
+
     }
 
     /** 获取配置模式相关翻译 */

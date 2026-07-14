@@ -27,7 +27,7 @@ public class ModZhcnLangProvider extends LanguageProvider {
         add(Keys.TOOLTIP_COPY_READY, "准备粘贴");
 
         // 配置模式显示
-        add(Keys.CONFIG_MODE_SHOW, "配置模式");
+        add(Keys.CONFIG_MODE_SHOW, "ME P2P通道 配置模式");
 
         // 复制模式显示
         add(Keys.COPY_MODE_SHOW, "复制模式");

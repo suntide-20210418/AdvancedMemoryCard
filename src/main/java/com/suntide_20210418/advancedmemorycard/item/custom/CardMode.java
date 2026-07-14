@@ -1,11 +1,6 @@
 package com.suntide_20210418.advancedmemorycard.item.custom;
 
 import com.suntide_20210418.advancedmemorycard.AdvancedMemoryCardMod;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.NavigableSet;
-import java.util.TreeSet;
-import java.util.function.Supplier;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -16,6 +11,12 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.NavigableSet;
+import java.util.TreeSet;
+import java.util.function.Supplier;
 
 public abstract class CardMode {
     private static final Map<ResourceLocation, Supplier<CardMode>> REGISTRY = new HashMap<>();
@@ -57,24 +58,27 @@ public abstract class CardMode {
 
     public abstract ResourceLocation getType();
 
+    public static CardMode cycleMode(CardMode mode) {
+        // 检查集合是否为空，避免 NoSuchElementException
+        if (CYCLE_ORDER.isEmpty()) {
+            return mode; // 如果没有注册的模式，返回当前模式
+        }
+
+        ResourceLocation current = mode.getType();
+        ResourceLocation next = CYCLE_ORDER.higher(current);
+        if (next == null) {
+            next = CYCLE_ORDER.first();
+        }
+        return REGISTRY.get(next).get();
+    }
+
     /**
      * Called from the onItemUseFirst method in the {@link AdvancedMemoryCardItem}
      *
-     * <p>Called before the item's actually used on the part/block so it can be cancelled or
+     * <p>Called before the item's actually used on the part/block so it can be canceled or
      * modified to change what the default {@link appeng.items.tools.MemoryCardItem} behavior is.
      */
     public abstract InteractionResult onItemUseFirst(ItemStack stack, UseOnContext context);
-
-    /**
-     * Called from the onItemUse method in the {@link AdvancedMemoryCardItem}
-     *
-     * <p>Mainly for modes to implement "submodes" that players can cycle between with right clicks
-     */
-    public InteractionResultHolder<ItemStack> onItemUse(
-            Level level, Player player, InteractionHand hand) {
-        // do nothing by default, some modes won't need this at all
-        return InteractionResultHolder.pass(player.getItemInHand(hand));
-    }
 
     /**
      * Save this mode's information to NBT to be loaded later
@@ -100,18 +104,10 @@ public abstract class CardMode {
 
     protected abstract Component getDescription();
 
-    public static CardMode cycleMode(CardMode mode, boolean cycleForward) {
-        // 检查集合是否为空，避免 NoSuchElementException
-        if (CYCLE_ORDER.isEmpty()) {
-            return mode; // 如果没有注册的模式，返回当前模式
-        }
-
-        ResourceLocation current = mode.getType();
-        ResourceLocation next =
-                cycleForward ? CYCLE_ORDER.higher(current) : CYCLE_ORDER.lower(current);
-        if (next == null) {
-            next = cycleForward ? CYCLE_ORDER.first() : CYCLE_ORDER.last();
-        }
-        return REGISTRY.get(next).get();
-    }
+    /**
+     * Called from the onItemUse method in the {@link AdvancedMemoryCardItem}
+     *
+     * <p>Mainly for modes to implement "submodes" that players can cycle between with right clicks
+     */
+    public abstract InteractionResultHolder<ItemStack> onItemUse(Level level, Player player, InteractionHand hand);
 }

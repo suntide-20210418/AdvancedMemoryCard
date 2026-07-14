@@ -4,7 +4,7 @@ import appeng.client.gui.AEBaseScreen;
 import appeng.client.gui.Icon;
 import appeng.client.gui.style.ScreenStyle;
 import appeng.client.gui.widgets.IconButton;
-import com.suntide_20210418.advancedmemorycard.client.gui.menu.AdvancedMemoryCardMenu;
+import com.suntide_20210418.advancedmemorycard.client.gui.menu.CopyModeMenu;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.Tooltip;
@@ -12,14 +12,18 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 
 /**
  * 采用ae2界面，样式文件定义于ae2/guis/advanced_memory_card.json
  *
  */
-public class AdvancedMemoryCardScreen extends AEBaseScreen<AdvancedMemoryCardMenu> {
 
-    //标识符，用于.setValue时不被监听器捕捉，重新定义数据
+public class CopyModeScreen extends AEBaseScreen<CopyModeMenu> {
+
+    // 标识符，用于.setValue时不被监听器捕捉，重新定义数据
     private boolean suppressListener = true;
     private IconButton clearButton;
 
@@ -34,61 +38,41 @@ public class AdvancedMemoryCardScreen extends AEBaseScreen<AdvancedMemoryCardMen
     private EditBox eZ;
 
 
-    public AdvancedMemoryCardScreen(AdvancedMemoryCardMenu menu, Inventory playerInventory, Component title, ScreenStyle style) {
+    public CopyModeScreen(CopyModeMenu menu, Inventory playerInventory, Component title, ScreenStyle style) {
         super(menu, playerInventory, title, style);
-
-
         menu.sendUpdateItemInf();
 
-        sX = new EditBox(this.font , 0, 0, 0, 0, Component.translatable("sX"));
-        sY = new EditBox(this.font , 0, 0, 0, 0, Component.translatable("sY"));
-        sZ = new EditBox(this.font , 0, 0, 0, 0, Component.translatable("sZ"));
-        eX = new EditBox(this.font , 0, 0, 0, 0, Component.translatable("eX"));
-        eY = new EditBox(this.font , 0, 0, 0, 0, Component.translatable("eY"));
-        eZ = new EditBox(this.font , 0, 0, 0, 0, Component.translatable("eZ"));
-        sX.setBordered( false);
-        sY.setBordered( false);
-        sZ.setBordered( false);
-        eX.setBordered(false);
-        eY.setBordered(false);
-        eZ.setBordered(false);
-        sX.setFilter(this::isDigitsWithOptionalSign);
-        sY.setFilter(this::isDigitsWithOptionalSign);
-        sZ.setFilter(this::isDigitsWithOptionalSign);
-        eX.setFilter(this::isDigitsWithOptionalSign);
-        eY.setFilter(this::isDigitsWithOptionalSign);
-        eZ.setFilter(this::isDigitsWithOptionalSign);
-        sX.setResponder(this::onInputChange);
-        sY.setResponder(this::onInputChange);
-        sZ.setResponder(this::onInputChange);
-        eX.setResponder(this::onInputChange);
-        eY.setResponder(this::onInputChange);
-        eZ.setResponder(this::onInputChange);
-        this.widgets.add("sX",sX);
-        this.widgets.add("sY",sY);
-        this.widgets.add("sZ",sZ);
-        this.widgets.add("eX",eX);
-        this.widgets.add("eY",eY);
-        this.widgets.add("eZ",eZ);
-
+        sX = registerFields("sX");
+        sY = registerFields("sY");
+        sZ = registerFields("sZ");
+        eX = registerFields("eX");
+        eY = registerFields("eY");
+        eZ = registerFields("eZ");
 
         clearButton = new IconButton(button -> {
             menu.sendClearPos();
             menu.sendUpdateItemInf();
-        }) {
+        })
+
+        {
             @Override
             protected Icon getIcon() {
                 return Icon.CONDENSER_OUTPUT_TRASH;
             }
         };
 
-
         clearButton.setTooltip(Tooltip.create(Component.translatable("clearmode.tooltip")));
         this.addToLeftToolbar(clearButton);
-
         updateFieldsFromHeldItem();
+    }
 
-
+    private EditBox registerFields(String fieldName){
+        EditBox field = new EditBox(this.font, 0, 0, 0, 0, Component.translatable(fieldName));
+        field.setBordered(true);
+        field.setFilter(this::isDigitsWithOptionalSign);
+        field.setResponder(this::onInputChange);
+        this.widgets.add(fieldName, field);
+        return field;
     }
 
     @Override
@@ -98,7 +82,6 @@ public class AdvancedMemoryCardScreen extends AEBaseScreen<AdvancedMemoryCardMen
         getPos();
         updateFieldsFromHeldItem();
 
-        setTextContent("mode",Component.translatable("当前模式:").append(menu.getMode()));
         setTextContent("start_pos", Component.translatable("开始坐标").append(": "));
         setTextContent("end_pos", Component.translatable("结束坐标").append(": "));
 
@@ -117,7 +100,7 @@ public class AdvancedMemoryCardScreen extends AEBaseScreen<AdvancedMemoryCardMen
             if (isNullOrEmpty(sX.getValue())) sX.setValue(String.valueOf(startPos.getX()));
             if (isNullOrEmpty(sY.getValue())) sY.setValue(String.valueOf(startPos.getY()));
             if (isNullOrEmpty(sZ.getValue())) sZ.setValue(String.valueOf(startPos.getZ()));
-        }else {
+        } else {
             sX.setValue("");
             sY.setValue("");
             sZ.setValue("");
@@ -126,7 +109,7 @@ public class AdvancedMemoryCardScreen extends AEBaseScreen<AdvancedMemoryCardMen
             if (isNullOrEmpty(eX.getValue())) eX.setValue(String.valueOf(endPos.getX()));
             if (isNullOrEmpty(eY.getValue())) eY.setValue(String.valueOf(endPos.getY()));
             if (isNullOrEmpty(eZ.getValue())) eZ.setValue(String.valueOf(endPos.getZ()));
-        }else {
+        } else {
             eX.setValue("");
             eY.setValue("");
             eZ.setValue("");
@@ -145,14 +128,14 @@ public class AdvancedMemoryCardScreen extends AEBaseScreen<AdvancedMemoryCardMen
         return input.matches("-?\\d*"); // 匹配可选负号和数字
     }
 
-    public  BlockPos parseBlockPos(String input) {
+    public BlockPos parseBlockPos(String input) {
         if (input.isEmpty()){
             return null;
         }
         // 使用正则表达式提取数字
-        String regex = "BlockPos\\{x=\\s*(-?\\d+),\\s*y=\\s*(-?\\d+),\\s*z=\\s*(-?\\d+)\\}";
-        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile(regex);
-        java.util.regex.Matcher matcher = pattern.matcher(input);
+        String regex = "BlockPos\\{x=\\s*(-?\\d+),\\s*y=\\s*(-?\\d+),\\s*z=\\s*(-?\\d+)}";
+        Pattern pattern = java.util.regex.Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(input);
 
         if (matcher.matches()) {
             // 提取 x, y, z 的值
@@ -168,7 +151,7 @@ public class AdvancedMemoryCardScreen extends AEBaseScreen<AdvancedMemoryCardMen
         }
     }
     private void onInputChange(String ignored) {
-        if (suppressListener){
+        if (suppressListener) {
             if (!isNullOrEmpty(sX.getValue()) && !isNullOrEmpty(sY.getValue()) && !isNullOrEmpty(sZ.getValue())) {
                 try {
                     int sx = Integer.parseInt(sX.getValue().trim());

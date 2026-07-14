@@ -1,10 +1,5 @@
 package com.suntide_20210418.advancedmemorycard.item.custom;
 
-import static com.suntide_20210418.advancedmemorycard.utils.AreaHelper.Area;
-import static com.suntide_20210418.advancedmemorycard.utils.AreaHelper.calculateVolume;
-import static com.suntide_20210418.advancedmemorycard.utils.TranslateHelper.CopyMode.*;
-import static com.suntide_20210418.advancedmemorycard.utils.TranslateHelper.Tooltip.*;
-
 import appeng.api.parts.IPart;
 import appeng.api.parts.IPartHost;
 import appeng.blockentity.AEBaseBlockEntity;
@@ -26,6 +21,11 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
+
+import static com.suntide_20210418.advancedmemorycard.utils.AreaHelper.Area;
+import static com.suntide_20210418.advancedmemorycard.utils.AreaHelper.calculateVolume;
+import static com.suntide_20210418.advancedmemorycard.utils.TranslateHelper.CopyMode.*;
+import static com.suntide_20210418.advancedmemorycard.utils.TranslateHelper.Tooltip.*;
 
 public class CopyMode extends CardMode {
 
@@ -98,19 +98,18 @@ public class CopyMode extends CardMode {
         return endPos;
     }
 
-    public void setEndPos(ItemStack stack,BlockPos endPos) {
+    public void setEndPos(ItemStack stack, BlockPos endPos) {
         this.endPos = endPos;
         this.save(stack.getOrCreateTag());
     }
 
-    public void setStartPos(ItemStack stack,BlockPos startPos) {
+    public void setStartPos(ItemStack stack, BlockPos startPos) {
         this.startPos = startPos;
         this.save(stack.getOrCreateTag());
     }
 
     @Override
-    public InteractionResultHolder<ItemStack> onItemUse(
-            Level level, Player player, InteractionHand hand) {
+    public InteractionResultHolder<ItemStack> onItemUse(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
         if (this.isCopying) {
             MemoryCardItem memoryCardItem = (MemoryCardItem) stack.getItem();
@@ -147,8 +146,9 @@ public class CopyMode extends CardMode {
             this.save(stack.getOrCreateTag());
         } else {
             player.displayClientMessage(failed(), true);
+            return InteractionResultHolder.fail(stack);
         }
-        return InteractionResultHolder.consume(stack);
+        return InteractionResultHolder.sidedSuccess(stack, level.isClientSide());
     }
 
     @Override
@@ -160,47 +160,43 @@ public class CopyMode extends CardMode {
     public InteractionResult onItemUseFirst(ItemStack stack, UseOnContext context) {
         Player player = context.getPlayer();
         BlockPos clickedPos = context.getClickedPos();
-        if (startPos == null) {
-            startPos = clickedPos;
-            this.save(stack.getOrCreateTag());
-
-            // 向玩家发送信息
-            if (player != null) {
-                player.displayClientMessage(firstPosMarked(startPos.toShortString()), true);
-            }
-
-            return InteractionResult.SUCCESS;
-
-        } else {
-            endPos = clickedPos;
-
-            long currentVolume = calculateVolume(startPos, endPos);
-            if (currentVolume > MAX_VOLUME) {
-                if (player != null) {
-                    player.displayClientMessage(tooLarge(currentVolume, MAX_VOLUME), true);
-                }
-                // 重置选择
-                this.startPos = null;
-                this.endPos = null;
+        Level level = context.getLevel();
+        if (player != null) {
+            if (startPos == null) {
+                startPos = clickedPos;
                 this.save(stack.getOrCreateTag());
-                return InteractionResult.FAIL;
-            }
 
-            isCopying = true;
-            this.save(stack.getOrCreateTag());
+                // 向玩家发送信息
+                player.displayClientMessage(firstPosMarked(startPos.toShortString()), true);
 
-            if (player != null) {
+            } else {
+                endPos = clickedPos;
+
+                long currentVolume = calculateVolume(startPos, endPos);
+                if (currentVolume > MAX_VOLUME) {
+                    player.displayClientMessage(tooLarge(currentVolume, MAX_VOLUME), true);
+                    // 重置选择
+                    this.startPos = null;
+                    this.endPos = null;
+                    this.save(stack.getOrCreateTag());
+                    return InteractionResult.FAIL;
+                }
+
+                isCopying = true;
+                this.save(stack.getOrCreateTag());
+                int[] area = Area(startPos, endPos);
+
                 player.displayClientMessage(
                         secondPosMarked(
                                 endPos.toShortString(),
-                                Area(startPos, endPos)[0],
-                                Area(startPos, endPos)[1],
-                                Area(startPos, endPos)[2]),
+                                area[0],
+                                area[1],
+                                area[2]),
                         true);
-            }
 
-            return InteractionResult.SUCCESS;
+            }
         }
+        return InteractionResult.sidedSuccess(level.isClientSide());
     }
 
     public BlockPos getTargetedBlockPos(Player player) {
@@ -238,7 +234,7 @@ public class CopyMode extends CardMode {
         }
     }
 
-    public  void clearPos(ItemStack stack){
+    public void clearPos(ItemStack stack){
         startPos = null;
         endPos = null;
         isCopying = false;
