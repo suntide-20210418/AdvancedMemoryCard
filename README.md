@@ -5,6 +5,8 @@
 ![Mod Version](https://img.shields.io/badge/Version-1.1.1-green)
 ![License](https://img.shields.io/badge/License-GPL--3.0-green)
 
+[简体中文](README.md) | **English**（见 [README_en.md](README_en.md)）
+
 一个 Applied Energistics 2（AE2）扩展模组，为 AE2 内存卡提供**批量复制**与**P2P 通道高级配置**两大增强功能。
 
 ## 🌟 功能特性
