@@ -133,9 +133,9 @@ public abstract class CardMode {
         return this;
     }
 
-    protected abstract Component getName();
+    public abstract Component getName();
 
-    protected abstract Component getDescription();
+    public abstract Component getDescription();
 
     public static CardMode cycleMode(CardMode mode, boolean cycleForward) {
         // 检查集合是否为空，避免 NoSuchElementException

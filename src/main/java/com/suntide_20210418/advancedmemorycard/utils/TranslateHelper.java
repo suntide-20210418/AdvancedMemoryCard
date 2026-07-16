@@ -29,6 +29,9 @@ public class TranslateHelper {
         // GUI相关
         public static final String GUI_PREFIX = "gui." + BASE_KEY + ".";
 
+        // 屏幕相关
+        public static final String SCREEN_PREFIX = "screen." + BASE_KEY + ".";
+
         // 复制模式相关
         public static final String COPY_MODE_PREFIX =
                 GUI_PREFIX + "advanced_memory_card.player.copy.";
@@ -42,9 +45,73 @@ public class TranslateHelper {
         public static final String COPY_MODE_ALREADY_MARKED = COPY_MODE_PREFIX + "already_marked";
         public static final String COPY_MODE_FAILED = COPY_MODE_PREFIX + "failed";
 
+        public static final String COPY_MODE_SCREEN_PREFIX = SCREEN_PREFIX + "advanced_memory_card.player.copy.";
+        public static final String COPY_MODE_SCREEN_START_POS = COPY_MODE_SCREEN_PREFIX + "start_pos";
+        public static final String COPY_MODE_SCREEN_END_POS = COPY_MODE_SCREEN_PREFIX + "end_pos";
+        public static final String COPY_MODE_SCREEN_CLEAR_TOOLTIP = COPY_MODE_SCREEN_PREFIX + "clear_tooltip";
+
+        public static final String CONFIG_MODE_SCREEN_PREFIX = SCREEN_PREFIX + "advanced_memory_card.player.config.";
+        public static final String CONFIG_MODE_SCREEN_TITLE = CONFIG_MODE_SCREEN_PREFIX + "title";
+        public static final String CONFIG_MODE_SCREEN_SEARCH_PLACEHOLDER = CONFIG_MODE_SCREEN_PREFIX + "search_placeholder";
+        public static final String CONFIG_MODE_SCREEN_INFO = CONFIG_MODE_SCREEN_PREFIX + "info";
+
+        // P2P 树控件相关
+        public static final String P2P_TREE_PREFIX = GUI_PREFIX + "advanced_memory_card.p2p_tree.";
+        public static final String P2P_TREE_EMPTY = P2P_TREE_PREFIX + "empty";
+        public static final String P2P_TREE_UNKNOWN_P2P = P2P_TREE_PREFIX + "unknown_p2p";
+        public static final String P2P_TREE_SEARCH_RESULTS = P2P_TREE_PREFIX + "search_results";
+        public static final String P2P_TREE_SEARCH_RESULT_COUNT = P2P_TREE_PREFIX + "search_result_count";
+
+        // 详情面板控件相关
+        public static final String DETAIL_PANEL_PREFIX = GUI_PREFIX + "advanced_memory_card.detail_panel.";
+        public static final String DETAIL_PANEL_PLACEHOLDER = DETAIL_PANEL_PREFIX + "placeholder";
+        public static final String DETAIL_PANEL_NAME_LABEL = DETAIL_PANEL_PREFIX + "name";
+        public static final String DETAIL_PANEL_FREQUENCY_LABEL = DETAIL_PANEL_PREFIX + "frequency";
+        public static final String DETAIL_PANEL_TYPE_LABEL = DETAIL_PANEL_PREFIX + "type";
+        public static final String DETAIL_PANEL_DIMENSION_LABEL = DETAIL_PANEL_PREFIX + "dimension";
+        public static final String DETAIL_PANEL_POSITION_LABEL = DETAIL_PANEL_PREFIX + "position";
+        public static final String DETAIL_PANEL_DIRECTION_LABEL = DETAIL_PANEL_PREFIX + "direction";
+        public static final String DETAIL_PANEL_STATUS_LABEL = DETAIL_PANEL_PREFIX + "status";
+        public static final String DETAIL_PANEL_CHANNEL_INFO_LABEL = DETAIL_PANEL_PREFIX + "channel_info";
+        public static final String DETAIL_PANEL_P2P_COUNT_LABEL = DETAIL_PANEL_PREFIX + "p2p_count";
+        public static final String DETAIL_PANEL_INPUT_COUNT_LABEL = DETAIL_PANEL_PREFIX + "input_count";
+        public static final String DETAIL_PANEL_OUTPUT_COUNT_LABEL = DETAIL_PANEL_PREFIX + "output_count";
+        public static final String DETAIL_PANEL_TOTAL_COUNT_LABEL = DETAIL_PANEL_PREFIX + "total_count";
+        public static final String DETAIL_PANEL_CHANNEL_COUNT_LABEL = DETAIL_PANEL_PREFIX + "channel_count";
+        public static final String DETAIL_PANEL_INPUT_NAME_LABEL = DETAIL_PANEL_PREFIX + "input_name";
+
+        // 按钮标签
+        public static final String BUTTON_PREFIX = GUI_PREFIX + "advanced_memory_card.button.";
+        public static final String BUTTON_RENAME = BUTTON_PREFIX + "rename";
+        public static final String BUTTON_SELECT = BUTTON_PREFIX + "select";
+        public static final String BUTTON_HIGHLIGHT = BUTTON_PREFIX + "highlight";
+        public static final String BUTTON_PENDING_BIND = BUTTON_PREFIX + "pending_bind";
+        public static final String BUTTON_REFRESH = BUTTON_PREFIX + "refresh";
+        public static final String BUTTON_CANCEL = BUTTON_PREFIX + "cancel";
+        public static final String BUTTON_BIND = BUTTON_PREFIX + "bind";
+        public static final String BUTTON_LOCATE = BUTTON_PREFIX + "locate";
+        public static final String BUTTON_INIT_P2P = BUTTON_PREFIX + "init_p2p";
+        public static final String BUTTON_ASSIGN_FREQ = BUTTON_PREFIX + "assign_freq";
+
+        // 状态文本
+        public static final String STATUS_PREFIX = GUI_PREFIX + "advanced_memory_card.status.";
+        public static final String STATUS_NOT_ACTIVE = STATUS_PREFIX + "not_active";
+        public static final String STATUS_NOT_CONNECTED = STATUS_PREFIX + "not_connected";
+        public static final String STATUS_CONNECTED = STATUS_PREFIX + "connected";
+        public static final String STATUS_OUTPUT = STATUS_PREFIX + "output";
+        public static final String STATUS_INPUT = STATUS_PREFIX + "input";
+        public static final String STATUS_CURRENT_SELECTED = STATUS_PREFIX + "current_selected";
+
+        // 聊天消息（高亮/传送相关）
+        public static final String CHAT_PREFIX = GUI_PREFIX + "advanced_memory_card.chat.";
+        public static final String CHAT_LOCATION_INFO = CHAT_PREFIX + "location_info";
+        public static final String CHAT_CLICK_TO_TELEPORT = CHAT_PREFIX + "click_to_teleport";
+        public static final String CHAT_TELEPORT_HOVER = CHAT_PREFIX + "teleport_hover";
+        public static final String CHAT_FREQ_HIGHLIGHT_HEADER = CHAT_PREFIX + "freq_highlight_header";
+        public static final String CHAT_TELEPORT_BUTTON = CHAT_PREFIX + "teleport_button";
+
         // 配置模式相关
-        public static final String CONFIG_MODE_PREFIX =
-                GUI_PREFIX + "advanced_memory_card.player.config.";
+        public static final String CONFIG_MODE_PREFIX = GUI_PREFIX + "advanced_memory_card.player.config.";
         public static final String CONFIG_MODE_SHOW = CONFIG_MODE_PREFIX + "show";
 
         // 工具提示相关
@@ -288,6 +355,14 @@ public class TranslateHelper {
         public static MutableComponent failed() {
             return errorMessage(Keys.COPY_MODE_FAILED);
         }
+
+        public static MutableComponent screenStartPos() {
+            return errorMessage(Keys.COPY_MODE_SCREEN_START_POS);
+        }
+
+        public static MutableComponent screenEndPos() {
+            return errorMessage(Keys.COPY_MODE_SCREEN_END_POS);
+        }
     }
 
     /** 获取配置模式相关翻译 */
@@ -328,6 +403,181 @@ public class TranslateHelper {
 
         public static MutableComponent itemGroupName() {
             return translate(Keys.ITEM_GROUP_TAB);
+        }
+    }
+
+    /** P2P 树控件相关翻译 */
+    public static class P2PTree {
+        public static MutableComponent empty() {
+            return translate(Keys.P2P_TREE_EMPTY);
+        }
+
+        public static MutableComponent unknownP2P() {
+            return translate(Keys.P2P_TREE_UNKNOWN_P2P);
+        }
+
+        public static MutableComponent searchResults() {
+            return translate(Keys.P2P_TREE_SEARCH_RESULTS);
+        }
+
+        public static MutableComponent searchResultCount(int count) {
+            return translate(Keys.P2P_TREE_SEARCH_RESULT_COUNT, count);
+        }
+    }
+
+    /** 详情面板控件相关翻译 */
+    public static class DetailPanel {
+        public static MutableComponent placeholder() {
+            return translate(Keys.DETAIL_PANEL_PLACEHOLDER);
+        }
+
+        public static MutableComponent nameLabel() {
+            return translate(Keys.DETAIL_PANEL_NAME_LABEL);
+        }
+
+        public static MutableComponent frequencyLabel() {
+            return translate(Keys.DETAIL_PANEL_FREQUENCY_LABEL);
+        }
+
+        public static MutableComponent typeLabel() {
+            return translate(Keys.DETAIL_PANEL_TYPE_LABEL);
+        }
+
+        public static MutableComponent dimensionLabel() {
+            return translate(Keys.DETAIL_PANEL_DIMENSION_LABEL);
+        }
+
+        public static MutableComponent positionLabel() {
+            return translate(Keys.DETAIL_PANEL_POSITION_LABEL);
+        }
+
+        public static MutableComponent directionLabel() {
+            return translate(Keys.DETAIL_PANEL_DIRECTION_LABEL);
+        }
+
+        public static MutableComponent statusLabel() {
+            return translate(Keys.DETAIL_PANEL_STATUS_LABEL);
+        }
+
+        public static MutableComponent channelInfoLabel() {
+            return translate(Keys.DETAIL_PANEL_CHANNEL_INFO_LABEL);
+        }
+
+        public static MutableComponent p2pCountLabel() {
+            return translate(Keys.DETAIL_PANEL_P2P_COUNT_LABEL);
+        }
+
+        public static MutableComponent inputCountLabel() {
+            return translate(Keys.DETAIL_PANEL_INPUT_COUNT_LABEL);
+        }
+
+        public static MutableComponent outputCountLabel() {
+            return translate(Keys.DETAIL_PANEL_OUTPUT_COUNT_LABEL);
+        }
+
+        public static MutableComponent totalCountLabel() {
+            return translate(Keys.DETAIL_PANEL_TOTAL_COUNT_LABEL);
+        }
+
+        public static MutableComponent channelCountLabel() {
+            return translate(Keys.DETAIL_PANEL_CHANNEL_COUNT_LABEL);
+        }
+
+        public static MutableComponent inputNameLabel() {
+            return translate(Keys.DETAIL_PANEL_INPUT_NAME_LABEL);
+        }
+    }
+
+    /** 按钮标签相关翻译 */
+    public static class Button {
+        public static MutableComponent rename() {
+            return translate(Keys.BUTTON_RENAME);
+        }
+
+        public static MutableComponent select() {
+            return translate(Keys.BUTTON_SELECT);
+        }
+
+        public static MutableComponent highlight() {
+            return translate(Keys.BUTTON_HIGHLIGHT);
+        }
+
+        public static MutableComponent pendingBind() {
+            return translate(Keys.BUTTON_PENDING_BIND);
+        }
+
+        public static MutableComponent refresh() {
+            return translate(Keys.BUTTON_REFRESH);
+        }
+
+        public static MutableComponent cancel() {
+            return translate(Keys.BUTTON_CANCEL);
+        }
+
+        public static MutableComponent bind() {
+            return translate(Keys.BUTTON_BIND);
+        }
+
+        public static MutableComponent locate() {
+            return translate(Keys.BUTTON_LOCATE);
+        }
+
+        public static MutableComponent initP2P() {
+            return translate(Keys.BUTTON_INIT_P2P);
+        }
+
+        public static MutableComponent assignFreq() {
+            return translate(Keys.BUTTON_ASSIGN_FREQ);
+        }
+    }
+
+    /** 状态文本相关翻译 */
+    public static class Status {
+        public static MutableComponent notActive() {
+            return translate(Keys.STATUS_NOT_ACTIVE);
+        }
+
+        public static MutableComponent notConnected() {
+            return translate(Keys.STATUS_NOT_CONNECTED);
+        }
+
+        public static MutableComponent connected() {
+            return translate(Keys.STATUS_CONNECTED);
+        }
+
+        public static MutableComponent output() {
+            return translate(Keys.STATUS_OUTPUT);
+        }
+
+        public static MutableComponent input() {
+            return translate(Keys.STATUS_INPUT);
+        }
+
+        public static MutableComponent currentSelected() {
+            return translate(Keys.STATUS_CURRENT_SELECTED);
+        }
+    }
+
+    /** 聊天消息相关翻译 */
+    public static class Chat {
+        public static MutableComponent locationInfo(Object... args) {
+            return translate(Keys.CHAT_LOCATION_INFO, args);
+        }
+
+        public static MutableComponent clickToTeleport() {
+            return translate(Keys.CHAT_CLICK_TO_TELEPORT);
+        }
+
+        public static MutableComponent teleportHover(Object... args) {
+            return translate(Keys.CHAT_TELEPORT_HOVER, args);
+        }
+
+        public static MutableComponent freqHighlightHeader(Object... args) {
+            return translate(Keys.CHAT_FREQ_HIGHLIGHT_HEADER, args);
+        }
+
+        public static MutableComponent teleportButton() {
+            return translate(Keys.CHAT_TELEPORT_BUTTON);
         }
     }
 }
