@@ -1,6 +1,6 @@
 package com.suntide_20210418.advancedmemorycard.network;
 
-import com.suntide_20210418.advancedmemorycard.menu.CopyModeMenu;
+import com.suntide_20210418.advancedmemorycard.client.gui.menu.CopyModeMenu;
 import com.suntide_20210418.advancedmemorycard.utils.ResourceLocationHelper;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;

@@ -4,7 +4,7 @@ import appeng.api.parts.IPartHost;
 import appeng.api.parts.SelectedPart;
 import appeng.parts.p2p.P2PTunnelPart;
 import com.suntide_20210418.advancedmemorycard.AdvancedMemoryCardMod;
-import com.suntide_20210418.advancedmemorycard.menu.ConfigModeMenu;
+import com.suntide_20210418.advancedmemorycard.client.gui.menu.ConfigModeMenu;
 import com.suntide_20210418.advancedmemorycard.p2p.P2PManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
