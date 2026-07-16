@@ -10,6 +10,7 @@ import appeng.api.parts.IPartHost;
 import appeng.blockentity.AEBaseBlockEntity;
 import appeng.util.SettingsFrom;
 import com.suntide_20210418.advancedmemorycard.AdvancedMemoryCardMod;
+import com.suntide_20210418.advancedmemorycard.config.ModConfigs;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.component.DataComponentMap;
@@ -29,7 +30,6 @@ import net.minecraft.world.phys.HitResult;
 
 public class CopyMode extends CardMode {
 
-    private static final int MAX_VOLUME = 2048;
     private static final String START_POS = "start_pos";
     private static final String END_POS = "end_pos";
     private static final String IS_COPYING = "is_copying";
@@ -82,11 +82,11 @@ public class CopyMode extends CardMode {
     // 获取渲染颜色（可以根据不同状态调整）
     public int getSelectionColor() {
         if (isCopying) {
-            return 0x00FF00; // 绿色 - 准备粘贴状态
+            return ModConfigs.getClientConfig().copySelectionReady.get(); // 绿色 - 准备粘贴状态
         } else if (endPos == null && startPos != null) {
-            return 0xFFFFFF; // 白色 - 选择第二个点状态
+            return ModConfigs.getClientConfig().copySelectionSecond.get(); // 白色 - 选择第二个点状态
         } else {
-            return 0xFF0000; // 红色 - 选择第一个点状态
+            return ModConfigs.getClientConfig().copySelectionFirst.get(); // 红色 - 选择第一个点状态
         }
     }
 
@@ -96,6 +96,23 @@ public class CopyMode extends CardMode {
 
     public BlockPos getEndPos() {
         return endPos;
+    }
+
+    public void setEndPos(ItemStack stack, BlockPos endPos) {
+        this.endPos = endPos;
+        this.saveToStack(stack);
+    }
+
+    public void setStartPos(ItemStack stack, BlockPos startPos) {
+        this.startPos = startPos;
+        this.saveToStack(stack);
+    }
+
+    public void clearPos(ItemStack stack) {
+        startPos = null;
+        endPos = null;
+        isCopying = false;
+        this.saveToStack(stack);
     }
 
     @Override
@@ -171,9 +188,9 @@ public class CopyMode extends CardMode {
             endPos = clickedPos;
 
             long currentVolume = calculateVolume(startPos, endPos);
-            if (currentVolume > MAX_VOLUME) {
+            if (currentVolume > getMaxVolume()) {
                 if (player != null) {
-                    player.displayClientMessage(tooLarge(currentVolume, MAX_VOLUME), true);
+                    player.displayClientMessage(tooLarge(currentVolume, getMaxVolume()), true);
                 }
                 // 重置选择
                 this.startPos = null;
@@ -213,12 +230,12 @@ public class CopyMode extends CardMode {
     }
 
     @Override
-    protected Component getName() {
+    public Component getName() {
         return show();
     }
 
     @Override
-    protected Component getDescription() {
+    public Component getDescription() {
         if (startPos == null) {
             // 没有选择任何位置，显示Copy Mode
             return copyInfo();
@@ -236,7 +253,7 @@ public class CopyMode extends CardMode {
     }
 
     public static int getMaxVolume() {
-        return MAX_VOLUME;
+        return ModConfigs.getServerConfig().maxCopyVolume.get();
     }
 
     // 新增：检查模式是否有效的方法
