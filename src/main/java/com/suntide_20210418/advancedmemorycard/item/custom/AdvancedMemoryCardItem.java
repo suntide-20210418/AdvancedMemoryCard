@@ -8,6 +8,7 @@ import appeng.core.localization.Tooltips;
 import appeng.items.tools.MemoryCardItem;
 import appeng.menu.locator.ItemMenuHostLocator;
 import appeng.util.InteractionUtil;
+import com.suntide_20210418.advancedmemorycard.config.ModConfigs;
 import java.util.List;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -38,13 +39,17 @@ public class AdvancedMemoryCardItem extends MemoryCardItem implements IMenuItem 
 
     @Override
     public InteractionResult onItemUseFirst(ItemStack stack, UseOnContext context) {
-        // copying/special tool use
-        if (context.isSecondaryUseActive()) {
-            return InteractionResult.PASS;
-        }
-
+        CardMode cardMode = CardMode.of(stack);
         Level level = context.getLevel();
+
         if (!level.isClientSide()) {
+            if (context.isSecondaryUseActive()) {
+                if (cardMode instanceof CopyMode) {
+                    return InteractionResult.PASS;
+                } else {
+                    return InteractionResult.CONSUME;
+                }
+            }
             return CardMode.of(stack).onItemUseFirst(stack, context);
         }
 
@@ -56,15 +61,16 @@ public class AdvancedMemoryCardItem extends MemoryCardItem implements IMenuItem 
             Level level, Player player, InteractionHand hand) {
         ItemStack handStack = player.getItemInHand(hand);
         if (InteractionUtil.isInAlternateUseMode(player)) {
-            this.cycleMode(player, handStack, true);
+            this.cycleMode(player, handStack);
             return InteractionResultHolder.consume(handStack);
         } else {
             return CardMode.of(handStack).onItemUse(level, player, hand);
         }
     }
 
-    private void clearCard(Player player, Level level, InteractionHand hand) {
-        ItemStack stack = player.getItemInHand(hand);
+    public void clearCard(Player player, Level level) {
+        ItemStack stack = player.getItemInHand(InteractionHand.MAIN_HAND);
+
         IMemoryCard mem = (IMemoryCard) stack.getItem();
         mem.notifyUser(player, MemoryCardMessages.SETTINGS_CLEARED);
 
@@ -77,16 +83,21 @@ public class AdvancedMemoryCardItem extends MemoryCardItem implements IMenuItem 
                 stack.set(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
             }
         }
+        // 清除copy模式下的数据
+        CardMode cardMode = CopyMode.of(stack);
+        if (cardMode instanceof CopyMode copyMode){
+            copyMode.clearPos(stack);
+        }
     }
 
-    private void cycleMode(Player player, ItemStack cardStack, boolean cycleForward) {
-        CardMode nextMode = CardMode.cycleMode(CardMode.of(cardStack), cycleForward);
-        nextMode.save(cardStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag());
+    public void cycleMode(Player player, ItemStack cardStack) {
+        CardMode nextMode = CardMode.cycleMode(CardMode.of(cardStack), true);
+        // 1.21.1：模式数据存于 CUSTOM_DATA 组件，必须通过 saveToStack 写回物品栈才能持久化
+        nextMode.saveToStack(cardStack);
         if (player != null) {
             player.displayClientMessage(nextMode.getName(), true);
         }
     }
-
 
     @Override
     public void appendHoverText(
@@ -97,11 +108,11 @@ public class AdvancedMemoryCardItem extends MemoryCardItem implements IMenuItem 
 
     @Override
     public int getColor(ItemStack stack) {
-        return 0xFF0000;
+        return ModConfigs.getClientConfig().itemColor.get();
     }
 
     public static int getTintColor(ItemStack stack, int index) {
-        return 0xFFFFFF;
+        return ModConfigs.getClientConfig().itemTintColor.get();
     }
 
     @Override

@@ -1,0 +1,43 @@
+{
+  "$schema": "../schema.json",
+  "includes": ["common/common.json"],
+  "background": {
+    "texture": "guis/config_mode_menu.png",
+    "textureWidth": 512,
+    "textureHeight": 512,
+    "srcRect": [0, 0, 352, 282]
+  },
+  "text": {
+    "title": {
+      "position": { "left": 7, "top": 7 }
+    },
+    "info": {
+      "position": { "left": 7, "top": 269 }
+    }
+  },
+  "widgets": {
+    "search_field": {
+      "left": 7,
+      "top": 25,
+      "width": 120,
+      "height": 12
+    },
+    "p2p_tree": {
+      "left": 15,
+      "top": 53,
+      "width": 152,
+      "height": 200
+    },
+    "p2p_tree_scrollbar": {
+      "left": 169,
+      "top": 53,
+      "height": 200
+    },
+    "detail_panel": {
+      "left": 184,
+      "top": 53,
+      "width": 152,
+      "height": 210
+    }
+  }
+}

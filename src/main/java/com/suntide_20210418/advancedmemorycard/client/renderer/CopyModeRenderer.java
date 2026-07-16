@@ -4,6 +4,8 @@ import static com.suntide_20210418.advancedmemorycard.utils.AreaHelper.*;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.suntide_20210418.advancedmemorycard.AdvancedMemoryCardMod;
+import com.suntide_20210418.advancedmemorycard.config.ModConfigs;
 import com.suntide_20210418.advancedmemorycard.item.custom.AdvancedMemoryCardItem;
 import com.suntide_20210418.advancedmemorycard.item.custom.CardMode;
 import com.suntide_20210418.advancedmemorycard.item.custom.CopyMode;
@@ -15,10 +17,12 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 
-
+@EventBusSubscriber(modid = AdvancedMemoryCardMod.MOD_ID, value = Dist.CLIENT)
 public class CopyModeRenderer {
 
     @SubscribeEvent
@@ -79,14 +83,14 @@ public class CopyModeRenderer {
         float alpha = 1.0F;
 
         if (startPos != null) {
-            renderBlock(poseStack, startPos, 0xFF0000);
+            renderBlock(poseStack, startPos, ModConfigs.getClientConfig().copyColorStartPos.get());
         }
 
         if (endPos != null) {
-            renderBlock(poseStack, endPos, 0xFFFF00);
+            renderBlock(poseStack, endPos, ModConfigs.getClientConfig().copyColorEndPos.get());
         } else {
             if (targetedPos != null) {
-                renderBlock(poseStack, targetedPos, 0x00FF00);
+                renderBlock(poseStack, targetedPos, ModConfigs.getClientConfig().copyColorTargetedPos.get());
             }
         }
 
@@ -95,7 +99,7 @@ public class CopyModeRenderer {
                     poseStack, vertexConsumer, selectionBox, rgb[0], rgb[1], rgb[2], alpha);
         } else if (targetedBox != null) {
             if (calculateVolume(targetedBox) > CopyMode.getMaxVolume()) {
-                color = 0xFF0000;
+                color = ModConfigs.getClientConfig().copyColorOverLimit.get();
                 rgb = RGB(color);
             }
             LevelRenderer.renderLineBox(
