@@ -1,0 +1,138 @@
+// 构建脚本仓库与 ForgeGradle 3 类路径（1.12.2 固定使用 FG3，不能用 1.20.1 的 FG6）
+buildscript {
+    repositories {
+        maven { url = 'https://maven.aliyun.com/repository/public' }
+        maven { url = 'https://bmclapi2.bangbang93.com/maven' }
+        maven { url = 'https://maven.minecraftforge.net/' }
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'net.minecraftforge.gradle:ForgeGradle:3.+'
+    }
+}
+
+apply plugin: 'net.minecraftforge.gradle'
+apply plugin: 'eclipse'
+apply plugin: 'idea'        // 迁移自 1.20.1 分支
+apply plugin: 'maven-publish'
+
+// 模组元数据（来自 gradle.properties，迁移自 1.20.1 分支）
+group = mod_group_id
+version = mod_version
+archivesBaseName = mod_id
+
+// 1.12.2 需要 Java 8（1.20.1 的 Java 17 工具链不适用于 FG3）
+sourceCompatibility = targetCompatibility = compileJava.sourceCompatibility = compileJava.targetCompatibility = '1.8'
+
+minecraft {
+    // 1.12.2 使用 MCP snapshot 映射（Parchment 为 1.14+ 专属，此处不适用）
+    mappings channel: channel, version: mcp_version
+
+    // 应用访问转换器：暴露 PartP2PTunnel.setOutput 为 public（替代 1.20.1 的 Mixin）
+    accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
+
+    // 1.20.1 的 runs.configureEach / mods{} / copyIdeResources 为 FG5+ 语法，FG3 不支持，
+    // 故保留 1.12.2 原生的 runs 写法。
+    runs {
+        client {
+            workingDirectory project.file('run')
+
+            property 'forge.logging.markers', 'SCAN,REGISTRIES,REGISTRYDUMP'
+            property 'forge.logging.console.level', 'debug'
+        }
+
+        server {
+            property 'forge.logging.markers', 'SCAN,REGISTRIES,REGISTRYDUMP'
+            property 'forge.logging.console.level', 'debug'
+        }
+    }
+}
+
+// 仓库配置（迁移自 1.20.1 分支）
+// 注意：Gradle 4.9 不支持 repository content { includeGroup } 过滤，已省略该写法。
+repositories {
+    mavenLocal()
+    maven { url 'https://maven.aliyun.com/repository/public' }
+    maven {
+        url = 'https://bmclapi2.bangbang93.com/maven'
+    }
+    maven {
+        url = 'https://cursemaven.com'
+    }
+    maven {
+        url = 'https://api.modrinth.com/maven'
+    }
+    maven {
+        url = 'https://maven.blamejared.com'
+    }
+    maven {
+        name = 'ParchmentMC'
+        url = 'https://maven.parchmentmc.org'
+    }
+}
+
+dependencies {
+    minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+    implementation fg.deobf("curse.maven:ae2-extended-life-570458:6302098")
+    implementation "maven.modrinth:kr1RaEqy:pgcAdhbb"
+}
+
+// 资源文件令牌替换（适配 1.12.2 的 mcmod.info；对应 1.20.1 对 mods.toml/pack.mcmeta 的 expand）
+processResources {
+    inputs.property 'version', project.version
+    inputs.property 'mcversion', minecraft_version
+
+    from(sourceSets.main.resources.srcDirs) {
+        include 'mcmod.info'
+        expand(
+            version: project.version,
+            mcversion: minecraft_version,
+            mod_id: mod_id,
+            mod_name: mod_name,
+            mod_version: mod_version,
+            mod_authors: mod_authors,
+            mod_description: mod_description,
+            mod_license: mod_license
+        )
+    }
+    from(sourceSets.main.resources.srcDirs) {
+        exclude 'mcmod.info'
+    }
+}
+
+jar {
+    manifest {
+        attributes([
+            "Specification-Title"     : mod_id,
+            "Specification-Vendor"    : mod_authors,
+            "Specification-Version"   : "1", // We are version 1 of ourselves
+            "Implementation-Title"    : project.name,
+            "Implementation-Version"  : "${version}",
+            "Implementation-Vendor"   : mod_authors,
+            "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
+        ])
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+jar.finalizedBy('reobfJar')
+
+// 统一源码编码（迁移自 1.20.1 分支）
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifact jar
+        }
+    }
+    repositories {
+        maven {
+            url "file:///${project.projectDir}/mcmodsrepo"
+        }
+    }
+}
+
+sourceSets { main { output.resourcesDir = output.classesDir } }

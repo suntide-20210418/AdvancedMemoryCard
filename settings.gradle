@@ -1,0 +1,23 @@
+// 迁移自 1.20.1 分支的 settings.gradle
+// 注意：Gradle 4.9 不支持 foojay-resolver-convention（Java 17 工具链解析器），已省略。
+pluginManagement {
+    repositories {
+        maven { url = 'https://maven.aliyun.com/repository/public' }
+        maven {
+            name = 'BMCLAPI'
+            url = 'https://bmclapi2.bangbang93.com/maven'
+        }
+        maven {
+            name = 'MinecraftForge'
+            url = 'https://maven.minecraftforge.net/'
+        }
+        maven {
+            name = 'ParchmentMC'
+            url = 'https://maven.parchmentmc.org'
+        }
+        gradlePluginPortal()
+        mavenCentral()
+    }
+}
+
+rootProject.name = 'AdvancedMemoryCard'
