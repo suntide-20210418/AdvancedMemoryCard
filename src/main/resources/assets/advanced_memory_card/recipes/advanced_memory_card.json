@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    { "item": "appliedenergistics2:memory_card" },
+    { "item": "appliedenergistics2:material", "data": 22 },
+    { "item": "appliedenergistics2:material", "data": 23 },
+    { "item": "appliedenergistics2:material", "data": 24 }
+  ],
+  "result": {
+    "item": "advanced_memory_card:advanced_memory_card"
+  }
+}
