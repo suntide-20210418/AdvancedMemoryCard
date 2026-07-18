@@ -1,106 +1,127 @@
-# Example Forge Mod for Minecraft 1.7.10
+# Advanced Memory Card 高级内存卡
 
-[![](https://jitpack.io/v/GTNewHorizons/ExampleMod1.7.10.svg)](https://jitpack.io/#GTNewHorizons/ExampleMod1.7.10)
-[![](https://github.com/GTNewHorizons/ExampleMod1.7.10/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/GTNewHorizons/ExampleMod1.7.10/actions/workflows/build-and-test.yml)
+![Minecraft Version](https://img.shields.io/badge/Minecraft-1.20.1-blue)
+![Forge Version](https://img.shields.io/badge/Forge-47.4.10-orange)
+![Mod Version](https://img.shields.io/badge/Version-1.1.1-green)
+![License](https://img.shields.io/badge/License-GPL--3.0-green)
 
-An example mod for Minecraft 1.7.10 with Forge focussed on a stable, updatable setup.
+[简体中文](README.md) | **English**（见 [README_en.md](README_en.md)）
 
-<!-- omit in toc -->
-### Table of Contents
+一个 Applied Energistics 2（AE2）扩展模组，为 AE2 内存卡提供**批量复制**与**P2P 通道高级配置**两大增强功能。
 
-* [Example Forge Mod for Minecraft 1.7.10](#example-forge-mod-for-minecraft-1710)
-    * [Motivation](#motivation)
-    * [Help! I'm stuck!](#help-im-stuck)
-    * [Getting started](#getting-started)
-    * [Features](#features)
-    * [Files](#files)
-    * [Forge's Access Transformers](#forges-access-transformers)
-    * [Mixins](#mixins)
-    * [Advanced](#advanced)
-    * [Feedback wanted](#feedback-wanted)
+## 🌟 功能特性
 
+### 🔧 两种工作模式
 
-### Motivation
+模组在物品 NBT 中以「模式」形式存储状态，可随时切换：
 
-We had our fair share in struggles with build scripts for Minecraft Forge. There are quite a few pitfalls from non-obvious error messages. This Example Project provides you a build system you can adapt to over 90% of Minecraft Forge mods and can easily be updated if need be.
+| 模式 | 说明 |
+| --- | --- |
+| **复制模式（Copy Mode）** | 框选一个区域，将已复制的 AE2 设备配置一次性批量粘贴到区域内所有 AE2 方块与部件 |
+| **配置模式（P2P 通道 配置模式）** | 对着 P2P 隧道部件右键打开图形化界面，对网络内的 P2P 通道进行集中管理与配置 |
 
-### Help! I'm stuck!
+### 📋 复制模式（Copy Mode）
 
-We all have been there! Check out our [FAQ](https://github.com/GTNewHorizons/ExampleMod1.7.10/blob/main/docs/FAQ.md). If that doesn't help, please open an issue.
+- **区域批量复制**：先复制单个 AE2 设备的配置，再框选两个对角方块确定区域，对着空气右键即可把配置批量应用。
+- **支持 AE2 方块与部件**：区域内所有 `AEBaseBlockEntity`（如 ME 控制器、接口、存储总线等）以及 `IPartHost` 上的所有部件都会被处理。
+- **体积上限保护**：区域体积超过服务端配置 `maxCopyVolume`（默认 2048 个方块）时会被拒绝并提示，避免误选超大范围卡顿。
+- **可视化选择框**：框选过程用不同颜色实时提示状态（红色=选第一点 / 白色=选第二点 / 绿色=待粘贴），目标方块、超范围方块也有独立配色。
+- **实时状态提示**：物品 tooltip 与聊天栏会显示已标记坐标、区域大小、粘贴完成数量等信息。
 
-### Getting started
+### 🕸 配置模式（P2P 通道 配置模式）
 
-Creating mod from scratch:
-1. Unzip [project starter](https://github.com/GTNewHorizons/ExampleMod1.7.10/releases/download/master-packages/starter.zip) into project directory.
-2. Replace placeholders in LICENSE-template and rename it to LICENSE, or remove LICENSE-template and put any other license you like on your code. This is an permissive OSS project and we encourage you participate in OSS movement by having permissive license like one in template. You can find out pros and cons of OSS software in [this article](https://www.freecodecamp.org/news/what-is-great-about-developing-open-source-and-what-is-not/)
-3. Ensure your project is under VCS. For example initialise git repository by running `git init; git commit --message "initialized repository"`.
-4. Replace placeholders (edit values in gradle.properties, change example package and class names, etc.)
-5. Run `./gradlew setupDecompWorkspace`
-6. Run `./gradlew build`
-6. Make sure to check out the rest sections of this file.
-7. You are good to go!
+对着任意 **P2P 隧道部件**右键即可打开配置界面，对当前 AE 网络内的所有 P2P 设备进行可视化管理：
 
-We also have described guidelines for existing mod [migration](docs/migration.md) and [porting](docs/porting.md)
+- **P2P 树形列表**：自动扫描所在网络，按类型 / 频道分组展示所有 P2P 设备，支持展开折叠与搜索过滤。
+- **详情面板**：选中节点后展示该 P2P 的类型、频段、输入/输出状态、连接状态等信息。
+- **重命名 / 别名**：为单个 P2P 设备设置自定义名称，也可为整个频道（频段输入端）设置别名，便于识别。
+- **绑定频段**：将选中的 P2P 绑定到指定 4 位十六进制频段（如 `0A1B`）。非 ME P2P 会自动智能判断输入/输出端角色。
+- **分配新频道**：为当前选中的非 ME P2P 一键分配一个全新的空闲频段并设为输入端。
+- **自动配置输入/输出（仅 ME P2P）**：根据外部网络是否连接「ME 控制器」自动判定该 ME P2P 应作为输入端还是输出端，并自动分配频段。
+- **高亮定位**：在世界上高亮渲染 P2P 通道（自身 / 输入端 / 输出端使用不同颜色），可选自动转头面向目标，并在聊天栏发送位置与传送链接。
+- **跨维度连接**：修复了原版客户端只发送坐标导致跨维度 P2P 无法定位的问题，编码格式携带维度信息，可正确跨维度查找并高亮 P2P 设备。
 
-### Features
+### ⌨️ 模式切换
 
- - Updatable: Replace [`build.gradle`](https://github.com/GTNewHorizons/ExampleMod1.7.10/blob/main/build.gradle) with a newer version
- - Optional API artifact (.jar)
- - Optional version replacement in Java files
- - Optional shadowing of dependencies
- - Simplified setup of Mixin and example
- - Scala support (add sources under `src/main/scala/` instead of `src/main/java/`)
- - Optional named developer account for consistent player progression during testing
- - Boilerplate forge mod as starting point
- - Improved warnings for pitfalls
- - Git Tags integration for versioning
- - [Jitpack](https://jitpack.io) CI
- - GitHub CI:
-   - Releasing your artifacts on new tags pushed. Push git tag named after version (e.g. 1.0.0) which will trigger a release of artifacts with according names.
-   - Running smoke test for server startup. On any server crash occurring workflow will fail and print the crash log.
+- **`V` 键**（默认键位，可在游戏控制设置中修改）—— 手持高级内存卡时按下切换模式。
+- **Shift + 右键** —— 在两种模式间快速切换（复制模式下 Shift+右键为原生 AE2 复制行为，不触发切换）。
 
-### Files
- - [`build.gradle`](https://github.com/GTNewHorizons/ExampleMod1.7.10/blob/main/build.gradle): This is the core script of the build process. You should not need to tamper with it, unless you are trying to accomplish something out of the ordinary. __Do not touch this file! You will make a future update near impossible if you do so!__
- - [`gradle.properties`](https://github.com/GTNewHorizons/ExampleMod1.7.10/blob/main/gradle.properties): The core configuration file. It includes
- - [`dependencies.gradle[.kts]`](https://github.com/GTNewHorizons/ExampleMod1.7.10/blob/main/dependencies.gradle): Add your mod's dependencies in this file. This is separate from the main build script, so you may replace the [`build.gradle`](https://github.com/SinTh0r4s/ExampleMod1.7.10/blob/main/build.gradle) if an update is available.
- - [`repositories.gradle[.kts]`](https://github.com/GTNewHorizons/ExampleMod1.7.10/blob/main/repositories.gradle): Add your dependencies' repositories. This is separate from the main build script, so you may replace the [`build.gradle`](https://github.com/SinTh0r4s/ExampleMod1.7.10/blob/main/build.gradle) if an update is available.
- - `addon.gradle[.kts]`: Any additional build logic. This is separate from the main build script, so you may replace the [`build.gradle`](https://github.com/SinTh0r4s/ExampleMod1.7.10/blob/main/build.gradle) if an update is available. See [Advanced](#advanced) for more details.
- - [`jitpack.yml`](https://github.com/GTNewHorizons/ExampleMod1.7.10/blob/main/jitpack.yml): Ensures that your mod is available as import over [Jitpack](https://jitpack.io).
- - [`.github/workflows/gradle.yml`](https://github.com/GTNewHorizons/ExampleMod1.7.10/blob/main/.github/workflows/gradle.yml): A simple CI script that will build your mod any time it is pushed to `master` or `main` and publish the result as release in your repository. This feature is free with GitHub if your repository is public.
+## 📦 安装说明
 
-### Forge's Access Transformers
+### 前置要求
 
-You may activate Forge's Access Transformers by defining a configuration file in `gradle.properties`.
+| 依赖 | 版本要求 |
+| --- | --- |
+| Minecraft | 1.20.1 |
+| Forge | 47.4.10 或更高（loader 范围 `[47,)`） |
+| Applied Energistics 2 (AE2) | `15.4.10` 或更高（`[15.4.10,)`） |
 
-Check out the [`example-access-transformers`](https://github.com/GTNewHorizons/ExampleMod1.7.10/tree/example-access-transformers) branch for a working example!
+> 模组运行时尚依赖 Jade、Guideme、JEI（均为 AE2 生态常用附属，建议一并安装以获得最佳体验）。
 
-> [!WARNING]
-> Access Transformers are bugged and will deny you any sources for the decompiled Minecraft! Your development environment will still work, but you might face some inconveniences. For example, IntelliJ will not permit searches in dependencies without attached sources.
+### 安装步骤
 
-### Mixins
+1. 从发布页下载最新版本的 `advanced_memory_card-<版本>.jar`。
+2. 将 `.jar` 文件放入 Minecraft 的 `mods` 文件夹。
+3. 确保已安装上述前置模组。
+4. 启动游戏即可在创造模式物品栏「高级内存卡」分组中找到该物品。
 
-[Mixins](https://github.com/SpongePowered/Mixin) are used to modify vanilla or mod/library code during runtime without having to edit, recompile, and redistribute the original code. For example, mixins can change a hardcoded value, redirect a method call, inject additional code, access private fields/methods, make a class implement your interface, and more. Mixins are an advanced feature which most normal mods will not require.
+## 🛠 配置说明
 
-Documentation about Mixin features can be found here: [Mixin Wiki](https://github.com/SpongePowered/Mixin/wiki) and [MixinExtras Wiki](https://github.com/LlamaLad7/MixinExtras/wiki)
+模组提供客户端与服务端两套配置文件（位于 `config/` 目录）：
 
-There are many examples of mixins in these mods: [Hodgepodge](https://github.com/GTNewHorizons/Hodgepodge) and [Angelica](https://github.com/GTNewHorizons/Angelica)
+### 服务端配置（`advanced_memory_card-server.toml`）
 
-To enable Mixins in your project, follow one of the example commits:
-- use [normal mixins](https://github.com/GTNewHorizons/ExampleMod1.7.10/commit/beba55615fa8337b7639f0d5b18db6cc8d4826be) for basic and quick registration
-- use [GTNH IMixins](https://github.com/GTNewHorizons/ExampleMod1.7.10/commit/055cd4f18765a421a86c706f53b62116988297e3) (recommended) for the same thing as below, but in a less verbose and more unified manner using the IMixins api
-- use [GTNH Early/Late mixins](https://github.com/GTNewHorizons/ExampleMod1.7.10/commit/c4df59d92164775b69451f3e690239e93d1fc979) to have full control over the registration logic and check for presence of other mods during runtime to load your mixins
+| 配置项 | 默认值 | 说明 |
+| --- | --- | --- |
+| `maxCopyVolume` | `2048` | 复制模式允许的最大区域体积（方块数），超出则拒绝粘贴 |
+| `sendHighlightToChat` | `true` | 高亮 P2P 设备时是否在聊天栏发送位置信息与传送链接 |
 
-The extra required dependencies are handled automatically after mixins are enabled.
+### 客户端配置（`advanced_memory_card-client.toml`）
 
-### Advanced
+主要用于界面与渲染外观的个性化，可调整：
 
-If your project requires custom gradle commands you may add a `addon.gradle[.kts]` to your project. It will be added automatically to the build script. Although we recommend against it, it is sometimes required. When in doubt, feel free to ask us about it. You may break future updates of this build system!
-If you need access to properties modified later in the buildscript, you can also use a `addon.late.gradle[.kts]`.
-For local tweaks that you don't want to commit to Git, like adding extra JVM arguments for testing, use `addon[.late].local.gradle[.kts]`.
+- **高亮行为**：`rotateHeadOnHighlight`（高亮时自动转头）、`p2pHighlightDurationSec`（高亮持续时间，1–60 秒）。
+- **P2P 树控件**：背景 / 选中 / 悬停颜色，缩进、行高、图标间距、频道警告阈值、名称最大长度等。
+- **详情面板**：背景、标题、标签、值、状态（未激活 / 未连接 / 已连接）等颜色与布局尺寸。
+- **通用按钮（FlatButton）**：默认 / 悬停 / 按下 / 文字颜色。
+- **复制模式选择框**：起始点、结束点、目标点、超范围以及三种选择状态的颜色。
+- **P2P 高亮渲染**：自身 / 输入端 / 输出端三种颜色。
+- **物品颜色**：物品主色与着色色。
 
-### Feedback wanted
+> 所有颜色为十六进制数值（GUI 类为 ARGB，渲染类为 RGB），可直接在配置文件中修改。
 
-If you tried out this build script we would love to head your opinion! Is there any feature missing for you? Did something not work? Please open an issue and we will try to resolve it asap!
+## 📖 使用流程速览
 
-Happy modding,\
-[SinTh0r4s](https://github.com/SinTh0r4s), [TheElan](https://github.com/TheElan) and [basdxz](https://github.com/basdxz)
+### 复制模式
+
+1. 手持高级内存卡处于复制模式，对着源 AE2 设备 **Shift + 右键** 复制其配置。
+2. 对着第一个角落方块 **普通右键** 标记起点（红色）。
+3. 对着对角方块 **普通右键** 标记终点（白色），此时进入待粘贴状态（绿色）。
+4. 对着空气 **普通右键** 将配置批量应用到区域内所有 AE2 设备。
+
+### 配置模式
+
+1. 切换至配置模式，对着任意 P2P 隧道部件 **普通右键** 打开配置界面。
+2. 在左侧树中浏览 / 搜索网络内的 P2P，选中节点查看右侧详情。
+3. 通过详情面板按钮进行重命名、绑定频段、分配新频道、自动配置输入/输出、高亮定位等操作。
+
+## 🔧 开发构建（面向开发者）
+
+```bash
+# 客户端运行（开发环境）
+./gradlew runClient
+
+# 构建发布 jar
+./gradlew build
+
+# 生成数据包 / 语言文件
+./gradlew runData
+```
+
+- 基于 Forge Gradle 6.x，Java 17 工具链。
+- 使用 Mixin（`advanced_memory_card.mixins.json`）对 AE2 的 `P2PTunnelPart` 进行扩展。
+- 资源文件由 `src/main/java/.../datagen` 下的数据生成器产出至 `src/generated/resources/`。
+
+## 📄 许可
+
+本项目基于 [GNU GPL-3.0](LICENSE.txt) 许可证开源。
