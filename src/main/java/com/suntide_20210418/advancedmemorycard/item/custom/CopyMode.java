@@ -139,14 +139,8 @@ public class CopyMode extends CardMode {
         return AdvancedMemoryCardMod.MOD_ID + ":copy";
     }
 
-    public int getSelectionColor() {
-        if (isCopying) {
-            return ModConfigs.getClientConfig().copySelectionReady;
-        } else if (endPos == null && startPos != null) {
-            return ModConfigs.getClientConfig().copySelectionSecond;
-        } else {
-            return ModConfigs.getClientConfig().copySelectionFirst;
-        }
+    public boolean isCopying() {
+        return isCopying;
     }
 
     public BlockPos getTargetedBlockPos(EntityPlayer player) {

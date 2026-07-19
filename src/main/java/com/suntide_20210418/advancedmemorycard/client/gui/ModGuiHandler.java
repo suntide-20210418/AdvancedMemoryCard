@@ -2,8 +2,6 @@ package com.suntide_20210418.advancedmemorycard.client.gui;
 
 import com.suntide_20210418.advancedmemorycard.client.gui.menu.ConfigModeMenu;
 import com.suntide_20210418.advancedmemorycard.client.gui.menu.CopyModeMenu;
-import com.suntide_20210418.advancedmemorycard.client.gui.screen.ConfigModeScreen;
-import com.suntide_20210418.advancedmemorycard.client.gui.screen.CopyModeScreen;
 import com.suntide_20210418.advancedmemorycard.p2p.P2PManager;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.world.World;
@@ -36,13 +34,8 @@ public class ModGuiHandler implements IGuiHandler {
 
     @Override
     public Object getClientGuiElement(int ID, EntityPlayer player, World world, int x, int y, int z) {
-        if (ID == CONFIG_GUI_ID) {
-            ConfigModeMenu menu = new ConfigModeMenu(player.inventory, net.minecraft.util.EnumHand.values()[x]);
-            return new ConfigModeScreen(menu, player);
-        } else if (ID == COPY_GUI_ID) {
-            CopyModeMenu menu = new CopyModeMenu(player.inventory, net.minecraft.util.EnumHand.values()[x]);
-            return new CopyModeScreen(menu, player);
-        }
-        return null;
+        // 该方法仅由客户端调用，客户端 Screen 的创建委托给客户端专用的
+        // ClientGuiFactory，保证本类可在专用服务端安全加载。
+        return ClientGuiFactory.getClientGuiElement(ID, player, world, x, y, z);
     }
 }
