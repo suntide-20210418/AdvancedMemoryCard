@@ -1,8 +1,7 @@
-package com.suntide_20210418.advancedmemorycard.client.gui.menu;
+package com.suntide_20210418.advancedmemorycard.menu;
 
 import appeng.menu.AEBaseMenu;
 import appeng.menu.guisync.GuiSync;
-import com.suntide_20210418.advancedmemorycard.client.gui.ModMenu;
 import com.suntide_20210418.advancedmemorycard.item.custom.AdvancedMemoryCardItem;
 import com.suntide_20210418.advancedmemorycard.item.custom.CardMode;
 import com.suntide_20210418.advancedmemorycard.item.custom.CopyMode;
