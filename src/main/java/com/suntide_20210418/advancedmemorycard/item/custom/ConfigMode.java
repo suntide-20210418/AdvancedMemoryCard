@@ -10,7 +10,7 @@ import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
 
 import com.suntide_20210418.advancedmemorycard.AdvancedMemoryCardMod;
-import com.suntide_20210418.advancedmemorycard.client.gui.ModGuiHandler;
+import com.suntide_20210418.advancedmemorycard.CommonProxy;
 import com.suntide_20210418.advancedmemorycard.p2p.P2PManager;
 
 import appeng.api.parts.IPartHost;
@@ -38,8 +38,8 @@ public class ConfigMode extends CardMode {
                 if (selectedPart.part instanceof PartP2PTunnel) {
                     PartP2PTunnel hitP2P = (PartP2PTunnel) selectedPart.part;
                     currentP2PManager = new P2PManager(hitP2P, player);
-                    ModGuiHandler.putPendingManager(player, currentP2PManager);
-                    player.openGui(AdvancedMemoryCardMod.INSTANCE, ModGuiHandler.CONFIG_GUI_ID, world, 0, 0, 0);
+                    CommonProxy.putPendingManager(player, currentP2PManager);
+                    player.openGui(AdvancedMemoryCardMod.INSTANCE, AdvancedMemoryCardMod.CONFIG_GUI_ID, world, 0, 0, 0);
                     return true;
                 }
             }
