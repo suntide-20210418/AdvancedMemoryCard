@@ -15,6 +15,8 @@ import com.suntide_20210418.advancedmemorycard.mixin.P2PTunnelPartMixin;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.fml.DistExecutor;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -342,16 +344,19 @@ public class P2PManager {
 
     public void renderP2P(P2PTunnelPart<?> p2pPart) {
         if (p2pPart == null) return;
-        P2PRenderer p2pRenderer = P2PRenderer.getInstance();
-        p2pRenderer.clearAllRenders();
-        p2pRenderer.triggerRender(p2pPart, ModConfigs.getClientConfig().highlightColorSelf.get());
-        if (p2pPart.getInput() != null) {
-            p2pRenderer.triggerRender(p2pPart.getInput(), ModConfigs.getClientConfig().highlightColorInput.get());
-        }
-        for (P2PTunnelPart<?> output : p2pPart.getOutputs()) {
-            if (output == p2pPart || output == null) continue;
-            p2pRenderer.triggerRender(output, ModConfigs.getClientConfig().highlightColorOutput.get());
-        }
+        // 渲染属于客户端行为，专用服务器上无客户端类，必须仅在物理客户端执行
+        DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {
+            P2PRenderer p2pRenderer = P2PRenderer.getInstance();
+            p2pRenderer.clearAllRenders();
+            p2pRenderer.triggerRender(p2pPart, ModConfigs.getClientConfig().highlightColorSelf.get());
+            if (p2pPart.getInput() != null) {
+                p2pRenderer.triggerRender(p2pPart.getInput(), ModConfigs.getClientConfig().highlightColorInput.get());
+            }
+            for (P2PTunnelPart<?> output : p2pPart.getOutputs()) {
+                if (output == p2pPart || output == null) continue;
+                p2pRenderer.triggerRender(output, ModConfigs.getClientConfig().highlightColorOutput.get());
+            }
+        });
     }
 
     public void renderP2P(String frequencyHex){
@@ -361,13 +366,16 @@ public class P2PManager {
         P2PService currentP2PService = P2PService.get(currentGrid);
         if (currentP2PService == null) return;
 
-        P2PRenderer p2pRenderer = P2PRenderer.getInstance();
-        p2pRenderer.clearAllRenders();
-        short freq = (short) Integer.parseInt(frequencyHex, 16);
-        P2PTunnelPart<?> input = currentP2PService.getInput(freq);
-        if (input == null) return;
-        p2pRenderer.triggerRender(input, ModConfigs.getClientConfig().highlightColorInput.get());
-        input.getOutputs().forEach(output -> p2pRenderer.triggerRender(output, ModConfigs.getClientConfig().highlightColorOutput.get()));
+        // 渲染属于客户端行为，专用服务器上无客户端类，必须仅在物理客户端执行
+        DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {
+            P2PRenderer p2pRenderer = P2PRenderer.getInstance();
+            p2pRenderer.clearAllRenders();
+            short freq = (short) Integer.parseInt(frequencyHex, 16);
+            P2PTunnelPart<?> input = currentP2PService.getInput(freq);
+            if (input == null) return;
+            p2pRenderer.triggerRender(input, ModConfigs.getClientConfig().highlightColorInput.get());
+            input.getOutputs().forEach(output -> p2pRenderer.triggerRender(output, ModConfigs.getClientConfig().highlightColorOutput.get()));
+        });
     }
 
     /**
