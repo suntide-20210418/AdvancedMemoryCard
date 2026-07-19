@@ -1,4 +1,4 @@
-package com.suntide_20210418.advancedmemorycard.client.gui.menu;
+package com.suntide_20210418.advancedmemorycard.menu;
 
 import appeng.api.parts.IPart;
 import appeng.api.parts.IPartHost;
@@ -6,7 +6,6 @@ import appeng.menu.AEBaseMenu;
 import appeng.menu.guisync.GuiSync;
 import appeng.parts.p2p.MEP2PTunnelPart;
 import appeng.parts.p2p.P2PTunnelPart;
-import com.suntide_20210418.advancedmemorycard.client.gui.ModMenu;
 import com.suntide_20210418.advancedmemorycard.config.ModConfigs;
 import com.suntide_20210418.advancedmemorycard.item.custom.CardMode;
 import com.suntide_20210418.advancedmemorycard.network.ConfigModeSyncPacket;
@@ -450,8 +449,6 @@ public class ConfigModeMenu extends AEBaseMenu {
     }
 
     private void highlightP2P(P2PTunnelPart<?> p2pPart) {
-        p2pManager.renderP2P(p2pPart);
-
         // 根据服务端配置决定是否在聊天栏输出 P2P 位置信息及传送链接
         if (!ModConfigs.getServerConfig().sendHighlightToChat.get()) {
             return;
@@ -484,8 +481,6 @@ public class ConfigModeMenu extends AEBaseMenu {
     }
 
     private void highlightP2PTunnel(String frequencyHex) {
-        p2pManager.renderP2P(frequencyHex);
-
         // 根据服务端配置决定是否在聊天栏输出该频段下所有输入端 P2P 的位置信息及传送链接
         if (!ModConfigs.getServerConfig().sendHighlightToChat.get()) {
             return;

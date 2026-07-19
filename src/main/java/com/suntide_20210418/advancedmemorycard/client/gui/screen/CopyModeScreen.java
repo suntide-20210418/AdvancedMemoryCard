@@ -4,7 +4,7 @@ import appeng.client.gui.AEBaseScreen;
 import appeng.client.gui.Icon;
 import appeng.client.gui.style.ScreenStyle;
 import appeng.client.gui.widgets.IconButton;
-import com.suntide_20210418.advancedmemorycard.client.gui.menu.CopyModeMenu;
+import com.suntide_20210418.advancedmemorycard.menu.CopyModeMenu;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.Tooltip;
