@@ -1,22 +1,25 @@
 package com.suntide_20210418.advancedmemorycard.client.renderer;
 
-import com.suntide_20210418.advancedmemorycard.config.ModConfigs;
-import com.suntide_20210418.advancedmemorycard.item.custom.CardMode;
-import com.suntide_20210418.advancedmemorycard.item.custom.CopyMode;
+import static com.suntide_20210418.advancedmemorycard.utils.AreaHelper.*;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.AxisAlignedBB;
-import com.suntide_20210418.advancedmemorycard.utils.BlockPos;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
+
+import org.lwjgl.opengl.GL11;
+
+import com.suntide_20210418.advancedmemorycard.config.ModConfigs;
+import com.suntide_20210418.advancedmemorycard.item.custom.CardMode;
+import com.suntide_20210418.advancedmemorycard.item.custom.CopyMode;
+import com.suntide_20210418.advancedmemorycard.utils.BlockPos;
+
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
-import org.lwjgl.opengl.GL11;
-
-import static com.suntide_20210418.advancedmemorycard.utils.AreaHelper.*;
 
 @SideOnly(Side.CLIENT)
 public class CopyModeRenderer {
@@ -37,7 +40,7 @@ public class CopyModeRenderer {
 
     private static CopyMode getCopyModeFromStack(ItemStack stack) {
         if (stack != null
-                && stack.getItem() instanceof com.suntide_20210418.advancedmemorycard.item.custom.AdvancedMemoryCardItem) {
+            && stack.getItem() instanceof com.suntide_20210418.advancedmemorycard.item.custom.AdvancedMemoryCardItem) {
             CardMode mode = CardMode.of(stack);
             return mode instanceof CopyMode ? (CopyMode) mode : null;
         }
@@ -109,8 +112,12 @@ public class CopyModeRenderer {
     private static void renderBlock(Tessellator tessellator, BlockPos blockPos, int color) {
         float[] rgb = RGB(color);
         AxisAlignedBB cornerBox = AxisAlignedBB.getBoundingBox(
-                blockPos.getX(), blockPos.getY(), blockPos.getZ(),
-                blockPos.getX() + 1, blockPos.getY() + 1, blockPos.getZ() + 1);
+            blockPos.getX(),
+            blockPos.getY(),
+            blockPos.getZ(),
+            blockPos.getX() + 1,
+            blockPos.getY() + 1,
+            blockPos.getZ() + 1);
         drawBox(tessellator, cornerBox, rgb[0], rgb[1], rgb[2]);
     }
 
@@ -133,8 +140,8 @@ public class CopyModeRenderer {
         line(tessellator, minX, minY, maxZ, minX, maxY, maxZ);
     }
 
-    private static void line(Tessellator tessellator, double x1, double y1, double z1,
-                             double x2, double y2, double z2) {
+    private static void line(Tessellator tessellator, double x1, double y1, double z1, double x2, double y2,
+        double z2) {
         tessellator.addVertex(x1, y1, z1);
         tessellator.addVertex(x2, y2, z2);
     }

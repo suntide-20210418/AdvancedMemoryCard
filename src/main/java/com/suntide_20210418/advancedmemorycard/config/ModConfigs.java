@@ -1,12 +1,15 @@
 package com.suntide_20210418.advancedmemorycard.config;
 
-import com.suntide_20210418.advancedmemorycard.AdvancedMemoryCardMod;
-import net.minecraftforge.common.config.Configuration;
-import cpw.mods.fml.common.event.FMLPreInitializationEvent;
-
 import java.io.File;
 
+import net.minecraftforge.common.config.Configuration;
+
+import com.suntide_20210418.advancedmemorycard.AdvancedMemoryCardMod;
+
+import cpw.mods.fml.common.event.FMLPreInitializationEvent;
+
 public class ModConfigs {
+
     private static ClientConfig clientConfig;
     private static ServerConfig serverConfig;
 

@@ -1,12 +1,13 @@
 package com.suntide_20210418.advancedmemorycard.network;
 
+import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.inventory.Container;
+
 import cpw.mods.fml.common.network.ByteBufUtils;
 import cpw.mods.fml.common.network.simpleimpl.IMessage;
 import cpw.mods.fml.common.network.simpleimpl.IMessageHandler;
 import cpw.mods.fml.common.network.simpleimpl.MessageContext;
 import io.netty.buffer.ByteBuf;
-import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.inventory.Container;
 
 /**
  * 客户端 -> 服务端：配置模式 GUI 中的各种操作（绑定频段、改名、高亮、刷新、自动配置等）。
@@ -16,14 +17,14 @@ public class ConfigModeActionPacket implements IMessage {
 
     // 客户端容器实现此接口以接收操作分发
     public interface IActionMenu {
+
         void handleAction(String action, String param);
     }
 
     private String action;
     private String param;
 
-    public ConfigModeActionPacket() {
-    }
+    public ConfigModeActionPacket() {}
 
     public ConfigModeActionPacket(String action) {
         this(action, null);
@@ -58,6 +59,7 @@ public class ConfigModeActionPacket implements IMessage {
     }
 
     public static class Handler implements IMessageHandler<ConfigModeActionPacket, IMessage> {
+
         @Override
         public IMessage onMessage(ConfigModeActionPacket msg, MessageContext ctx) {
             EntityPlayerMP player = ctx.getServerHandler().playerEntity;

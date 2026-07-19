@@ -1,9 +1,9 @@
 package com.suntide_20210418.advancedmemorycard.utils;
 
 import net.minecraft.util.AxisAlignedBB;
-import com.suntide_20210418.advancedmemorycard.utils.BlockPos;
 
 public class AreaHelper {
+
     public static AxisAlignedBB createAABB(BlockPos startPos, BlockPos endPos) {
         if (startPos != null && endPos != null) {
             double minX = Math.min(startPos.getX(), endPos.getX());

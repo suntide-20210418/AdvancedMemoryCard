@@ -1,27 +1,31 @@
 package com.suntide_20210418.advancedmemorycard.client.renderer;
 
-import appeng.parts.BusCollisionHelper;
-import appeng.parts.p2p.PartP2PTunnel;
-import com.suntide_20210418.advancedmemorycard.config.ModConfigs;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.Tessellator;
-import net.minecraft.entity.Entity;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.AxisAlignedBB;
-import com.suntide_20210418.advancedmemorycard.utils.BlockPos;
-import net.minecraftforge.client.event.RenderWorldLastEvent;
-import cpw.mods.fml.common.eventhandler.SubscribeEvent;
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
-import org.lwjgl.opengl.GL11;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
 
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.Tessellator;
+import net.minecraft.entity.Entity;
+import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.AxisAlignedBB;
+import net.minecraftforge.client.event.RenderWorldLastEvent;
+
+import org.lwjgl.opengl.GL11;
+
+import com.suntide_20210418.advancedmemorycard.config.ModConfigs;
+import com.suntide_20210418.advancedmemorycard.utils.BlockPos;
+
+import appeng.parts.BusCollisionHelper;
+import appeng.parts.p2p.PartP2PTunnel;
+import cpw.mods.fml.common.eventhandler.SubscribeEvent;
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
+
 @SideOnly(Side.CLIENT)
 public class P2PRenderer {
+
     // 存储每个 P2P 部件的渲染开始时间和持续时间
     private final Map<PartP2PTunnel, RenderInfo> renderTimes = new WeakHashMap<>();
 
@@ -35,6 +39,7 @@ public class P2PRenderer {
      * 渲染信息内部类
      */
     private static class RenderInfo {
+
         final long startTime;
         final long duration;
         final int color;
@@ -183,8 +188,7 @@ public class P2PRenderer {
         line(tessellator, minX, minY, maxZ, minX, maxY, maxZ);
     }
 
-    private void line(Tessellator tessellator, double x1, double y1, double z1,
-                      double x2, double y2, double z2) {
+    private void line(Tessellator tessellator, double x1, double y1, double z1, double x2, double y2, double z2) {
         tessellator.addVertex(x1, y1, z1);
         tessellator.addVertex(x2, y2, z2);
     }

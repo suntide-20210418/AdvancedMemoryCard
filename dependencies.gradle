@@ -1,4 +1,4 @@
 dependencies {
     runtimeOnlyNonPublishable("com.github.GTNewHorizons:NotEnoughItems:2.8.114-GTNH:dev")
-    implementation("com.github.GTNewHorizons:Applied-Energistics-2-Unofficial:rv3-beta-1012-GTNH:dev")
+    implementation("com.github.GTNewHorizons:Applied-Energistics-2-Unofficial:rv3-beta-1000-GTNH:dev")
 }

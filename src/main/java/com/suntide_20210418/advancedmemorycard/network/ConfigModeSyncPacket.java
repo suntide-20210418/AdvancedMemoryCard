@@ -1,39 +1,39 @@
 package com.suntide_20210418.advancedmemorycard.network;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+
+import net.minecraftforge.common.util.ForgeDirection;
+
 import com.suntide_20210418.advancedmemorycard.p2p.ChannelInfo;
 import com.suntide_20210418.advancedmemorycard.p2p.P2PInfo;
-import com.suntide_20210418.advancedmemorycard.p2p.P2PTypeInfo;
 import com.suntide_20210418.advancedmemorycard.p2p.P2PPosition;
+import com.suntide_20210418.advancedmemorycard.p2p.P2PTypeInfo;
+import com.suntide_20210418.advancedmemorycard.utils.BlockPos;
+
+import cpw.mods.fml.common.network.ByteBufUtils;
 import cpw.mods.fml.common.network.simpleimpl.IMessage;
 import cpw.mods.fml.common.network.simpleimpl.IMessageHandler;
 import cpw.mods.fml.common.network.simpleimpl.MessageContext;
 import io.netty.buffer.ByteBuf;
-import com.suntide_20210418.advancedmemorycard.utils.BlockPos;
-import net.minecraftforge.common.util.ForgeDirection;
-import cpw.mods.fml.common.network.ByteBufUtils;
-
-import java.util.ArrayList;
-import java.util.HashMap;
 
 /**
  * 服务端 -> 客户端：同步 P2P 网络数据到配置模式 GUI 的本地缓存。
  * 本类（含 Handler）不引用任何客户端类，因此可在专用服务端安全加载。
  */
 public class ConfigModeSyncPacket implements IMessage {
+
     private HashMap<String, String> p2pFrequencyAndAlias;
     private HashMap<P2PPosition, String> p2pDevicesMap;
     private HashMap<P2PPosition, P2PInfo> p2pInfoMap;
     private HashMap<String, ChannelInfo> channelInfoMap;
     private HashMap<String, P2PTypeInfo> p2pTypeInfoMap;
 
-    public ConfigModeSyncPacket() {
-    }
+    public ConfigModeSyncPacket() {}
 
     public ConfigModeSyncPacket(HashMap<String, String> p2pFrequencyAndAlias,
-            HashMap<P2PPosition, String> p2pDevicesMap,
-            HashMap<P2PPosition, P2PInfo> p2pInfoMap,
-            HashMap<String, ChannelInfo> channelInfoMap,
-            HashMap<String, P2PTypeInfo> p2pTypeInfoMap) {
+        HashMap<P2PPosition, String> p2pDevicesMap, HashMap<P2PPosition, P2PInfo> p2pInfoMap,
+        HashMap<String, ChannelInfo> channelInfoMap, HashMap<String, P2PTypeInfo> p2pTypeInfoMap) {
         this.p2pFrequencyAndAlias = p2pFrequencyAndAlias;
         this.p2pDevicesMap = p2pDevicesMap;
         this.p2pInfoMap = p2pInfoMap;
@@ -217,8 +217,21 @@ public class ConfigModeSyncPacket implements IMessage {
         int dimensionId = buf.readInt();
         BlockPos position = new BlockPos(buf.readInt(), buf.readInt(), buf.readInt());
         ForgeDirection direction = ForgeDirection.values()[buf.readByte()];
-        return new P2PInfo(isActive, isOutput, isConnected, isMEP2P, isPendingBind, channel, maxChannel,
-                frequency, name, p2pType, dimension, dimensionId, position, direction);
+        return new P2PInfo(
+            isActive,
+            isOutput,
+            isConnected,
+            isMEP2P,
+            isPendingBind,
+            channel,
+            maxChannel,
+            frequency,
+            name,
+            p2pType,
+            dimension,
+            dimensionId,
+            position,
+            direction);
     }
 
     private static void writeChannelInfo(ByteBuf buf, ChannelInfo info) {
@@ -281,6 +294,7 @@ public class ConfigModeSyncPacket implements IMessage {
     }
 
     public static class Handler implements IMessageHandler<ConfigModeSyncPacket, IMessage> {
+
         @Override
         public IMessage onMessage(ConfigModeSyncPacket msg, MessageContext ctx) {
             // 仅入队，由客户端 ConfigModeMenu 在每 tick 抽取，避免在处理线程中触碰客户端类

@@ -1,7 +1,8 @@
 package com.suntide_20210418.advancedmemorycard.utils;
 
-import com.suntide_20210418.advancedmemorycard.AdvancedMemoryCardMod;
 import net.minecraft.util.ResourceLocation;
+
+import com.suntide_20210418.advancedmemorycard.AdvancedMemoryCardMod;
 
 public class ResourceLocationHelper {
 

@@ -1,11 +1,13 @@
 package com.suntide_20210418.advancedmemorycard.p2p;
 
-import com.suntide_20210418.advancedmemorycard.utils.BlockPos;
-import net.minecraftforge.common.util.ForgeDirection;
-
 import java.util.Objects;
 
+import net.minecraftforge.common.util.ForgeDirection;
+
+import com.suntide_20210418.advancedmemorycard.utils.BlockPos;
+
 public class P2PPosition {
+
     public final BlockPos position;
     public final ForgeDirection direction;
     public final String dimension;
@@ -16,9 +18,17 @@ public class P2PPosition {
         this.dimension = dimension;
     }
 
-    public BlockPos position() { return position; }
-    public ForgeDirection direction() { return direction; }
-    public String dimension() { return dimension; }
+    public BlockPos position() {
+        return position;
+    }
+
+    public ForgeDirection direction() {
+        return direction;
+    }
+
+    public String dimension() {
+        return dimension;
+    }
 
     @Override
     public boolean equals(Object o) {

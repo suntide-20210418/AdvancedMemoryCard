@@ -1,15 +1,16 @@
 package com.suntide_20210418.advancedmemorycard.command;
 
-import com.suntide_20210418.advancedmemorycard.utils.DimensionHelper;
-import com.suntide_20210418.advancedmemorycard.utils.TranslateHelper;
+import java.util.Collections;
+import java.util.List;
+
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.EnumChatFormatting;
 
-import java.util.Collections;
-import java.util.List;
+import com.suntide_20210418.advancedmemorycard.utils.DimensionHelper;
+import com.suntide_20210418.advancedmemorycard.utils.TranslateHelper;
 
 /**
  * 服务端指令：将执行者传送至指定维度与坐标。
@@ -40,7 +41,8 @@ public class TeleportCommand extends CommandBase {
             return;
         }
         if (!(sender instanceof EntityPlayerMP)) {
-            sender.addChatMessage(new ChatComponentText(EnumChatFormatting.RED + TranslateHelper.Chat.teleportOnlyPlayer()));
+            sender.addChatMessage(
+                new ChatComponentText(EnumChatFormatting.RED + TranslateHelper.Chat.teleportOnlyPlayer()));
             return;
         }
 
@@ -52,14 +54,15 @@ public class TeleportCommand extends CommandBase {
 
         // 跨维度传送：1.7.10 通过 ServerConfigurationManager 移动同一玩家实体，无需替换引用。
         if (player.dimension != targetDim) {
-            player.mcServer.getConfigurationManager().transferPlayerToDimension(player, targetDim);
+            player.mcServer.getConfigurationManager()
+                .transferPlayerToDimension(player, targetDim);
         }
 
         player.setPositionAndUpdate(x, y, z);
         String dimName = DimensionHelper.getDimensionName(targetDim);
         String coords = x + ", " + y + ", " + z;
-        player.addChatMessage(new ChatComponentText(
-                EnumChatFormatting.GREEN + TranslateHelper.Chat.teleportSuccess(dimName, coords)));
+        player.addChatMessage(
+            new ChatComponentText(EnumChatFormatting.GREEN + TranslateHelper.Chat.teleportSuccess(dimName, coords)));
     }
 
     @Override

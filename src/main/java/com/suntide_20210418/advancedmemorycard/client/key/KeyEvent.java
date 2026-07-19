@@ -1,12 +1,14 @@
 package com.suntide_20210418.advancedmemorycard.client.key;
 
+import net.minecraft.client.Minecraft;
+import net.minecraft.item.ItemStack;
+
 import com.suntide_20210418.advancedmemorycard.item.ModItems;
 import com.suntide_20210418.advancedmemorycard.network.ModeSwitchPacket;
 import com.suntide_20210418.advancedmemorycard.network.NetworkHandler;
-import net.minecraft.client.Minecraft;
-import net.minecraft.item.ItemStack;
-import cpw.mods.fml.common.gameevent.InputEvent;
+
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
+import cpw.mods.fml.common.gameevent.InputEvent;
 
 /**
  * 客户端按键事件处理。以实例形式注册到 EVENT_BUS（1.7.10 无 @Mod.EventBusSubscriber）。

@@ -1,20 +1,23 @@
 package com.suntide_20210418.advancedmemorycard.client.gui;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.item.ItemStack;
+import net.minecraft.world.World;
+
 import com.suntide_20210418.advancedmemorycard.client.gui.menu.ConfigModeMenu;
 import com.suntide_20210418.advancedmemorycard.client.gui.menu.CopyModeMenu;
 import com.suntide_20210418.advancedmemorycard.client.gui.screen.ConfigModeScreen;
 import com.suntide_20210418.advancedmemorycard.client.gui.screen.CopyModeScreen;
 import com.suntide_20210418.advancedmemorycard.p2p.P2PManager;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.item.ItemStack;
-import net.minecraft.world.World;
+
 import cpw.mods.fml.common.network.IGuiHandler;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-
 public class ModGuiHandler implements IGuiHandler {
+
     public static final int CONFIG_GUI_ID = 0;
     public static final int COPY_GUI_ID = 1;
 

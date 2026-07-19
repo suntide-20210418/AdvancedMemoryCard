@@ -1,5 +1,13 @@
 package com.suntide_20210418.advancedmemorycard.client.gui.screen;
 
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Gui;
+import net.minecraft.client.gui.GuiTextField;
+import net.minecraft.client.gui.inventory.GuiContainer;
+import net.minecraft.entity.player.EntityPlayer;
+
+import org.lwjgl.input.Mouse;
+
 import com.suntide_20210418.advancedmemorycard.client.gui.menu.ConfigModeMenu;
 import com.suntide_20210418.advancedmemorycard.client.gui.widgets.DetailPanelWidget;
 import com.suntide_20210418.advancedmemorycard.client.gui.widgets.P2PTreeWidget;
@@ -9,16 +17,11 @@ import com.suntide_20210418.advancedmemorycard.network.NetworkHandler;
 import com.suntide_20210418.advancedmemorycard.p2p.NodeType;
 import com.suntide_20210418.advancedmemorycard.p2p.P2PInfo;
 import com.suntide_20210418.advancedmemorycard.p2p.TreeNode;
-import com.suntide_20210418.advancedmemorycard.utils.TranslateHelper;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.GuiTextField;
-import net.minecraft.client.gui.inventory.GuiContainer;
-import net.minecraft.entity.player.EntityPlayer;
 import com.suntide_20210418.advancedmemorycard.utils.BlockPos;
+import com.suntide_20210418.advancedmemorycard.utils.TranslateHelper;
+
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
-import org.lwjgl.input.Mouse;
 
 @SideOnly(Side.CLIENT)
 public class ConfigModeScreen extends GuiContainer {
@@ -48,11 +51,18 @@ public class ConfigModeScreen extends GuiContainer {
     }
 
     private static String encodeP2PPosition(P2PInfo p2pInfo) {
-        return p2pInfo.position().getX() + "|"
-                + p2pInfo.position().getY() + "|"
-                + p2pInfo.position().getZ() + "|"
-                + p2pInfo.direction().ordinal() + "|"
-                + p2pInfo.dimensionId();
+        return p2pInfo.position()
+            .getX() + "|"
+            + p2pInfo.position()
+                .getY()
+            + "|"
+            + p2pInfo.position()
+                .getZ()
+            + "|"
+            + p2pInfo.direction()
+                .ordinal()
+            + "|"
+            + p2pInfo.dimensionId();
     }
 
     @Override
@@ -80,19 +90,67 @@ public class ConfigModeScreen extends GuiContainer {
         int detailW = xSize - 182;
         detailPanel = new DetailPanelWidget(detailX, treeY, detailW, treeH);
         detailPanel.setActionCallback(new DetailPanelWidget.ActionCallback() {
-            @Override public void onRename(P2PInfo p2pInfo, String newName) {
-                if (!newName.isEmpty()) { actionSetP2PAlias(p2pInfo, newName); resetUpdateCooldown(); }
+
+            @Override
+            public void onRename(P2PInfo p2pInfo, String newName) {
+                if (!newName.isEmpty()) {
+                    actionSetP2PAlias(p2pInfo, newName);
+                    resetUpdateCooldown();
+                }
             }
-            @Override public void onBind(P2PInfo p2pInfo) { actionBindFrequency(p2pInfo.frequency()); }
-            @Override public void onSelect(P2PInfo p2pInfo) { actionSetPendingBind(p2pInfo); }
-            @Override public void onHighlight(P2PInfo p2pInfo) { actionHighlightP2P(p2pInfo); if (ModConfigs.getClientConfig().rotateHeadOnHighlight) rotatePlayerTowardsP2P(p2pInfo); }
-            @Override public void onLocate(P2PInfo p2pInfo) { navigateToP2P(p2pInfo); }
-            @Override public void onAutoAssign() { actionAutoConfigIO(); }
-            @Override public void onAssignFreq(P2PInfo p2pInfo) { actionAssignFreq(); }
-            @Override public void onChannelRename(String frequency, String newAlias) { actionSetChannelAlias(frequency, newAlias); resetUpdateCooldown(); }
-            @Override public void onChannelBind(String frequency) { actionBindFrequency(frequency); }
-            @Override public void onChannelHighlight(String frequency) { actionHighlightP2PTunnel(frequency); }
-            @Override public void onRefresh() { actionRefreshP2P(); resetUpdateCooldown(); }
+
+            @Override
+            public void onBind(P2PInfo p2pInfo) {
+                actionBindFrequency(p2pInfo.frequency());
+            }
+
+            @Override
+            public void onSelect(P2PInfo p2pInfo) {
+                actionSetPendingBind(p2pInfo);
+            }
+
+            @Override
+            public void onHighlight(P2PInfo p2pInfo) {
+                actionHighlightP2P(p2pInfo);
+                if (ModConfigs.getClientConfig().rotateHeadOnHighlight) rotatePlayerTowardsP2P(p2pInfo);
+            }
+
+            @Override
+            public void onLocate(P2PInfo p2pInfo) {
+                navigateToP2P(p2pInfo);
+            }
+
+            @Override
+            public void onAutoAssign() {
+                actionAutoConfigIO();
+            }
+
+            @Override
+            public void onAssignFreq(P2PInfo p2pInfo) {
+                actionAssignFreq();
+            }
+
+            @Override
+            public void onChannelRename(String frequency, String newAlias) {
+                actionSetChannelAlias(frequency, newAlias);
+                resetUpdateCooldown();
+            }
+
+            @Override
+            public void onChannelBind(String frequency) {
+                actionBindFrequency(frequency);
+            }
+
+            @Override
+            public void onChannelHighlight(String frequency) {
+                actionHighlightP2PTunnel(frequency);
+            }
+
+            @Override
+            public void onRefresh() {
+                actionRefreshP2P();
+                resetUpdateCooldown();
+            }
         });
 
         searchField = new GuiTextField(fontRendererObj, guiLeft + 4, guiTop + 5, 170, 12);
@@ -102,7 +160,9 @@ public class ConfigModeScreen extends GuiContainer {
         updateTreeData();
     }
 
-    private void actionAssignFreq() { menu.dispatchClientAction("assign_freq"); }
+    private void actionAssignFreq() {
+        menu.dispatchClientAction("assign_freq");
+    }
 
     public void navigateToP2P(P2PInfo targetP2P) {
         if (p2pTree != null && targetP2P != null) {
@@ -112,7 +172,8 @@ public class ConfigModeScreen extends GuiContainer {
 
     private void updateTreeData() {
         if (p2pTree != null) {
-            p2pTree.updateData(menu.getClientP2PTypeInfoMap(), menu.getClientChannelInfoMap(), menu.getClientP2PInfoMap());
+            p2pTree
+                .updateData(menu.getClientP2PTypeInfoMap(), menu.getClientChannelInfoMap(), menu.getClientP2PInfoMap());
         }
     }
 
@@ -122,22 +183,42 @@ public class ConfigModeScreen extends GuiContainer {
         }
     }
 
-    private void resetUpdateCooldown() { updateItemInfoCooldown = 0; }
+    private void resetUpdateCooldown() {
+        updateItemInfoCooldown = 0;
+    }
 
-    public void actionRefreshP2P() { menu.dispatchClientAction("refresh_p2p"); }
-    public void actionUpdateItemInfo() { menu.dispatchClientAction("update_item_info"); }
-    public void actionBindFrequency(String frequencyHex) { menu.dispatchClientAction("bind_frequency", frequencyHex); }
-    public void actionSetChannelAlias(String frequency, String alias) { menu.dispatchClientAction("set_channel_alias", frequency + "|" + alias); }
+    public void actionRefreshP2P() {
+        menu.dispatchClientAction("refresh_p2p");
+    }
+
+    public void actionUpdateItemInfo() {
+        menu.dispatchClientAction("update_item_info");
+    }
+
+    public void actionBindFrequency(String frequencyHex) {
+        menu.dispatchClientAction("bind_frequency", frequencyHex);
+    }
+
+    public void actionSetChannelAlias(String frequency, String alias) {
+        menu.dispatchClientAction("set_channel_alias", frequency + "|" + alias);
+    }
+
     public void actionSetP2PAlias(P2PInfo p2pInfo, String alias) {
         menu.dispatchClientAction("set_p2p_alias", encodeP2PPosition(p2pInfo) + "::" + alias);
     }
+
     public void actionSetPendingBind(P2PInfo p2pInfo) {
         menu.dispatchClientAction("set_pending_bind", encodeP2PPosition(p2pInfo));
     }
-    public void actionAutoConfigIO() { menu.dispatchClientAction("auto_config_io"); }
+
+    public void actionAutoConfigIO() {
+        menu.dispatchClientAction("auto_config_io");
+    }
+
     public void actionHighlightP2P(P2PInfo p2pInfo) {
         menu.dispatchClientAction("highlight_p2p", encodeP2PPosition(p2pInfo));
     }
+
     public void actionHighlightP2PTunnel(String frequencyHex) {
         menu.dispatchClientAction("highlight_p2p_tunnel", frequencyHex);
     }
@@ -267,7 +348,8 @@ public class ConfigModeScreen extends GuiContainer {
         // 搜索框焦点
         if (searchField != null) {
             boolean inSearch = mouseX >= searchField.xPosition && mouseX <= searchField.xPosition + searchField.width
-                    && mouseY >= searchField.yPosition && mouseY <= searchField.yPosition + searchField.height;
+                && mouseY >= searchField.yPosition
+                && mouseY <= searchField.yPosition + searchField.height;
             if (!inSearch) searchField.setFocused(false);
             searchField.mouseClicked(mouseX, mouseY, mouseButton);
         }

@@ -1,20 +1,22 @@
 package com.suntide_20210418.advancedmemorycard.item.custom;
 
-import appeng.api.implementations.items.IMemoryCard;
-import appeng.api.implementations.items.MemoryCardMessages;
-import appeng.items.tools.ToolMemoryCard;
-import com.suntide_20210418.advancedmemorycard.AdvancedMemoryCardMod;
-import com.suntide_20210418.advancedmemorycard.item.ModCreativeModeTabs;
+import java.util.List;
+
+import net.minecraft.client.renderer.texture.IIconRegister;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.world.World;
-import net.minecraft.client.renderer.texture.IIconRegister;
+
+import com.suntide_20210418.advancedmemorycard.AdvancedMemoryCardMod;
+import com.suntide_20210418.advancedmemorycard.item.ModCreativeModeTabs;
+
+import appeng.api.implementations.items.IMemoryCard;
+import appeng.api.implementations.items.MemoryCardMessages;
+import appeng.items.tools.ToolMemoryCard;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
-
-import java.util.List;
 
 public class AdvancedMemoryCardItem extends ToolMemoryCard {
 
@@ -32,7 +34,7 @@ public class AdvancedMemoryCardItem extends ToolMemoryCard {
 
     @Override
     public boolean onItemUseFirst(ItemStack stack, EntityPlayer player, World world, int x, int y, int z, int side,
-            float hitX, float hitY, float hitZ) {
+        float hitX, float hitY, float hitZ) {
         CardMode cardMode = CardMode.of(stack);
         if (!world.isRemote) {
             if (cardMode instanceof CopyMode && player.isSneaking()) {
@@ -48,8 +50,8 @@ public class AdvancedMemoryCardItem extends ToolMemoryCard {
     }
 
     @Override
-    public boolean onItemUse(ItemStack stack, EntityPlayer player, World world,
-            int x, int y, int z, int side, float hitX, float hitY, float hitZ) {
+    public boolean onItemUse(ItemStack stack, EntityPlayer player, World world, int x, int y, int z, int side,
+        float hitX, float hitY, float hitZ) {
         if (world.isRemote) {
             // 在客户端消费这次点击：让 PlayerControllerMP.onPlayerRightClick 返回 true，
             // 从而 rightClickMouse 不再调用 sendUseItem 发送 (-1,-1,-1) 空气包，
@@ -65,7 +67,8 @@ public class AdvancedMemoryCardItem extends ToolMemoryCard {
             if (player.isSneaking() && CardMode.of(stack) instanceof CopyMode) {
                 return stack;
             }
-            return CardMode.of(stack).onItemUse(world, player);
+            return CardMode.of(stack)
+                .onItemUse(world, player);
         }
         return stack;
     }
@@ -97,8 +100,10 @@ public class AdvancedMemoryCardItem extends ToolMemoryCard {
 
     @Override
     @SideOnly(Side.CLIENT)
-    public void addCheckedInformation(ItemStack stack, EntityPlayer player, List<String> lines, boolean advancedTooltips) {
-        String desc = CardMode.of(stack).getDescription();
+    public void addCheckedInformation(ItemStack stack, EntityPlayer player, List<String> lines,
+        boolean advancedTooltips) {
+        String desc = CardMode.of(stack)
+            .getDescription();
         if (desc != null) {
             for (String line : desc.split("\n")) {
                 lines.add(line);

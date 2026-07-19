@@ -1,14 +1,16 @@
 package com.suntide_20210418.advancedmemorycard.network;
 
+import java.util.concurrent.ConcurrentLinkedQueue;
+
+import net.minecraft.entity.player.EntityPlayerMP;
+
 import cpw.mods.fml.common.network.NetworkRegistry;
 import cpw.mods.fml.common.network.simpleimpl.IMessage;
 import cpw.mods.fml.common.network.simpleimpl.SimpleNetworkWrapper;
 import cpw.mods.fml.relauncher.Side;
-import net.minecraft.entity.player.EntityPlayerMP;
-
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class NetworkHandler {
+
     public static SimpleNetworkWrapper INSTANCE;
 
     // 客户端同步数据包队列：服务端发送的 ConfigModeSyncPacket 先入队，
@@ -22,11 +24,20 @@ public class NetworkHandler {
 
         // 服务端处理的消息（客户端 -> 服务端）
         INSTANCE.registerMessage(ModeSwitchPacket.Handler.class, ModeSwitchPacket.class, discriminator++, Side.SERVER);
-        INSTANCE.registerMessage(ConfigModeActionPacket.Handler.class, ConfigModeActionPacket.class, discriminator++, Side.SERVER);
+        INSTANCE.registerMessage(
+            ConfigModeActionPacket.Handler.class,
+            ConfigModeActionPacket.class,
+            discriminator++,
+            Side.SERVER);
         INSTANCE.registerMessage(CopyModePacket.Handler.class, CopyModePacket.class, discriminator++, Side.SERVER);
-        INSTANCE.registerMessage(OpenCopyGuiPacket.Handler.class, OpenCopyGuiPacket.class, discriminator++, Side.SERVER);
+        INSTANCE
+            .registerMessage(OpenCopyGuiPacket.Handler.class, OpenCopyGuiPacket.class, discriminator++, Side.SERVER);
         // 客户端处理的消息（服务端 -> 客户端）。其 Handler 仅入队/调度，不引用任何客户端类，故服务端也可安全加载。
-        INSTANCE.registerMessage(ConfigModeSyncPacket.Handler.class, ConfigModeSyncPacket.class, discriminator++, Side.CLIENT);
+        INSTANCE.registerMessage(
+            ConfigModeSyncPacket.Handler.class,
+            ConfigModeSyncPacket.class,
+            discriminator++,
+            Side.CLIENT);
         INSTANCE.registerMessage(HighlightPacket.Handler.class, HighlightPacket.class, discriminator++, Side.CLIENT);
     }
 

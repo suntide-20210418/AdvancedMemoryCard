@@ -10,6 +10,7 @@ public class TranslateHelper {
     private static final String BASE_KEY = "advanced_memory_card";
 
     public static class Keys {
+
         public static final String ITEM_PREFIX = "item." + BASE_KEY + ".";
         public static final String ITEM_ADVANCED_MEMORY_CARD = ITEM_PREFIX + "advanced_memory_card";
 
@@ -36,7 +37,8 @@ public class TranslateHelper {
 
         public static final String CONFIG_MODE_SCREEN_PREFIX = SCREEN_PREFIX + "advanced_memory_card.player.config.";
         public static final String CONFIG_MODE_SCREEN_TITLE = CONFIG_MODE_SCREEN_PREFIX + "title";
-        public static final String CONFIG_MODE_SCREEN_SEARCH_PLACEHOLDER = CONFIG_MODE_SCREEN_PREFIX + "search_placeholder";
+        public static final String CONFIG_MODE_SCREEN_SEARCH_PLACEHOLDER = CONFIG_MODE_SCREEN_PREFIX
+            + "search_placeholder";
         public static final String CONFIG_MODE_SCREEN_INFO = CONFIG_MODE_SCREEN_PREFIX + "info";
 
         public static final String P2P_TREE_PREFIX = GUI_PREFIX + "advanced_memory_card.p2p_tree.";
@@ -117,90 +119,273 @@ public class TranslateHelper {
     }
 
     public static class CopyMode {
-        public static String show() { return translate(Keys.COPY_MODE_SHOW); }
-        public static String firstPosMarked(String pos) { return translate(Keys.COPY_MODE_FIRST_POS_MARKED, pos); }
-        public static String secondPosMarked(String pos, int w, int h, int d) { return translate(Keys.COPY_MODE_SECOND_POS_MARKED, pos, w, h, d); }
-        public static String tooLarge(long cur, long max) { return translate(Keys.COPY_MODE_TOO_LARGE, cur, max); }
-        public static String completed(long count) { return translate(Keys.COPY_MODE_COMPLETED, count); }
-        public static String alreadyMarked() { return translate(Keys.COPY_MODE_ALREADY_MARKED); }
-        public static String failed() { return translate(Keys.COPY_MODE_FAILED); }
-        public static String screenStartPos() { return translate(Keys.COPY_MODE_SCREEN_START_POS); }
-        public static String screenEndPos() { return translate(Keys.COPY_MODE_SCREEN_END_POS); }
+
+        public static String show() {
+            return translate(Keys.COPY_MODE_SHOW);
+        }
+
+        public static String firstPosMarked(String pos) {
+            return translate(Keys.COPY_MODE_FIRST_POS_MARKED, pos);
+        }
+
+        public static String secondPosMarked(String pos, int w, int h, int d) {
+            return translate(Keys.COPY_MODE_SECOND_POS_MARKED, pos, w, h, d);
+        }
+
+        public static String tooLarge(long cur, long max) {
+            return translate(Keys.COPY_MODE_TOO_LARGE, cur, max);
+        }
+
+        public static String completed(long count) {
+            return translate(Keys.COPY_MODE_COMPLETED, count);
+        }
+
+        public static String alreadyMarked() {
+            return translate(Keys.COPY_MODE_ALREADY_MARKED);
+        }
+
+        public static String failed() {
+            return translate(Keys.COPY_MODE_FAILED);
+        }
+
+        public static String screenStartPos() {
+            return translate(Keys.COPY_MODE_SCREEN_START_POS);
+        }
+
+        public static String screenEndPos() {
+            return translate(Keys.COPY_MODE_SCREEN_END_POS);
+        }
     }
 
     public static class ConfigMode {
-        public static String show() { return translate(Keys.CONFIG_MODE_SHOW); }
+
+        public static String show() {
+            return translate(Keys.CONFIG_MODE_SHOW);
+        }
     }
 
     public static class Tooltip {
-        public static String copyInfo() { return translate(Keys.TOOLTIP_COPY_INFO); }
-        public static String copyFirstPos(String pos) { return translate(Keys.TOOLTIP_COPY_FIRST_POS, pos); }
-        public static String copySecondPos(String pos) { return translate(Keys.TOOLTIP_COPY_SECOND_POS, pos); }
-        public static String copyReady() { return translate(Keys.TOOLTIP_COPY_READY); }
-        public static String configInfo() { return translate(Keys.TOOLTIP_CONFIG_INFO); }
+
+        public static String copyInfo() {
+            return translate(Keys.TOOLTIP_COPY_INFO);
+        }
+
+        public static String copyFirstPos(String pos) {
+            return translate(Keys.TOOLTIP_COPY_FIRST_POS, pos);
+        }
+
+        public static String copySecondPos(String pos) {
+            return translate(Keys.TOOLTIP_COPY_SECOND_POS, pos);
+        }
+
+        public static String copyReady() {
+            return translate(Keys.TOOLTIP_COPY_READY);
+        }
+
+        public static String configInfo() {
+            return translate(Keys.TOOLTIP_CONFIG_INFO);
+        }
     }
 
     public static class Common {
-        public static String itemName() { return translate(Keys.ITEM_ADVANCED_MEMORY_CARD); }
-        public static String itemGroupName() { return translate(Keys.ITEM_GROUP_TAB); }
+
+        public static String itemName() {
+            return translate(Keys.ITEM_ADVANCED_MEMORY_CARD);
+        }
+
+        public static String itemGroupName() {
+            return translate(Keys.ITEM_GROUP_TAB);
+        }
     }
 
     public static class P2PTree {
-        public static String empty() { return translate(Keys.P2P_TREE_EMPTY); }
-        public static String unknownP2P() { return translate(Keys.P2P_TREE_UNKNOWN_P2P); }
-        public static String searchResults() { return translate(Keys.P2P_TREE_SEARCH_RESULTS); }
-        public static String searchResultCount(int count) { return translate(Keys.P2P_TREE_SEARCH_RESULT_COUNT, count); }
+
+        public static String empty() {
+            return translate(Keys.P2P_TREE_EMPTY);
+        }
+
+        public static String unknownP2P() {
+            return translate(Keys.P2P_TREE_UNKNOWN_P2P);
+        }
+
+        public static String searchResults() {
+            return translate(Keys.P2P_TREE_SEARCH_RESULTS);
+        }
+
+        public static String searchResultCount(int count) {
+            return translate(Keys.P2P_TREE_SEARCH_RESULT_COUNT, count);
+        }
     }
 
     public static class DetailPanel {
-        public static String placeholder() { return translate(Keys.DETAIL_PANEL_PLACEHOLDER); }
-        public static String nameLabel() { return translate(Keys.DETAIL_PANEL_NAME_LABEL); }
-        public static String frequencyLabel() { return translate(Keys.DETAIL_PANEL_FREQUENCY_LABEL); }
-        public static String typeLabel() { return translate(Keys.DETAIL_PANEL_TYPE_LABEL); }
-        public static String dimensionLabel() { return translate(Keys.DETAIL_PANEL_DIMENSION_LABEL); }
-        public static String positionLabel() { return translate(Keys.DETAIL_PANEL_POSITION_LABEL); }
-        public static String directionLabel() { return translate(Keys.DETAIL_PANEL_DIRECTION_LABEL); }
-        public static String statusLabel() { return translate(Keys.DETAIL_PANEL_STATUS_LABEL); }
-        public static String channelInfoLabel() { return translate(Keys.DETAIL_PANEL_CHANNEL_INFO_LABEL); }
-        public static String p2pCountLabel() { return translate(Keys.DETAIL_PANEL_P2P_COUNT_LABEL); }
-        public static String inputCountLabel() { return translate(Keys.DETAIL_PANEL_INPUT_COUNT_LABEL); }
-        public static String outputCountLabel() { return translate(Keys.DETAIL_PANEL_OUTPUT_COUNT_LABEL); }
-        public static String totalCountLabel() { return translate(Keys.DETAIL_PANEL_TOTAL_COUNT_LABEL); }
-        public static String channelCountLabel() { return translate(Keys.DETAIL_PANEL_CHANNEL_COUNT_LABEL); }
-        public static String inputNameLabel() { return translate(Keys.DETAIL_PANEL_INPUT_NAME_LABEL); }
+
+        public static String placeholder() {
+            return translate(Keys.DETAIL_PANEL_PLACEHOLDER);
+        }
+
+        public static String nameLabel() {
+            return translate(Keys.DETAIL_PANEL_NAME_LABEL);
+        }
+
+        public static String frequencyLabel() {
+            return translate(Keys.DETAIL_PANEL_FREQUENCY_LABEL);
+        }
+
+        public static String typeLabel() {
+            return translate(Keys.DETAIL_PANEL_TYPE_LABEL);
+        }
+
+        public static String dimensionLabel() {
+            return translate(Keys.DETAIL_PANEL_DIMENSION_LABEL);
+        }
+
+        public static String positionLabel() {
+            return translate(Keys.DETAIL_PANEL_POSITION_LABEL);
+        }
+
+        public static String directionLabel() {
+            return translate(Keys.DETAIL_PANEL_DIRECTION_LABEL);
+        }
+
+        public static String statusLabel() {
+            return translate(Keys.DETAIL_PANEL_STATUS_LABEL);
+        }
+
+        public static String channelInfoLabel() {
+            return translate(Keys.DETAIL_PANEL_CHANNEL_INFO_LABEL);
+        }
+
+        public static String p2pCountLabel() {
+            return translate(Keys.DETAIL_PANEL_P2P_COUNT_LABEL);
+        }
+
+        public static String inputCountLabel() {
+            return translate(Keys.DETAIL_PANEL_INPUT_COUNT_LABEL);
+        }
+
+        public static String outputCountLabel() {
+            return translate(Keys.DETAIL_PANEL_OUTPUT_COUNT_LABEL);
+        }
+
+        public static String totalCountLabel() {
+            return translate(Keys.DETAIL_PANEL_TOTAL_COUNT_LABEL);
+        }
+
+        public static String channelCountLabel() {
+            return translate(Keys.DETAIL_PANEL_CHANNEL_COUNT_LABEL);
+        }
+
+        public static String inputNameLabel() {
+            return translate(Keys.DETAIL_PANEL_INPUT_NAME_LABEL);
+        }
     }
 
     public static class Button {
-        public static String rename() { return translate(Keys.BUTTON_RENAME); }
-        public static String select() { return translate(Keys.BUTTON_SELECT); }
-        public static String highlight() { return translate(Keys.BUTTON_HIGHLIGHT); }
-        public static String pendingBind() { return translate(Keys.BUTTON_PENDING_BIND); }
-        public static String refresh() { return translate(Keys.BUTTON_REFRESH); }
-        public static String cancel() { return translate(Keys.BUTTON_CANCEL); }
-        public static String bind() { return translate(Keys.BUTTON_BIND); }
-        public static String locate() { return translate(Keys.BUTTON_LOCATE); }
-        public static String initP2P() { return translate(Keys.BUTTON_INIT_P2P); }
-        public static String assignFreq() { return translate(Keys.BUTTON_ASSIGN_FREQ); }
+
+        public static String rename() {
+            return translate(Keys.BUTTON_RENAME);
+        }
+
+        public static String select() {
+            return translate(Keys.BUTTON_SELECT);
+        }
+
+        public static String highlight() {
+            return translate(Keys.BUTTON_HIGHLIGHT);
+        }
+
+        public static String pendingBind() {
+            return translate(Keys.BUTTON_PENDING_BIND);
+        }
+
+        public static String refresh() {
+            return translate(Keys.BUTTON_REFRESH);
+        }
+
+        public static String cancel() {
+            return translate(Keys.BUTTON_CANCEL);
+        }
+
+        public static String bind() {
+            return translate(Keys.BUTTON_BIND);
+        }
+
+        public static String locate() {
+            return translate(Keys.BUTTON_LOCATE);
+        }
+
+        public static String initP2P() {
+            return translate(Keys.BUTTON_INIT_P2P);
+        }
+
+        public static String assignFreq() {
+            return translate(Keys.BUTTON_ASSIGN_FREQ);
+        }
     }
 
     public static class Status {
-        public static String notActive() { return translate(Keys.STATUS_NOT_ACTIVE); }
-        public static String notConnected() { return translate(Keys.STATUS_NOT_CONNECTED); }
-        public static String connected() { return translate(Keys.STATUS_CONNECTED); }
-        public static String output() { return translate(Keys.STATUS_OUTPUT); }
-        public static String input() { return translate(Keys.STATUS_INPUT); }
-        public static String currentSelected() { return translate(Keys.STATUS_CURRENT_SELECTED); }
+
+        public static String notActive() {
+            return translate(Keys.STATUS_NOT_ACTIVE);
+        }
+
+        public static String notConnected() {
+            return translate(Keys.STATUS_NOT_CONNECTED);
+        }
+
+        public static String connected() {
+            return translate(Keys.STATUS_CONNECTED);
+        }
+
+        public static String output() {
+            return translate(Keys.STATUS_OUTPUT);
+        }
+
+        public static String input() {
+            return translate(Keys.STATUS_INPUT);
+        }
+
+        public static String currentSelected() {
+            return translate(Keys.STATUS_CURRENT_SELECTED);
+        }
     }
 
     public static class Chat {
-        public static String locationInfo(Object... args) { return translate(Keys.CHAT_LOCATION_INFO, args); }
-        public static String clickToTeleport() { return translate(Keys.CHAT_CLICK_TO_TELEPORT); }
-        public static String teleportHover(Object... args) { return translate(Keys.CHAT_TELEPORT_HOVER, args); }
-        public static String freqHighlightHeader(Object... args) { return translate(Keys.CHAT_FREQ_HIGHLIGHT_HEADER, args); }
-        public static String teleportButton() { return translate(Keys.CHAT_TELEPORT_BUTTON); }
-        public static String teleportUsage() { return translate(Keys.CHAT_TELEPORT_USAGE); }
-        public static String teleportOnlyPlayer() { return translate(Keys.CHAT_TELEPORT_ONLY_PLAYER); }
-        public static String teleportDimFailed() { return translate(Keys.CHAT_TELEPORT_DIM_FAILED); }
-        public static String teleportSuccess(Object... args) { return translate(Keys.CHAT_TELEPORT_SUCCESS, args); }
+
+        public static String locationInfo(Object... args) {
+            return translate(Keys.CHAT_LOCATION_INFO, args);
+        }
+
+        public static String clickToTeleport() {
+            return translate(Keys.CHAT_CLICK_TO_TELEPORT);
+        }
+
+        public static String teleportHover(Object... args) {
+            return translate(Keys.CHAT_TELEPORT_HOVER, args);
+        }
+
+        public static String freqHighlightHeader(Object... args) {
+            return translate(Keys.CHAT_FREQ_HIGHLIGHT_HEADER, args);
+        }
+
+        public static String teleportButton() {
+            return translate(Keys.CHAT_TELEPORT_BUTTON);
+        }
+
+        public static String teleportUsage() {
+            return translate(Keys.CHAT_TELEPORT_USAGE);
+        }
+
+        public static String teleportOnlyPlayer() {
+            return translate(Keys.CHAT_TELEPORT_ONLY_PLAYER);
+        }
+
+        public static String teleportDimFailed() {
+            return translate(Keys.CHAT_TELEPORT_DIM_FAILED);
+        }
+
+        public static String teleportSuccess(Object... args) {
+            return translate(Keys.CHAT_TELEPORT_SUCCESS, args);
+        }
     }
 }
