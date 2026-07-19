@@ -1,36 +1,42 @@
 package com.suntide_20210418.advancedmemorycard.client.gui.menu;
 
-import appeng.api.parts.IPart;
-import appeng.api.parts.IPartHost;
-import appeng.parts.p2p.PartP2PTunnel;
-import appeng.parts.p2p.PartP2PTunnelME;
-import com.suntide_20210418.advancedmemorycard.config.ModConfigs;
-import com.suntide_20210418.advancedmemorycard.network.ConfigModeActionPacket;
-import com.suntide_20210418.advancedmemorycard.network.ConfigModeSyncPacket;
-import com.suntide_20210418.advancedmemorycard.network.NetworkHandler;
-import com.suntide_20210418.advancedmemorycard.p2p.*;
-import com.suntide_20210418.advancedmemorycard.utils.DimensionHelper;
-import com.suntide_20210418.advancedmemorycard.utils.TranslateHelper;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.inventory.Container;
-import net.minecraft.entity.player.InventoryPlayer;
-import net.minecraft.tileentity.TileEntity;
-import com.suntide_20210418.advancedmemorycard.utils.BlockPos;
-import net.minecraft.util.ChatComponentText;
-import net.minecraft.util.ChatStyle;
-import net.minecraft.util.EnumChatFormatting;
-import net.minecraft.util.IChatComponent;
-import net.minecraft.event.ClickEvent;
-import net.minecraft.event.HoverEvent;
-import net.minecraft.world.World;
-import net.minecraftforge.common.DimensionManager;
-import net.minecraftforge.common.util.ForgeDirection;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.entity.player.InventoryPlayer;
+import net.minecraft.event.ClickEvent;
+import net.minecraft.event.HoverEvent;
+import net.minecraft.inventory.Container;
+import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.ChatComponentText;
+import net.minecraft.util.ChatStyle;
+import net.minecraft.util.EnumChatFormatting;
+import net.minecraft.util.IChatComponent;
+import net.minecraft.world.World;
+import net.minecraftforge.common.DimensionManager;
+import net.minecraftforge.common.util.ForgeDirection;
+
+import com.suntide_20210418.advancedmemorycard.config.ModConfigs;
+import com.suntide_20210418.advancedmemorycard.network.ConfigModeActionPacket;
+import com.suntide_20210418.advancedmemorycard.network.ConfigModeSyncPacket;
+import com.suntide_20210418.advancedmemorycard.network.NetworkHandler;
+import com.suntide_20210418.advancedmemorycard.p2p.ChannelInfo;
+import com.suntide_20210418.advancedmemorycard.p2p.P2PInfo;
+import com.suntide_20210418.advancedmemorycard.p2p.P2PManager;
+import com.suntide_20210418.advancedmemorycard.p2p.P2PPosition;
+import com.suntide_20210418.advancedmemorycard.p2p.P2PTypeInfo;
+import com.suntide_20210418.advancedmemorycard.utils.BlockPos;
+import com.suntide_20210418.advancedmemorycard.utils.DimensionHelper;
+import com.suntide_20210418.advancedmemorycard.utils.TranslateHelper;
+
+import appeng.api.parts.IPart;
+import appeng.api.parts.IPartHost;
+import appeng.parts.p2p.PartP2PTunnel;
+import appeng.parts.p2p.PartP2PTunnelME;
 
 /**
  * 配置模式菜单（服务端容器）。
@@ -151,23 +157,26 @@ public class ConfigModeMenu extends Container implements ConfigModeActionPacket.
             PartP2PTunnel p2p = entry.getKey();
             TileEntity te = p2p.getTile();
             String dim = String.valueOf(te.getWorldObj().provider.dimensionId);
-            positionDevicesMap.put(new P2PPosition(new BlockPos(te.xCoord, te.yCoord, te.zCoord), p2p.getSide(), dim), entry.getValue());
+            positionDevicesMap.put(
+                new P2PPosition(new BlockPos(te.xCoord, te.yCoord, te.zCoord), p2p.getSide(), dim),
+                entry.getValue());
         }
 
         for (Map.Entry<PartP2PTunnel, P2PInfo> entry : p2pInfoMap.entrySet()) {
             PartP2PTunnel p2p = entry.getKey();
             TileEntity te = p2p.getTile();
             String dim = String.valueOf(te.getWorldObj().provider.dimensionId);
-            positionInfoMap.put(new P2PPosition(new BlockPos(te.xCoord, te.yCoord, te.zCoord), p2p.getSide(), dim), entry.getValue());
+            positionInfoMap.put(
+                new P2PPosition(new BlockPos(te.xCoord, te.yCoord, te.zCoord), p2p.getSide(), dim),
+                entry.getValue());
         }
 
         ConfigModeSyncPacket packet = new ConfigModeSyncPacket(
-                p2pFrequencyAndAlias,
-                positionDevicesMap,
-                positionInfoMap,
-                channelInfoMap,
-                p2pTypeInfoMap
-        );
+            p2pFrequencyAndAlias,
+            positionDevicesMap,
+            positionInfoMap,
+            channelInfoMap,
+            p2pTypeInfoMap);
         NetworkHandler.sendToPlayer(packet, player);
     }
 
@@ -242,9 +251,21 @@ public class ConfigModeMenu extends Container implements ConfigModeActionPacket.
             String dimension = te.getWorldObj().provider.getDimensionName();
             int dimensionId = te.getWorldObj().provider.dimensionId;
 
-            P2PInfo info = new P2PInfo(isActive, isOutput, isConnected, isMEP2P,
-                    isPendingBind, channel, maxChannel, frequency, name, p2pTypeName,
-                    dimension, dimensionId, pos, side);
+            P2PInfo info = new P2PInfo(
+                isActive,
+                isOutput,
+                isConnected,
+                isMEP2P,
+                isPendingBind,
+                channel,
+                maxChannel,
+                frequency,
+                name,
+                p2pTypeName,
+                dimension,
+                dimensionId,
+                pos,
+                side);
             p2pInfoMap.put(p2p, info);
         }
 
@@ -253,8 +274,7 @@ public class ConfigModeMenu extends Container implements ConfigModeActionPacket.
         // 若仅按频率分组会把不同类型合并到同一 channel，导致树形结构把所有 P2P 错误归入某一类型节点。
         HashMap<String, HashMap<String, ArrayList<P2PInfo>>> typeFreqGrouped = new HashMap<>();
         for (P2PInfo info : p2pInfoMap.values()) {
-            typeFreqGrouped
-                .computeIfAbsent(info.p2pType, k -> new HashMap<>())
+            typeFreqGrouped.computeIfAbsent(info.p2pType, k -> new HashMap<>())
                 .computeIfAbsent(info.frequency, k -> new ArrayList<>())
                 .add(info);
         }
@@ -262,7 +282,8 @@ public class ConfigModeMenu extends Container implements ConfigModeActionPacket.
         // 构建 channelInfoMap，key 改为 frequency|p2pType，保证每个 channel 仅含单一类型
         channelInfoMap.clear();
         for (Map.Entry<String, HashMap<String, ArrayList<P2PInfo>>> typeEntry : typeFreqGrouped.entrySet()) {
-            for (Map.Entry<String, ArrayList<P2PInfo>> freqEntry : typeEntry.getValue().entrySet()) {
+            for (Map.Entry<String, ArrayList<P2PInfo>> freqEntry : typeEntry.getValue()
+                .entrySet()) {
                 String frequency = freqEntry.getKey();
                 ChannelInfo channelInfo = getChannelInfo(freqEntry, frequency);
                 channelInfoMap.put(frequency + "|" + typeEntry.getKey(), channelInfo);
@@ -274,7 +295,8 @@ public class ConfigModeMenu extends Container implements ConfigModeActionPacket.
             String p2pType = typeEntry.getKey();
             ArrayList<ChannelInfo> chList = new ArrayList<>();
             ArrayList<P2PInfo> p2pList = new ArrayList<>();
-            for (Map.Entry<String, ArrayList<P2PInfo>> freqEntry : typeEntry.getValue().entrySet()) {
+            for (Map.Entry<String, ArrayList<P2PInfo>> freqEntry : typeEntry.getValue()
+                .entrySet()) {
                 chList.add(getChannelInfo(freqEntry, freqEntry.getKey()));
                 p2pList.addAll(freqEntry.getValue());
             }
@@ -315,10 +337,11 @@ public class ConfigModeMenu extends Container implements ConfigModeActionPacket.
         }
         int channelRemaining = totalChannels - usedChannels;
 
-        String p2pType = p2pList.isEmpty() ? "unknown" : p2pList.get(0).p2pType();
+        String p2pType = p2pList.isEmpty() ? "unknown"
+            : p2pList.get(0)
+                .p2pType();
 
-        return new ChannelInfo(frequency, alias, p2pList.size(),
-                totalChannels, channelRemaining, p2pType, p2pList);
+        return new ChannelInfo(frequency, alias, p2pList.size(), totalChannels, channelRemaining, p2pType, p2pList);
     }
 
     // ==================== 操作实现 ====================
@@ -350,9 +373,10 @@ public class ConfigModeMenu extends Container implements ConfigModeActionPacket.
      */
     private PartP2PTunnel parsingP2P(String data) {
         String[] posParts = data.split("\\|");
-        BlockPos pos = new BlockPos(Integer.parseInt(posParts[0]),
-                Integer.parseInt(posParts[1]),
-                Integer.parseInt(posParts[2]));
+        BlockPos pos = new BlockPos(
+            Integer.parseInt(posParts[0]),
+            Integer.parseInt(posParts[1]),
+            Integer.parseInt(posParts[2]));
         ForgeDirection side = ForgeDirection.values()[Integer.parseInt(posParts[3])];
 
         EntityPlayer player = playerInventory.player;
@@ -416,7 +440,8 @@ public class ConfigModeMenu extends Container implements ConfigModeActionPacket.
 
         ArrayList<P2PInfo> p2pList = new ArrayList<>();
         for (Map.Entry<String, ChannelInfo> e : channelInfoMap.entrySet()) {
-            if (e.getKey().startsWith(frequencyHex + "|")) {
+            if (e.getKey()
+                .startsWith(frequencyHex + "|")) {
                 ArrayList<P2PInfo> list = e.getValue().p2pInfoList;
                 if (list != null) p2pList.addAll(list);
             }
@@ -424,7 +449,8 @@ public class ConfigModeMenu extends Container implements ConfigModeActionPacket.
         if (p2pList.isEmpty()) return;
 
         String freqAlias = getFrequencyAlias(frequencyHex);
-        String freqDisplay = freqAlias.equals("frequency " + frequencyHex) ? frequencyHex : freqAlias + " (" + frequencyHex + ")";
+        String freqDisplay = freqAlias.equals("frequency " + frequencyHex) ? frequencyHex
+            : freqAlias + " (" + frequencyHex + ")";
 
         player.addChatMessage(new ChatComponentText(TranslateHelper.Chat.freqHighlightHeader(freqDisplay)));
 
@@ -435,7 +461,8 @@ public class ConfigModeMenu extends Container implements ConfigModeActionPacket.
             BlockPos pos = info.position();
             String dimId = info.dimension();
             String coords = pos.getX() + ", " + pos.getY() + ", " + pos.getZ();
-            String p2pName = info.name().isEmpty() ? info.toShortString() : info.name();
+            String p2pName = info.name()
+                .isEmpty() ? info.toShortString() : info.name();
 
             String locationInfo = TranslateHelper.Chat.locationInfo("[" + index + "] " + p2pName, dimId, coords);
             player.addChatMessage(new ChatComponentText(locationInfo));
@@ -463,7 +490,9 @@ public class ConfigModeMenu extends Container implements ConfigModeActionPacket.
         IChatComponent link = new ChatComponentText(TranslateHelper.Chat.clickToTeleport());
         ChatStyle style = link.getChatStyle();
         style.setChatClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, command));
-        style.setChatHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+        style.setChatHoverEvent(
+            new HoverEvent(
+                HoverEvent.Action.SHOW_TEXT,
                 new ChatComponentText(TranslateHelper.Chat.teleportHover(dimName, displayCoords))));
         style.setColor(EnumChatFormatting.AQUA);
         return link;
@@ -489,7 +518,8 @@ public class ConfigModeMenu extends Container implements ConfigModeActionPacket.
         try {
             appeng.api.networking.IGridNode externalNode = meP2P.getExternalFacingNode();
             if (externalNode == null) return 0;
-            java.lang.reflect.Method m = externalNode.getClass().getMethod("usedChannels");
+            java.lang.reflect.Method m = externalNode.getClass()
+                .getMethod("usedChannels");
             m.setAccessible(true);
             Object result = m.invoke(externalNode);
             if (result instanceof Integer) {

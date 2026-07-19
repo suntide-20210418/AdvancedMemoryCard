@@ -1,14 +1,19 @@
 package com.suntide_20210418.advancedmemorycard.client.gui.widgets;
 
-import com.suntide_20210418.advancedmemorycard.config.ModConfigs;
-import com.suntide_20210418.advancedmemorycard.p2p.*;
-import com.suntide_20210418.advancedmemorycard.utils.TranslateHelper;
+import java.util.ArrayList;
+import java.util.Map;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.GuiTextField;
 
-import java.util.ArrayList;
-import java.util.Map;
+import com.suntide_20210418.advancedmemorycard.config.ModConfigs;
+import com.suntide_20210418.advancedmemorycard.p2p.ChannelInfo;
+import com.suntide_20210418.advancedmemorycard.p2p.NodeType;
+import com.suntide_20210418.advancedmemorycard.p2p.P2PInfo;
+import com.suntide_20210418.advancedmemorycard.p2p.P2PTypeInfo;
+import com.suntide_20210418.advancedmemorycard.p2p.TreeNode;
+import com.suntide_20210418.advancedmemorycard.utils.TranslateHelper;
 
 /**
  * P2P 详细信息面板控件（1.7.10 vanilla 实现）。<br/>
@@ -26,14 +31,10 @@ public class DetailPanelWidget {
     private final GuiTextField nameField;
     private final FlatButton[] buttons;
 
-    private String[] activeButtonLabelKeys = new String[]{
-            TranslateHelper.Keys.BUTTON_RENAME,
-            TranslateHelper.Keys.BUTTON_SELECT,
-            TranslateHelper.Keys.BUTTON_HIGHLIGHT,
-            TranslateHelper.Keys.BUTTON_PENDING_BIND,
-            TranslateHelper.Keys.BUTTON_REFRESH,
-            TranslateHelper.Keys.BUTTON_ASSIGN_FREQ
-    };
+    private String[] activeButtonLabelKeys = new String[] { TranslateHelper.Keys.BUTTON_RENAME,
+        TranslateHelper.Keys.BUTTON_SELECT, TranslateHelper.Keys.BUTTON_HIGHLIGHT,
+        TranslateHelper.Keys.BUTTON_PENDING_BIND, TranslateHelper.Keys.BUTTON_REFRESH,
+        TranslateHelper.Keys.BUTTON_ASSIGN_FREQ };
     private int activeButtonCount = 6;
 
     private P2PInfo selectedP2PInfo;
@@ -50,25 +51,77 @@ public class DetailPanelWidget {
 
     private ActionCallback actionCallback;
 
-    private int getColorBg() { return ModConfigs.getClientConfig().panelColorBg; }
-    private int getColorTitle() { return ModConfigs.getClientConfig().panelColorTitle; }
-    private int getColorLabel() { return ModConfigs.getClientConfig().panelColorLabel; }
-    private int getColorValue() { return ModConfigs.getClientConfig().panelColorValue; }
-    private int getColorPlaceholder() { return ModConfigs.getClientConfig().panelColorPlaceholder; }
-    private int getColorSeparator() { return ModConfigs.getClientConfig().panelColorSeparator; }
-    private int getColorButtonAreaBg() { return ModConfigs.getClientConfig().panelColorButtonAreaBg; }
-    private int getStatusNotActive() { return ModConfigs.getClientConfig().panelStatusNotActive; }
-    private int getStatusNotConnected() { return ModConfigs.getClientConfig().panelStatusNotConnected; }
-    private int getStatusConnected() { return ModConfigs.getClientConfig().panelStatusConnected; }
+    private int getColorBg() {
+        return ModConfigs.getClientConfig().panelColorBg;
+    }
 
-    private int getButtonWidth() { return ModConfigs.getClientConfig().panelButtonWidth; }
-    private int getButtonHeight() { return ModConfigs.getClientConfig().panelButtonHeight; }
-    private int getInfoAreaHeightRatio() { return ModConfigs.getClientConfig().panelInfoAreaHeightRatio; }
-    private int getTotalHeightRatio() { return ModConfigs.getClientConfig().panelTotalHeightRatio; }
-    private int getLineHeight() { return ModConfigs.getClientConfig().panelLineHeight; }
-    private int getPaddingLeft() { return ModConfigs.getClientConfig().panelPaddingLeft; }
-    private int getPaddingTop() { return ModConfigs.getClientConfig().panelPaddingTop; }
-    private int getButtonCountMax() { return ModConfigs.getClientConfig().panelButtonCountMax; }
+    private int getColorTitle() {
+        return ModConfigs.getClientConfig().panelColorTitle;
+    }
+
+    private int getColorLabel() {
+        return ModConfigs.getClientConfig().panelColorLabel;
+    }
+
+    private int getColorValue() {
+        return ModConfigs.getClientConfig().panelColorValue;
+    }
+
+    private int getColorPlaceholder() {
+        return ModConfigs.getClientConfig().panelColorPlaceholder;
+    }
+
+    private int getColorSeparator() {
+        return ModConfigs.getClientConfig().panelColorSeparator;
+    }
+
+    private int getColorButtonAreaBg() {
+        return ModConfigs.getClientConfig().panelColorButtonAreaBg;
+    }
+
+    private int getStatusNotActive() {
+        return ModConfigs.getClientConfig().panelStatusNotActive;
+    }
+
+    private int getStatusNotConnected() {
+        return ModConfigs.getClientConfig().panelStatusNotConnected;
+    }
+
+    private int getStatusConnected() {
+        return ModConfigs.getClientConfig().panelStatusConnected;
+    }
+
+    private int getButtonWidth() {
+        return ModConfigs.getClientConfig().panelButtonWidth;
+    }
+
+    private int getButtonHeight() {
+        return ModConfigs.getClientConfig().panelButtonHeight;
+    }
+
+    private int getInfoAreaHeightRatio() {
+        return ModConfigs.getClientConfig().panelInfoAreaHeightRatio;
+    }
+
+    private int getTotalHeightRatio() {
+        return ModConfigs.getClientConfig().panelTotalHeightRatio;
+    }
+
+    private int getLineHeight() {
+        return ModConfigs.getClientConfig().panelLineHeight;
+    }
+
+    private int getPaddingLeft() {
+        return ModConfigs.getClientConfig().panelPaddingLeft;
+    }
+
+    private int getPaddingTop() {
+        return ModConfigs.getClientConfig().panelPaddingTop;
+    }
+
+    private int getButtonCountMax() {
+        return ModConfigs.getClientConfig().panelButtonCountMax;
+    }
 
     public DetailPanelWidget(int x, int y, int width, int height) {
         this.x = x;
@@ -85,8 +138,13 @@ public class DetailPanelWidget {
         buttons = new FlatButton[max];
         for (int i = 0; i < max; i++) {
             final int idx = i;
-            buttons[i] = new FlatButton(0, 0, getButtonWidth(), getButtonHeight(),
-                    TranslateHelper.Keys.BUTTON_RENAME, () -> onButtonClick(idx));
+            buttons[i] = new FlatButton(
+                0,
+                0,
+                getButtonWidth(),
+                getButtonHeight(),
+                TranslateHelper.Keys.BUTTON_RENAME,
+                () -> onButtonClick(idx));
         }
         repositionButtons();
     }
@@ -110,9 +168,15 @@ public class DetailPanelWidget {
     private void onButtonClick(int index) {
         if (actionCallback == null || selectedNode == null) return;
         switch (selectedNode.type) {
-            case P2P: handleP2PButtonClick(index); break;
-            case CHANNEL: handleChannelButtonClick(index); break;
-            case P2P_TYPE: handleTypeButtonClick(index); break;
+            case P2P:
+                handleP2PButtonClick(index);
+                break;
+            case CHANNEL:
+                handleChannelButtonClick(index);
+                break;
+            case P2P_TYPE:
+                handleTypeButtonClick(index);
+                break;
         }
     }
 
@@ -120,21 +184,49 @@ public class DetailPanelWidget {
         if (selectedP2PInfo == null) return;
         if (!selectedP2PInfo.isMEP2P()) {
             switch (index) {
-                case 0: if (isEditing) cancelEditing(); else enterEditing(); break;
-                case 1: actionCallback.onSelect(selectedP2PInfo); break;
-                case 2: Minecraft.getMinecraft().displayGuiScreen(null); actionCallback.onHighlight(selectedP2PInfo); break;
-                case 3: actionCallback.onAssignFreq(selectedP2PInfo); break;
-                case 4: actionCallback.onLocate(pendingBindP2P); break;
-                case 5: actionCallback.onRefresh(); break;
+                case 0:
+                    if (isEditing) cancelEditing();
+                    else enterEditing();
+                    break;
+                case 1:
+                    actionCallback.onSelect(selectedP2PInfo);
+                    break;
+                case 2:
+                    Minecraft.getMinecraft()
+                        .displayGuiScreen(null);
+                    actionCallback.onHighlight(selectedP2PInfo);
+                    break;
+                case 3:
+                    actionCallback.onAssignFreq(selectedP2PInfo);
+                    break;
+                case 4:
+                    actionCallback.onLocate(pendingBindP2P);
+                    break;
+                case 5:
+                    actionCallback.onRefresh();
+                    break;
             }
             return;
         }
         switch (index) {
-            case 0: if (isEditing) cancelEditing(); else enterEditing(); break;
-            case 1: actionCallback.onSelect(selectedP2PInfo); break;
-            case 2: Minecraft.getMinecraft().displayGuiScreen(null); actionCallback.onHighlight(selectedP2PInfo); break;
-            case 3: actionCallback.onLocate(pendingBindP2P); break;
-            case 4: actionCallback.onRefresh(); break;
+            case 0:
+                if (isEditing) cancelEditing();
+                else enterEditing();
+                break;
+            case 1:
+                actionCallback.onSelect(selectedP2PInfo);
+                break;
+            case 2:
+                Minecraft.getMinecraft()
+                    .displayGuiScreen(null);
+                actionCallback.onHighlight(selectedP2PInfo);
+                break;
+            case 3:
+                actionCallback.onLocate(pendingBindP2P);
+                break;
+            case 4:
+                actionCallback.onRefresh();
+                break;
         }
     }
 
@@ -142,25 +234,48 @@ public class DetailPanelWidget {
         String frequency = selectedNode.frequency;
         if (frequency == null) return;
         switch (index) {
-            case 0: if (isEditing) cancelEditing(); else enterChannelEditing(); break;
-            case 1: actionCallback.onChannelBind(frequency); break;
-            case 2: Minecraft.getMinecraft().displayGuiScreen(null); actionCallback.onChannelHighlight(frequency); break;
-            case 3: actionCallback.onLocate(pendingBindP2P); break;
-            case 4: actionCallback.onRefresh(); break;
+            case 0:
+                if (isEditing) cancelEditing();
+                else enterChannelEditing();
+                break;
+            case 1:
+                actionCallback.onChannelBind(frequency);
+                break;
+            case 2:
+                Minecraft.getMinecraft()
+                    .displayGuiScreen(null);
+                actionCallback.onChannelHighlight(frequency);
+                break;
+            case 3:
+                actionCallback.onLocate(pendingBindP2P);
+                break;
+            case 4:
+                actionCallback.onRefresh();
+                break;
         }
     }
 
     private void handleTypeButtonClick(int index) {
         if (isMEP2PType()) {
             switch (index) {
-                case 0: actionCallback.onRefresh(); break;
-                case 1: actionCallback.onAutoAssign(); break;
-                case 2: actionCallback.onLocate(pendingBindP2P); break;
+                case 0:
+                    actionCallback.onRefresh();
+                    break;
+                case 1:
+                    actionCallback.onAutoAssign();
+                    break;
+                case 2:
+                    actionCallback.onLocate(pendingBindP2P);
+                    break;
             }
         } else {
             switch (index) {
-                case 0: actionCallback.onRefresh(); break;
-                case 1: actionCallback.onLocate(pendingBindP2P); break;
+                case 0:
+                    actionCallback.onRefresh();
+                    break;
+                case 1:
+                    actionCallback.onLocate(pendingBindP2P);
+                    break;
             }
         }
     }
@@ -182,7 +297,8 @@ public class DetailPanelWidget {
     private void enterChannelEditing() {
         isEditing = true;
         int labelX = x + getPaddingLeft();
-        int labelWidth = Minecraft.getMinecraft().fontRenderer.getStringWidth(TranslateHelper.DetailPanel.inputNameLabel());
+        int labelWidth = Minecraft.getMinecraft().fontRenderer
+            .getStringWidth(TranslateHelper.DetailPanel.inputNameLabel());
         String freq = selectedNode.frequency;
         String alias = getFrequencyAlias(freq);
         nameField.setText(alias);
@@ -201,7 +317,8 @@ public class DetailPanelWidget {
     private void onNameConfirm() {
         if (!isEditing) return;
         if (selectedP2PInfo != null) {
-            String newName = nameField.getText().trim();
+            String newName = nameField.getText()
+                .trim();
             if (!newName.isEmpty() && actionCallback != null) {
                 optimisticP2PName = newName;
                 optimisticP2PNameKey = selectedP2PInfo.frequency() + ":" + selectedP2PInfo.toShortString();
@@ -213,8 +330,11 @@ public class DetailPanelWidget {
 
     private void onChannelAliasConfirm() {
         if (!isEditing) return;
-        String newAlias = nameField.getText().trim();
-        if (!newAlias.isEmpty() && actionCallback != null && selectedNode != null && selectedNode.type == NodeType.CHANNEL) {
+        String newAlias = nameField.getText()
+            .trim();
+        if (!newAlias.isEmpty() && actionCallback != null
+            && selectedNode != null
+            && selectedNode.type == NodeType.CHANNEL) {
             optimisticChannelAlias = newAlias;
             optimisticChannelAliasFreq = selectedNode.frequency;
             actionCallback.onChannelRename(selectedNode.frequency, newAlias);
@@ -254,14 +374,16 @@ public class DetailPanelWidget {
         }
     }
 
-    public void setSelectedNode(TreeNode node, Map<String, ChannelInfo> channelInfoMap, Map<String, P2PTypeInfo> p2pTypeInfoMap) {
+    public void setSelectedNode(TreeNode node, Map<String, ChannelInfo> channelInfoMap,
+        Map<String, P2PTypeInfo> p2pTypeInfoMap) {
         this.selectedNode = node;
         this.channelInfoMap = channelInfoMap;
         this.p2pTypeInfoMap = p2pTypeInfoMap;
 
         if (node != null && node.type == NodeType.P2P) {
             this.selectedP2PInfo = node.p2pInfo;
-            if (optimisticP2PName != null && selectedP2PInfo != null && optimisticP2PName.equals(selectedP2PInfo.name())) {
+            if (optimisticP2PName != null && selectedP2PInfo != null
+                && optimisticP2PName.equals(selectedP2PInfo.name())) {
                 optimisticP2PName = null;
                 optimisticP2PNameKey = null;
             }
@@ -275,7 +397,8 @@ public class DetailPanelWidget {
             ChannelInfo ci = null;
             if (channelInfoMap != null) {
                 for (Map.Entry<String, ChannelInfo> e : channelInfoMap.entrySet()) {
-                    if (e.getKey().startsWith(optimisticChannelAliasFreq + "|")) {
+                    if (e.getKey()
+                        .startsWith(optimisticChannelAliasFreq + "|")) {
                         ci = e.getValue();
                         break;
                     }
@@ -297,39 +420,31 @@ public class DetailPanelWidget {
             switch (selectedNode.type) {
                 case P2P:
                     if (selectedP2PInfo != null && !selectedP2PInfo.isMEP2P()) {
-                        activeButtonLabelKeys = new String[]{
-                                TranslateHelper.Keys.BUTTON_RENAME, TranslateHelper.Keys.BUTTON_SELECT,
-                                TranslateHelper.Keys.BUTTON_HIGHLIGHT, TranslateHelper.Keys.BUTTON_ASSIGN_FREQ,
-                                TranslateHelper.Keys.BUTTON_PENDING_BIND, TranslateHelper.Keys.BUTTON_REFRESH
-                        };
+                        activeButtonLabelKeys = new String[] { TranslateHelper.Keys.BUTTON_RENAME,
+                            TranslateHelper.Keys.BUTTON_SELECT, TranslateHelper.Keys.BUTTON_HIGHLIGHT,
+                            TranslateHelper.Keys.BUTTON_ASSIGN_FREQ, TranslateHelper.Keys.BUTTON_PENDING_BIND,
+                            TranslateHelper.Keys.BUTTON_REFRESH };
                         activeButtonCount = 6;
                     } else {
-                        activeButtonLabelKeys = new String[]{
-                                TranslateHelper.Keys.BUTTON_RENAME, TranslateHelper.Keys.BUTTON_SELECT,
-                                TranslateHelper.Keys.BUTTON_HIGHLIGHT, TranslateHelper.Keys.BUTTON_PENDING_BIND,
-                                TranslateHelper.Keys.BUTTON_REFRESH
-                        };
+                        activeButtonLabelKeys = new String[] { TranslateHelper.Keys.BUTTON_RENAME,
+                            TranslateHelper.Keys.BUTTON_SELECT, TranslateHelper.Keys.BUTTON_HIGHLIGHT,
+                            TranslateHelper.Keys.BUTTON_PENDING_BIND, TranslateHelper.Keys.BUTTON_REFRESH };
                         activeButtonCount = 5;
                     }
                     break;
                 case CHANNEL:
-                    activeButtonLabelKeys = new String[]{
-                            TranslateHelper.Keys.BUTTON_RENAME, TranslateHelper.Keys.BUTTON_BIND,
-                            TranslateHelper.Keys.BUTTON_HIGHLIGHT, TranslateHelper.Keys.BUTTON_PENDING_BIND,
-                            TranslateHelper.Keys.BUTTON_REFRESH
-                    };
+                    activeButtonLabelKeys = new String[] { TranslateHelper.Keys.BUTTON_RENAME,
+                        TranslateHelper.Keys.BUTTON_BIND, TranslateHelper.Keys.BUTTON_HIGHLIGHT,
+                        TranslateHelper.Keys.BUTTON_PENDING_BIND, TranslateHelper.Keys.BUTTON_REFRESH };
                     activeButtonCount = 5;
                     break;
                 case P2P_TYPE:
                     if (isMEP2PType()) {
-                        activeButtonLabelKeys = new String[]{
-                                TranslateHelper.Keys.BUTTON_REFRESH, TranslateHelper.Keys.BUTTON_INIT_P2P,
-                                TranslateHelper.Keys.BUTTON_PENDING_BIND
-                        };
+                        activeButtonLabelKeys = new String[] { TranslateHelper.Keys.BUTTON_REFRESH,
+                            TranslateHelper.Keys.BUTTON_INIT_P2P, TranslateHelper.Keys.BUTTON_PENDING_BIND };
                     } else {
-                        activeButtonLabelKeys = new String[]{
-                                TranslateHelper.Keys.BUTTON_REFRESH, TranslateHelper.Keys.BUTTON_PENDING_BIND
-                        };
+                        activeButtonLabelKeys = new String[] { TranslateHelper.Keys.BUTTON_REFRESH,
+                            TranslateHelper.Keys.BUTTON_PENDING_BIND };
                     }
                     activeButtonCount = activeButtonLabelKeys.length;
                     break;
@@ -378,9 +493,15 @@ public class DetailPanelWidget {
     private void renderInfoArea(FontRenderer font, int infoHeight) {
         if (selectedNode == null) return;
         switch (selectedNode.type) {
-            case P2P: renderP2PInfoArea(font); break;
-            case CHANNEL: renderChannelInfoArea(font); break;
-            case P2P_TYPE: renderTypeInfoArea(font); break;
+            case P2P:
+                renderP2PInfoArea(font);
+                break;
+            case CHANNEL:
+                renderChannelInfoArea(font);
+                break;
+            case P2P_TYPE:
+                renderTypeInfoArea(font);
+                break;
         }
     }
 
@@ -405,17 +526,44 @@ public class DetailPanelWidget {
         drawLabelValue(font, lx, ly, TranslateHelper.DetailPanel.frequencyLabel(), freqDisplay, getColorValue());
         ly += lineSpacing;
 
-        drawLabelValue(font, lx, ly, TranslateHelper.DetailPanel.typeLabel(), selectedP2PInfo.p2pType(), getColorValue());
+        drawLabelValue(
+            font,
+            lx,
+            ly,
+            TranslateHelper.DetailPanel.typeLabel(),
+            selectedP2PInfo.p2pType(),
+            getColorValue());
         ly += lineSpacing;
 
-        drawLabelValue(font, lx, ly, TranslateHelper.DetailPanel.dimensionLabel(), selectedP2PInfo.dimension(), getColorValue());
+        drawLabelValue(
+            font,
+            lx,
+            ly,
+            TranslateHelper.DetailPanel.dimensionLabel(),
+            selectedP2PInfo.dimension(),
+            getColorValue());
         ly += lineSpacing;
 
-        String position = "[" + selectedP2PInfo.position().getX() + ", " + selectedP2PInfo.position().getY() + ", " + selectedP2PInfo.position().getZ() + "]";
+        String position = "[" + selectedP2PInfo.position()
+            .getX()
+            + ", "
+            + selectedP2PInfo.position()
+                .getY()
+            + ", "
+            + selectedP2PInfo.position()
+                .getZ()
+            + "]";
         drawLabelValue(font, lx, ly, TranslateHelper.DetailPanel.positionLabel(), position, getColorValue());
         ly += lineSpacing;
 
-        drawLabelValue(font, lx, ly, TranslateHelper.DetailPanel.directionLabel(), selectedP2PInfo.direction().name(), getColorValue());
+        drawLabelValue(
+            font,
+            lx,
+            ly,
+            TranslateHelper.DetailPanel.directionLabel(),
+            selectedP2PInfo.direction()
+                .name(),
+            getColorValue());
         ly += lineSpacing;
 
         String status;
@@ -440,10 +588,18 @@ public class DetailPanelWidget {
             if (selectedP2PInfo.isActive() && selectedP2PInfo.isConnected()) {
                 used = selectedP2PInfo.channel();
                 maxCh = selectedP2PInfo.maxChannel();
-                ChannelInfo meChannel = channelInfoMap != null ? channelInfoMap.get(frequency + "|" + selectedP2PInfo.p2pType()) : null;
+                ChannelInfo meChannel = channelInfoMap != null
+                    ? channelInfoMap.get(frequency + "|" + selectedP2PInfo.p2pType())
+                    : null;
                 remaining = meChannel != null ? meChannel.channelRemaining() : 0;
             }
-            drawLabelValue(font, lx, ly, TranslateHelper.DetailPanel.channelInfoLabel(), used + "/" + remaining + "/" + maxCh, getColorValue());
+            drawLabelValue(
+                font,
+                lx,
+                ly,
+                TranslateHelper.DetailPanel.channelInfoLabel(),
+                used + "/" + remaining + "/" + maxCh,
+                getColorValue());
         }
     }
 
@@ -460,7 +616,8 @@ public class DetailPanelWidget {
             }
             if (channelInfo == null) {
                 for (Map.Entry<String, ChannelInfo> e : channelInfoMap.entrySet()) {
-                    if (e.getKey().startsWith(frequency + "|")) {
+                    if (e.getKey()
+                        .startsWith(frequency + "|")) {
                         channelInfo = e.getValue();
                         break;
                     }
@@ -479,7 +636,13 @@ public class DetailPanelWidget {
         ly += lineSpacing;
 
         int p2pCount = channelInfo != null ? channelInfo.p2pCount() : 0;
-        drawLabelValue(font, lx, ly, TranslateHelper.DetailPanel.p2pCountLabel(), String.valueOf(p2pCount), getColorValue());
+        drawLabelValue(
+            font,
+            lx,
+            ly,
+            TranslateHelper.DetailPanel.p2pCountLabel(),
+            String.valueOf(p2pCount),
+            getColorValue());
         ly += lineSpacing;
 
         String p2pType = channelInfo != null ? channelInfo.p2pType() : "unknown";
@@ -491,20 +654,39 @@ public class DetailPanelWidget {
             ArrayList<P2PInfo> p2ps = channelInfo.p2pInfoList();
             if (p2ps != null) {
                 for (P2PInfo info : p2ps) {
-                    if (info.isOutput()) outputCount++; else inputCount++;
+                    if (info.isOutput()) outputCount++;
+                    else inputCount++;
                 }
             }
         }
-        drawLabelValue(font, lx, ly, TranslateHelper.DetailPanel.inputCountLabel(), String.valueOf(inputCount), getColorValue());
+        drawLabelValue(
+            font,
+            lx,
+            ly,
+            TranslateHelper.DetailPanel.inputCountLabel(),
+            String.valueOf(inputCount),
+            getColorValue());
         ly += lineSpacing;
-        drawLabelValue(font, lx, ly, TranslateHelper.DetailPanel.outputCountLabel(), String.valueOf(outputCount), getColorValue());
+        drawLabelValue(
+            font,
+            lx,
+            ly,
+            TranslateHelper.DetailPanel.outputCountLabel(),
+            String.valueOf(outputCount),
+            getColorValue());
         ly += lineSpacing;
 
         if (isChannelMEP2P(channelInfo)) {
             int remaining = channelInfo.channelRemaining();
             int maxCh = channelInfo.maxChannel();
             int usedCh = maxCh - remaining;
-            drawLabelValue(font, lx, ly, TranslateHelper.DetailPanel.channelInfoLabel(), usedCh + "/" + remaining + "/" + maxCh, getColorValue());
+            drawLabelValue(
+                font,
+                lx,
+                ly,
+                TranslateHelper.DetailPanel.channelInfoLabel(),
+                usedCh + "/" + remaining + "/" + maxCh,
+                getColorValue());
         }
     }
 
@@ -516,15 +698,33 @@ public class DetailPanelWidget {
         String typeName = selectedNode.typeName;
         P2PTypeInfo typeInfo = p2pTypeInfoMap != null ? p2pTypeInfoMap.get(typeName) : null;
 
-        drawLabelValue(font, lx, ly, TranslateHelper.DetailPanel.typeLabel(), typeName != null ? typeName : "unknown", getColorTitle());
+        drawLabelValue(
+            font,
+            lx,
+            ly,
+            TranslateHelper.DetailPanel.typeLabel(),
+            typeName != null ? typeName : "unknown",
+            getColorTitle());
         ly += lineSpacing;
 
         int p2pCount = typeInfo != null ? typeInfo.p2pCount() : 0;
-        drawLabelValue(font, lx, ly, TranslateHelper.DetailPanel.totalCountLabel(), String.valueOf(p2pCount), getColorValue());
+        drawLabelValue(
+            font,
+            lx,
+            ly,
+            TranslateHelper.DetailPanel.totalCountLabel(),
+            String.valueOf(p2pCount),
+            getColorValue());
         ly += lineSpacing;
 
         int channelCount = typeInfo != null ? typeInfo.channelCount() : 0;
-        drawLabelValue(font, lx, ly, TranslateHelper.DetailPanel.channelCountLabel(), String.valueOf(channelCount), getColorValue());
+        drawLabelValue(
+            font,
+            lx,
+            ly,
+            TranslateHelper.DetailPanel.channelCountLabel(),
+            String.valueOf(channelCount),
+            getColorValue());
 
         if (isMEP2PType()) {
             ly += lineSpacing;
@@ -539,7 +739,13 @@ public class DetailPanelWidget {
                 }
             }
             int totalUsed = totalMax - totalRemaining;
-            drawLabelValue(font, lx, ly, TranslateHelper.DetailPanel.channelInfoLabel(), totalUsed + "/" + totalRemaining + "/" + totalMax, getColorValue());
+            drawLabelValue(
+                font,
+                lx,
+                ly,
+                TranslateHelper.DetailPanel.channelInfoLabel(),
+                totalUsed + "/" + totalRemaining + "/" + totalMax,
+                getColorValue());
         }
     }
 
@@ -621,16 +827,20 @@ public class DetailPanelWidget {
     }
 
     private String getEffectiveChannelAlias(String frequency) {
-        if (optimisticChannelAlias != null && frequency.equals(optimisticChannelAliasFreq)) return optimisticChannelAlias;
+        if (optimisticChannelAlias != null && frequency.equals(optimisticChannelAliasFreq))
+            return optimisticChannelAlias;
         return getFrequencyAlias(frequency);
     }
 
     private String getFrequencyAlias(String frequency) {
         if (channelInfoMap != null) {
             for (Map.Entry<String, ChannelInfo> e : channelInfoMap.entrySet()) {
-                if (e.getKey().startsWith(frequency + "|")) {
+                if (e.getKey()
+                    .startsWith(frequency + "|")) {
                     ChannelInfo channelInfo = e.getValue();
-                    if (channelInfo != null && channelInfo.alias() != null && !channelInfo.alias().equals("frequency " + frequency)) {
+                    if (channelInfo != null && channelInfo.alias() != null
+                        && !channelInfo.alias()
+                            .equals("frequency " + frequency)) {
                         return channelInfo.alias();
                     }
                     break;
@@ -645,21 +855,33 @@ public class DetailPanelWidget {
             String currentKey = selectedP2PInfo.frequency() + ":" + selectedP2PInfo.toShortString();
             if (currentKey.equals(optimisticP2PNameKey)) return optimisticP2PName;
         }
-        if (selectedP2PInfo.name().isEmpty()) return selectedP2PInfo.toShortString();
+        if (selectedP2PInfo.name()
+            .isEmpty()) return selectedP2PInfo.toShortString();
         return selectedP2PInfo.name();
     }
 
     public interface ActionCallback {
+
         void onRename(P2PInfo p2pInfo, String newName);
+
         void onBind(P2PInfo p2pInfo);
+
         void onSelect(P2PInfo p2pInfo);
+
         void onHighlight(P2PInfo p2pInfo);
+
         void onLocate(P2PInfo p2pInfo);
+
         void onAutoAssign();
+
         void onAssignFreq(P2PInfo p2pInfo);
+
         void onChannelRename(String frequency, String newAlias);
+
         void onChannelBind(String frequency);
+
         void onChannelHighlight(String frequency);
+
         void onRefresh();
     }
 }

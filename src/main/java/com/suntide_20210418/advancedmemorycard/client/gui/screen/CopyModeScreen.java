@@ -1,18 +1,20 @@
 package com.suntide_20210418.advancedmemorycard.client.gui.screen;
 
-import com.suntide_20210418.advancedmemorycard.client.gui.menu.CopyModeMenu;
-import com.suntide_20210418.advancedmemorycard.utils.TranslateHelper;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.entity.player.EntityPlayer;
+
+import com.suntide_20210418.advancedmemorycard.client.gui.menu.CopyModeMenu;
 import com.suntide_20210418.advancedmemorycard.utils.BlockPos;
+import com.suntide_20210418.advancedmemorycard.utils.TranslateHelper;
+
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
-
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @SideOnly(Side.CLIENT)
 public class CopyModeScreen extends GuiContainer {
@@ -29,8 +31,8 @@ public class CopyModeScreen extends GuiContainer {
     private BlockPos startPos;
     private BlockPos endPos;
 
-    private static final Pattern BLOCKPOS_PATTERN =
-            Pattern.compile("BlockPos\\{x=\\s*(-?\\d+),\\s*y=\\s*(-?\\d+),\\s*z=\\s*(-?\\d+)}");
+    private static final Pattern BLOCKPOS_PATTERN = Pattern
+        .compile("BlockPos\\{x=\\s*(-?\\d+),\\s*y=\\s*(-?\\d+),\\s*z=\\s*(-?\\d+)}");
 
     public CopyModeScreen(CopyModeMenu menu, EntityPlayer player) {
         super(menu);
@@ -58,15 +60,24 @@ public class CopyModeScreen extends GuiContainer {
         eY = new GuiTextField(fontRendererObj, baseX + 45, y, w, h);
         eZ = new GuiTextField(fontRendererObj, baseX + 90, y, w, h);
 
-        fields[0] = sX; fields[1] = sY; fields[2] = sZ;
-        fields[3] = eX; fields[4] = eY; fields[5] = eZ;
+        fields[0] = sX;
+        fields[1] = sY;
+        fields[2] = sZ;
+        fields[3] = eX;
+        fields[4] = eY;
+        fields[5] = eZ;
         for (GuiTextField f : fields) {
             f.setMaxStringLength(12);
             f.setText("");
         }
 
-        clearButton = new GuiButton(0, guiLeft + 10, guiTop + ySize - 30, 80, 20,
-                TranslateHelper.translate(TranslateHelper.Keys.COPY_MODE_SCREEN_CLEAR_TOOLTIP));
+        clearButton = new GuiButton(
+            0,
+            guiLeft + 10,
+            guiTop + ySize - 30,
+            80,
+            20,
+            TranslateHelper.translate(TranslateHelper.Keys.COPY_MODE_SCREEN_CLEAR_TOOLTIP));
         this.buttonList.add(clearButton);
 
         updateFieldsFromHeldItem();
@@ -97,10 +108,12 @@ public class CopyModeScreen extends GuiContainer {
             GuiTextField f = fields[i];
             if (!f.isFocused()) {
                 String newVal = coordValue(i);
-                if (!f.getText().equals(newVal)) f.setText(newVal);
+                if (!f.getText()
+                    .equals(newVal)) f.setText(newVal);
                 lastFieldText[i] = f.getText();
             } else {
-                if (!f.getText().equals(lastFieldText[i])) {
+                if (!f.getText()
+                    .equals(lastFieldText[i])) {
                     handleFieldChange(i);
                     lastFieldText[i] = f.getText();
                 }
@@ -112,9 +125,12 @@ public class CopyModeScreen extends GuiContainer {
         BlockPos p = (i < 3) ? startPos : endPos;
         if (p == null) return "";
         switch (i % 3) {
-            case 0: return String.valueOf(p.getX());
-            case 1: return String.valueOf(p.getY());
-            default: return String.valueOf(p.getZ());
+            case 0:
+                return String.valueOf(p.getX());
+            case 1:
+                return String.valueOf(p.getY());
+            default:
+                return String.valueOf(p.getZ());
         }
     }
 
@@ -122,32 +138,52 @@ public class CopyModeScreen extends GuiContainer {
         if (changedIndex < 3) {
             if (!isEmpty(sX) && !isEmpty(sY) && !isEmpty(sZ)) {
                 try {
-                    BlockPos sp = new BlockPos(Integer.parseInt(sX.getText().trim()),
-                            Integer.parseInt(sY.getText().trim()), Integer.parseInt(sZ.getText().trim()));
+                    BlockPos sp = new BlockPos(
+                        Integer.parseInt(
+                            sX.getText()
+                                .trim()),
+                        Integer.parseInt(
+                            sY.getText()
+                                .trim()),
+                        Integer.parseInt(
+                            sZ.getText()
+                                .trim()));
                     menu.dispatchClientAction("revise_start_pos", sp);
-                } catch (NumberFormatException ignored) { }
+                } catch (NumberFormatException ignored) {}
             }
         } else {
             if (!isEmpty(eX) && !isEmpty(eY) && !isEmpty(eZ)) {
                 try {
-                    BlockPos ep = new BlockPos(Integer.parseInt(eX.getText().trim()),
-                            Integer.parseInt(eY.getText().trim()), Integer.parseInt(eZ.getText().trim()));
+                    BlockPos ep = new BlockPos(
+                        Integer.parseInt(
+                            eX.getText()
+                                .trim()),
+                        Integer.parseInt(
+                            eY.getText()
+                                .trim()),
+                        Integer.parseInt(
+                            eZ.getText()
+                                .trim()));
                     menu.dispatchClientAction("revise_end_pos", ep);
-                } catch (NumberFormatException ignored) { }
+                } catch (NumberFormatException ignored) {}
             }
         }
     }
 
     private boolean isEmpty(GuiTextField f) {
-        return f.getText() == null || f.getText().trim().isEmpty();
+        return f.getText() == null || f.getText()
+            .trim()
+            .isEmpty();
     }
 
     public BlockPos parseBlockPos(String input) {
         if (input == null || input.isEmpty()) return null;
         Matcher matcher = BLOCKPOS_PATTERN.matcher(input);
         if (matcher.matches()) {
-            return new BlockPos(Integer.parseInt(matcher.group(1)),
-                    Integer.parseInt(matcher.group(2)), Integer.parseInt(matcher.group(3)));
+            return new BlockPos(
+                Integer.parseInt(matcher.group(1)),
+                Integer.parseInt(matcher.group(2)),
+                Integer.parseInt(matcher.group(3)));
         }
         return null;
     }
@@ -161,12 +197,21 @@ public class CopyModeScreen extends GuiContainer {
         Gui.drawRect(guiLeft, guiTop, guiLeft + xSize, guiTop + ySize, 0xFF2B2B2B);
         Gui.drawRect(guiLeft + 2, guiTop + 2, guiLeft + xSize - 2, guiTop + ySize - 2, 0xFF3B3B3B);
 
-        fontRendererObj.drawString(TranslateHelper.translate(TranslateHelper.Keys.COPY_MODE_SCREEN_TITLE),
-                guiLeft + 4, guiTop + 5, 0xFFFFFFFF);
-        fontRendererObj.drawString(TranslateHelper.translate(TranslateHelper.Keys.COPY_MODE_SCREEN_START_POS),
-                guiLeft + 4, guiTop + 32, 0xFFCCCCCC);
-        fontRendererObj.drawString(TranslateHelper.translate(TranslateHelper.Keys.COPY_MODE_SCREEN_END_POS),
-                guiLeft + 4, guiTop + 57, 0xFFCCCCCC);
+        fontRendererObj.drawString(
+            TranslateHelper.translate(TranslateHelper.Keys.COPY_MODE_SCREEN_TITLE),
+            guiLeft + 4,
+            guiTop + 5,
+            0xFFFFFFFF);
+        fontRendererObj.drawString(
+            TranslateHelper.translate(TranslateHelper.Keys.COPY_MODE_SCREEN_START_POS),
+            guiLeft + 4,
+            guiTop + 32,
+            0xFFCCCCCC);
+        fontRendererObj.drawString(
+            TranslateHelper.translate(TranslateHelper.Keys.COPY_MODE_SCREEN_END_POS),
+            guiLeft + 4,
+            guiTop + 57,
+            0xFFCCCCCC);
 
         for (GuiTextField f : fields) f.drawTextBox();
 
@@ -194,8 +239,7 @@ public class CopyModeScreen extends GuiContainer {
     }
 
     @Override
-    protected void drawGuiContainerBackgroundLayer(float partialTicks, int mouseX, int mouseY) {
-    }
+    protected void drawGuiContainerBackgroundLayer(float partialTicks, int mouseX, int mouseY) {}
 
     @Override
     public boolean doesGuiPauseGame() {

@@ -1,17 +1,19 @@
 package com.suntide_20210418.advancedmemorycard.item.custom;
 
-import com.suntide_20210418.advancedmemorycard.AdvancedMemoryCardMod;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.world.World;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeSet;
 import java.util.function.Supplier;
 
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.world.World;
+
+import com.suntide_20210418.advancedmemorycard.AdvancedMemoryCardMod;
+
 public abstract class CardMode {
+
     private static final Map<String, Supplier<CardMode>> REGISTRY = new HashMap<>();
     private static final TreeSet<String> CYCLE_ORDER = new TreeSet<>();
     private static final String MODE_TYPE = "type";
@@ -24,7 +26,8 @@ public abstract class CardMode {
         if (supplier == null) {
             return new CopyMode();
         } else {
-            return supplier.get().load(data);
+            return supplier.get()
+                .load(data);
         }
     }
 
@@ -75,8 +78,8 @@ public abstract class CardMode {
      * Called from onItemUseFirst in AdvancedMemoryCardItem, before the item is actually
      * used on the part/block so it can be cancelled or modified.
      */
-    public abstract boolean onItemUseFirst(ItemStack stack, EntityPlayer player, World world,
-            int x, int y, int z, int side, float hitX, float hitY, float hitZ);
+    public abstract boolean onItemUseFirst(ItemStack stack, EntityPlayer player, World world, int x, int y, int z,
+        int side, float hitX, float hitY, float hitZ);
 
     public NBTTagCompound save(NBTTagCompound tag) {
         NBTTagCompound data = new NBTTagCompound();

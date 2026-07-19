@@ -1,5 +1,19 @@
 package com.suntide_20210418.advancedmemorycard.p2p;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.tileentity.TileEntity;
+import net.minecraft.world.World;
+
+import com.suntide_20210418.advancedmemorycard.config.ModConfigs;
+import com.suntide_20210418.advancedmemorycard.network.HighlightPacket;
+import com.suntide_20210418.advancedmemorycard.network.NetworkHandler;
+import com.suntide_20210418.advancedmemorycard.utils.BlockPos;
+
 import appeng.api.networking.IGrid;
 import appeng.api.networking.IGridHost;
 import appeng.api.networking.IGridNode;
@@ -7,18 +21,6 @@ import appeng.me.GridAccessException;
 import appeng.me.cache.P2PCache;
 import appeng.parts.p2p.PartP2PTunnel;
 import appeng.parts.p2p.PartP2PTunnelME;
-import com.suntide_20210418.advancedmemorycard.config.ModConfigs;
-import com.suntide_20210418.advancedmemorycard.network.HighlightPacket;
-import com.suntide_20210418.advancedmemorycard.network.NetworkHandler;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.tileentity.TileEntity;
-import com.suntide_20210418.advancedmemorycard.utils.BlockPos;
-import net.minecraft.world.World;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 
 /**
  * P2P 网络分析与管理（AE2 rv3 / 1.7.10 适配）。
@@ -26,6 +28,7 @@ import java.util.List;
  * newFrequency 在 rv3 中不存在故自行生成，TileEntity 坐标使用 xCoord/yCoord/zCoord。
  */
 public class P2PManager {
+
     private PartP2PTunnel p2pTunnelPartBinding;
     private IGrid grid;
     private final EntityPlayer player;
@@ -40,7 +43,8 @@ public class P2PManager {
         this.player = player;
         analysisP2P();
         try {
-            this.p2pService = p2pTunnelPartBinding.getProxy().getP2P();
+            this.p2pService = p2pTunnelPartBinding.getProxy()
+                .getP2P();
         } catch (GridAccessException e) {
             this.p2pService = null;
         }
@@ -153,7 +157,8 @@ public class P2PManager {
 
     private P2PCache getP2PService() {
         try {
-            return p2pTunnelPartBinding.getProxy().getP2P();
+            return p2pTunnelPartBinding.getProxy()
+                .getP2P();
         } catch (GridAccessException e) {
             return null;
         }
@@ -268,8 +273,14 @@ public class P2PManager {
             IGridHost machine = node.getMachine();
             // 不直接引用 appeng.tile.networking.TileController，避免其实现的 GregTech 接口
             // (gregtech.api.interfaces.tileentity.IEnergyConnected) 在编译期缺失导致无法加载类。
-            if (machine != null && machine.getClass().getName().equals("appeng.tile.networking.TileController")) {
-                return true;
+            // TileCreativeEnergyController 继承自 TileController，同样是控制器，需一并判定。
+            if (machine != null) {
+                String className = machine.getClass()
+                    .getName();
+                if (className.equals("appeng.tile.networking.TileController")
+                    || className.equals("appeng.tile.networking.TileCreativeEnergyController")) {
+                    return true;
+                }
             }
         }
         return false;
@@ -305,7 +316,8 @@ public class P2PManager {
         }
         try {
             if (setCustomNameInternalMethod == null) {
-                setCustomNameInternalMethod = PartP2PTunnel.class.getDeclaredMethod("setCustomNameInternal", String.class);
+                setCustomNameInternalMethod = PartP2PTunnel.class
+                    .getDeclaredMethod("setCustomNameInternal", String.class);
                 setCustomNameInternalMethod.setAccessible(true);
             }
             setCustomNameInternalMethod.invoke(part, name);
@@ -410,7 +422,8 @@ public class P2PManager {
     }
 
     public static String getP2PType(PartP2PTunnel p2pPart) {
-        String name = p2pPart.getClass().getSimpleName();
+        String name = p2pPart.getClass()
+            .getSimpleName();
         if (name.startsWith("PartP2PTunnel")) {
             name = name.substring("PartP2PTunnel".length());
         }

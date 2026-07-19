@@ -1,21 +1,24 @@
 package com.suntide_20210418.advancedmemorycard.item.custom;
 
-import appeng.api.parts.IPartHost;
-import appeng.api.parts.SelectedPart;
-import appeng.parts.p2p.PartP2PTunnel;
-import com.suntide_20210418.advancedmemorycard.AdvancedMemoryCardMod;
-import com.suntide_20210418.advancedmemorycard.client.gui.ModGuiHandler;
-import com.suntide_20210418.advancedmemorycard.p2p.P2PManager;
+import static com.suntide_20210418.advancedmemorycard.utils.TranslateHelper.ConfigMode.show;
+import static com.suntide_20210418.advancedmemorycard.utils.TranslateHelper.Tooltip.configInfo;
+
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
 
-import static com.suntide_20210418.advancedmemorycard.utils.TranslateHelper.ConfigMode.show;
-import static com.suntide_20210418.advancedmemorycard.utils.TranslateHelper.Tooltip.configInfo;
+import com.suntide_20210418.advancedmemorycard.AdvancedMemoryCardMod;
+import com.suntide_20210418.advancedmemorycard.client.gui.ModGuiHandler;
+import com.suntide_20210418.advancedmemorycard.p2p.P2PManager;
+
+import appeng.api.parts.IPartHost;
+import appeng.api.parts.SelectedPart;
+import appeng.parts.p2p.PartP2PTunnel;
 
 public class ConfigMode extends CardMode {
+
     private P2PManager currentP2PManager;
 
     @Override
@@ -24,8 +27,8 @@ public class ConfigMode extends CardMode {
     }
 
     @Override
-    public boolean onItemUseFirst(ItemStack stack, EntityPlayer player, World world,
-            int x, int y, int z, int side, float hitX, float hitY, float hitZ) {
+    public boolean onItemUseFirst(ItemStack stack, EntityPlayer player, World world, int x, int y, int z, int side,
+        float hitX, float hitY, float hitZ) {
         if (player != null) {
             TileEntity blockEntity = world.getTileEntity(x, y, z);
             if (blockEntity instanceof IPartHost) {

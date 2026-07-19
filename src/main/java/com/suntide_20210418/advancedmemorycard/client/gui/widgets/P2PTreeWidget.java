@@ -1,18 +1,30 @@
 package com.suntide_20210418.advancedmemorycard.client.gui.widgets;
 
-import com.suntide_20210418.advancedmemorycard.config.ModConfigs;
-import com.suntide_20210418.advancedmemorycard.p2p.*;
-import com.suntide_20210418.advancedmemorycard.utils.TranslateHelper;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Consumer;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.util.EnumChatFormatting;
+
 import org.lwjgl.opengl.GL11;
 
-import java.util.*;
-import java.util.function.Consumer;
-
-import static com.suntide_20210418.advancedmemorycard.AdvancedMemoryCardMod.getLogger;
+import com.suntide_20210418.advancedmemorycard.config.ModConfigs;
+import com.suntide_20210418.advancedmemorycard.p2p.ChannelInfo;
+import com.suntide_20210418.advancedmemorycard.p2p.NodeType;
+import com.suntide_20210418.advancedmemorycard.p2p.P2PInfo;
+import com.suntide_20210418.advancedmemorycard.p2p.P2PPosition;
+import com.suntide_20210418.advancedmemorycard.p2p.P2PTypeInfo;
+import com.suntide_20210418.advancedmemorycard.p2p.TreeNode;
+import com.suntide_20210418.advancedmemorycard.utils.TranslateHelper;
 
 /**
  * P2P 树形控件（1.7.10 vanilla 实现）。<br/>
@@ -65,26 +77,60 @@ public class P2PTreeWidget {
     }
 
     public static int getRowHeight() {
-        return ModConfigs.getClientConfig().treeRowHeight > 0 ? ModConfigs.getClientConfig().treeRowHeight : ROW_HEIGHT_FALLBACK;
+        return ModConfigs.getClientConfig().treeRowHeight > 0 ? ModConfigs.getClientConfig().treeRowHeight
+            : ROW_HEIGHT_FALLBACK;
     }
 
-    private int getColorBg() { return ModConfigs.getClientConfig().treeColorBg; }
-    private int getColorSelected() { return ModConfigs.getClientConfig().treeColorSelected; }
-    private int getColorHover() { return ModConfigs.getClientConfig().treeColorHover; }
-    private int getIndentWidth() { return ModConfigs.getClientConfig().treeIndentWidth; }
-    private int getIconTextSpacing() { return ModConfigs.getClientConfig().treeIconTextSpacing; }
-    private int getExpandIconWidth() { return ModConfigs.getClientConfig().treeExpandIconWidth; }
-    private int getChannelWarningThreshold() { return ModConfigs.getClientConfig().treeChannelWarningThreshold; }
-    private int getP2PNameMaxLength() { return ModConfigs.getClientConfig().treeP2PNameMaxLength; }
+    private int getColorBg() {
+        return ModConfigs.getClientConfig().treeColorBg;
+    }
 
-    public int getX() { return x; }
-    public int getY() { return y; }
-    public int getWidth() { return width; }
-    public int getHeight() { return height; }
+    private int getColorSelected() {
+        return ModConfigs.getClientConfig().treeColorSelected;
+    }
 
-    public void updateData(Map<String, P2PTypeInfo> p2pTypeInfoMap,
-                           Map<String, ChannelInfo> channelInfoMap,
-                           Map<P2PPosition, P2PInfo> p2pInfoMap) {
+    private int getColorHover() {
+        return ModConfigs.getClientConfig().treeColorHover;
+    }
+
+    private int getIndentWidth() {
+        return ModConfigs.getClientConfig().treeIndentWidth;
+    }
+
+    private int getIconTextSpacing() {
+        return ModConfigs.getClientConfig().treeIconTextSpacing;
+    }
+
+    private int getExpandIconWidth() {
+        return ModConfigs.getClientConfig().treeExpandIconWidth;
+    }
+
+    private int getChannelWarningThreshold() {
+        return ModConfigs.getClientConfig().treeChannelWarningThreshold;
+    }
+
+    private int getP2PNameMaxLength() {
+        return ModConfigs.getClientConfig().treeP2PNameMaxLength;
+    }
+
+    public int getX() {
+        return x;
+    }
+
+    public int getY() {
+        return y;
+    }
+
+    public int getWidth() {
+        return width;
+    }
+
+    public int getHeight() {
+        return height;
+    }
+
+    public void updateData(Map<String, P2PTypeInfo> p2pTypeInfoMap, Map<String, ChannelInfo> channelInfoMap,
+        Map<P2PPosition, P2PInfo> p2pInfoMap) {
         this.p2pTypeInfoMap = p2pTypeInfoMap != null ? p2pTypeInfoMap : new HashMap<>();
         this.channelInfoMap = channelInfoMap != null ? channelInfoMap : new HashMap<>();
         this.p2pInfoMap = p2pInfoMap != null ? p2pInfoMap : new HashMap<>();
@@ -122,7 +168,9 @@ public class P2PTreeWidget {
         String selectedNodeId = getSelectedNodeId();
 
         P2PInfo targetP2P = pendingNavigateTarget;
-        if (targetP2P == null && selectedNode != null && selectedNode.type == NodeType.P2P && selectedNode.p2pInfo != null) {
+        if (targetP2P == null && selectedNode != null
+            && selectedNode.type == NodeType.P2P
+            && selectedNode.p2pInfo != null) {
             targetP2P = selectedNode.p2pInfo;
         }
 
@@ -187,7 +235,7 @@ public class P2PTreeWidget {
             typeNode.type = NodeType.P2P_TYPE;
             typeNode.typeName = typeName;
             typeNode.expanded = expandedTypeIds.contains(typeNode.getNodeId())
-                    || expandedStateCache.getOrDefault(typeNode.getNodeId(), false);
+                || expandedStateCache.getOrDefault(typeNode.getNodeId(), false);
             typeNode.data = typeInfo;
             flatNodes.add(typeNode);
 
@@ -200,7 +248,7 @@ public class P2PTreeWidget {
                         channelNode.type = NodeType.CHANNEL;
                         channelNode.frequency = channelInfo.frequency();
                         channelNode.expanded = expandedTypeIds.contains(channelNode.getNodeId())
-                                || expandedStateCache.getOrDefault(channelNode.getNodeId(), false);
+                            || expandedStateCache.getOrDefault(channelNode.getNodeId(), false);
                         channelNode.data = channelInfo;
                         channelNode.parent = typeNode;
                         flatNodes.add(channelNode);
@@ -236,19 +284,35 @@ public class P2PTreeWidget {
         }
     }
 
-    public P2PInfo getSelectedP2PInfo() { return selectedP2PInfo; }
-    public TreeNode getSelectedNode() { return selectedNode; }
-    public int getScrollOffset() { return currentScrollOffset; }
-    public void setScrollOffset(int scrollOffset) { this.currentScrollOffset = scrollOffset; }
-    public int getTotalContentHeight() { return flatNodes.size() * getRowHeight(); }
+    public P2PInfo getSelectedP2PInfo() {
+        return selectedP2PInfo;
+    }
+
+    public TreeNode getSelectedNode() {
+        return selectedNode;
+    }
+
+    public int getScrollOffset() {
+        return currentScrollOffset;
+    }
+
+    public void setScrollOffset(int scrollOffset) {
+        this.currentScrollOffset = scrollOffset;
+    }
+
+    public int getTotalContentHeight() {
+        return flatNodes.size() * getRowHeight();
+    }
 
     public void setSearchFilter(String query) {
-        if (query == null || query.trim().isEmpty()) {
+        if (query == null || query.trim()
+            .isEmpty()) {
             if (!isSearchMode) return;
             this.currentSearchQuery = null;
             this.isSearchMode = false;
         } else {
-            this.currentSearchQuery = query.trim().toLowerCase();
+            this.currentSearchQuery = query.trim()
+                .toLowerCase();
             this.isSearchMode = true;
         }
         rebuildTree();
@@ -270,7 +334,8 @@ public class P2PTreeWidget {
             Map<String, List<P2PInfo>> byFrequency = new LinkedHashMap<>();
             for (P2PInfo p2p : matchedP2ps) {
                 String freq = String.valueOf(p2p.frequency());
-                byFrequency.computeIfAbsent(freq, k -> new ArrayList<>()).add(p2p);
+                byFrequency.computeIfAbsent(freq, k -> new ArrayList<>())
+                    .add(p2p);
             }
             groupedResults.put(typeInfo.p2pType(), byFrequency);
             searchResultCount += matchedP2ps.size();
@@ -280,7 +345,10 @@ public class P2PTreeWidget {
             String typeName = typeEntry.getKey();
             Map<String, List<P2PInfo>> freqMap = typeEntry.getValue();
             P2PTypeInfo typeInfo = p2pTypeInfoMap.get(typeName);
-            int typeMatchCount = freqMap.values().stream().mapToInt(List::size).sum();
+            int typeMatchCount = freqMap.values()
+                .stream()
+                .mapToInt(List::size)
+                .sum();
 
             TreeNode typeNode = new TreeNode();
             typeNode.type = NodeType.P2P_TYPE;
@@ -316,11 +384,21 @@ public class P2PTreeWidget {
     }
 
     private boolean matchesSearch(P2PInfo p2p, String lowerQuery) {
-        if (p2p.p2pType() != null && p2p.p2pType().toLowerCase().contains(lowerQuery)) return true;
-        if (String.valueOf(p2p.frequency()).toLowerCase().contains(lowerQuery)) return true;
-        if (p2p.name() != null && p2p.name().toLowerCase().contains(lowerQuery)) return true;
+        if (p2p.p2pType() != null && p2p.p2pType()
+            .toLowerCase()
+            .contains(lowerQuery)) return true;
+        if (String.valueOf(p2p.frequency())
+            .toLowerCase()
+            .contains(lowerQuery)) return true;
+        if (p2p.name() != null && p2p.name()
+            .toLowerCase()
+            .contains(lowerQuery)) return true;
         ChannelInfo channelInfo = channelInfoMap.get(p2p.frequency() + "|" + p2p.p2pType());
-        if (channelInfo != null && channelInfo.alias() != null && channelInfo.alias().toLowerCase().contains(lowerQuery)) return true;
+        if (channelInfo != null && channelInfo.alias() != null
+            && channelInfo.alias()
+                .toLowerCase()
+                .contains(lowerQuery))
+            return true;
         return false;
     }
 
@@ -359,8 +437,10 @@ public class P2PTreeWidget {
     }
 
     private String formatTypeDisplayName(String typeName, P2PTypeInfo typeInfo) {
-        return EnumChatFormatting.GOLD + typeName + " "
-                + EnumChatFormatting.GRAY + String.format("(%d P2P, %d Freq)", typeInfo.p2pCount(), typeInfo.channelCount());
+        return EnumChatFormatting.GOLD + typeName
+            + " "
+            + EnumChatFormatting.GRAY
+            + String.format("(%d P2P, %d Freq)", typeInfo.p2pCount(), typeInfo.channelCount());
     }
 
     private String formatChannelDisplayName(ChannelInfo channelInfo) {
@@ -368,7 +448,8 @@ public class P2PTreeWidget {
         String freq = channelInfo.frequency();
         int channelRemaining = channelInfo.channelRemaining();
         int p2pCount = channelInfo.p2pCount();
-        boolean isMEP2P = channelInfo.p2pType().equals("ME");
+        boolean isMEP2P = channelInfo.p2pType()
+            .equals("ME");
 
         String aliasStr;
         if (alias != null && !alias.equals(freq)) {
@@ -382,15 +463,26 @@ public class P2PTreeWidget {
             EnumChatFormatting channelColor = EnumChatFormatting.GREEN;
             if (channelRemaining <= 0) channelColor = EnumChatFormatting.RED;
             else if (channelRemaining < getChannelWarningThreshold()) channelColor = EnumChatFormatting.YELLOW;
-            sb.append(" ").append(channelColor).append("[").append(p2pCount).append(" P2P | ").append(channelRemaining).append("]");
+            sb.append(" ")
+                .append(channelColor)
+                .append("[")
+                .append(p2pCount)
+                .append(" P2P | ")
+                .append(channelRemaining)
+                .append("]");
         } else {
-            sb.append(" ").append(EnumChatFormatting.GREEN).append("[").append(p2pCount).append(" P2P]");
+            sb.append(" ")
+                .append(EnumChatFormatting.GREEN)
+                .append("[")
+                .append(p2pCount)
+                .append(" P2P]");
         }
         return sb.toString();
     }
 
     private String formatP2PDisplayName(P2PInfo p2pInfo) {
-        String name = p2pInfo.name().isEmpty() ? p2pInfo.toShortString() : p2pInfo.name();
+        String name = p2pInfo.name()
+            .isEmpty() ? p2pInfo.toShortString() : p2pInfo.name();
         boolean isOutput = p2pInfo.isOutput();
         boolean isActive = p2pInfo.isActive();
         boolean isConnected = p2pInfo.isConnected();
@@ -408,7 +500,12 @@ public class P2PTreeWidget {
         else if (isActive && isConnected) nameColor = EnumChatFormatting.WHITE + "";
         else nameColor = EnumChatFormatting.YELLOW + "";
 
-        return statusMarker + " " + dirMarker + " " + nameColor + truncateString(name, getP2PNameMaxLength()) + EnumChatFormatting.RESET;
+        return statusMarker + " "
+            + dirMarker
+            + " "
+            + nameColor
+            + truncateString(name, getP2PNameMaxLength())
+            + EnumChatFormatting.RESET;
     }
 
     private String truncateString(String str, int maxLength) {
@@ -515,7 +612,8 @@ public class P2PTreeWidget {
     private String getDisplayString(TreeNode node) {
         switch (node.type) {
             case P2P_TYPE:
-                if (node.data instanceof P2PTypeInfo) return formatTypeDisplayName(node.typeName, (P2PTypeInfo) node.data);
+                if (node.data instanceof P2PTypeInfo)
+                    return formatTypeDisplayName(node.typeName, (P2PTypeInfo) node.data);
                 return node.typeName != null ? node.typeName : "";
             case CHANNEL:
                 if (node.data instanceof ChannelInfo) return formatChannelDisplayName((ChannelInfo) node.data);

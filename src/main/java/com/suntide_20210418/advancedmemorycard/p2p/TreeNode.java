@@ -3,6 +3,7 @@ package com.suntide_20210418.advancedmemorycard.p2p;
 import java.util.Objects;
 
 public class TreeNode {
+
     public NodeType type;
     public String typeName;
     public String frequency;

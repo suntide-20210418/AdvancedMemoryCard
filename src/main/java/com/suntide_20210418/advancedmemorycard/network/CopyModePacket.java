@@ -1,13 +1,15 @@
 package com.suntide_20210418.advancedmemorycard.network;
 
+import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.inventory.Container;
+
+import com.suntide_20210418.advancedmemorycard.utils.BlockPos;
+
+import cpw.mods.fml.common.network.ByteBufUtils;
 import cpw.mods.fml.common.network.simpleimpl.IMessage;
 import cpw.mods.fml.common.network.simpleimpl.IMessageHandler;
 import cpw.mods.fml.common.network.simpleimpl.MessageContext;
 import io.netty.buffer.ByteBuf;
-import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.inventory.Container;
-import com.suntide_20210418.advancedmemorycard.utils.BlockPos;
-import cpw.mods.fml.common.network.ByteBufUtils;
 
 /**
  * 客户端 -> 服务端：复制模式 GUI 中的操作（清除、修改起止点、刷新）。
@@ -15,14 +17,14 @@ import cpw.mods.fml.common.network.ByteBufUtils;
 public class CopyModePacket implements IMessage {
 
     public interface ICopyMenu {
+
         void handleCopyAction(String action, BlockPos pos);
     }
 
     private String action;
     private BlockPos pos;
 
-    public CopyModePacket() {
-    }
+    public CopyModePacket() {}
 
     public CopyModePacket(String action) {
         this(action, null);
@@ -59,6 +61,7 @@ public class CopyModePacket implements IMessage {
     }
 
     public static class Handler implements IMessageHandler<CopyModePacket, IMessage> {
+
         @Override
         public IMessage onMessage(CopyModePacket msg, MessageContext ctx) {
             EntityPlayerMP player = ctx.getServerHandler().playerEntity;

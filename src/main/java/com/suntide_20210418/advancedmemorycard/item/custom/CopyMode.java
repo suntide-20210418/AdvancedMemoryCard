@@ -1,27 +1,29 @@
 package com.suntide_20210418.advancedmemorycard.item.custom;
 
-import appeng.api.parts.IPart;
-import appeng.api.parts.IPartHost;
-import appeng.items.tools.ToolMemoryCard;
-import appeng.tile.AEBaseTile;
-import appeng.util.SettingsFrom;
-import com.suntide_20210418.advancedmemorycard.AdvancedMemoryCardMod;
-import com.suntide_20210418.advancedmemorycard.config.ModConfigs;
+import static com.suntide_20210418.advancedmemorycard.utils.AreaHelper.Area;
+import static com.suntide_20210418.advancedmemorycard.utils.AreaHelper.calculateVolume;
+import static com.suntide_20210418.advancedmemorycard.utils.TranslateHelper.CopyMode.*;
+import static com.suntide_20210418.advancedmemorycard.utils.TranslateHelper.Tooltip.*;
+
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
-import com.suntide_20210418.advancedmemorycard.utils.BlockPos;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
-import static com.suntide_20210418.advancedmemorycard.utils.AreaHelper.Area;
-import static com.suntide_20210418.advancedmemorycard.utils.AreaHelper.calculateVolume;
-import static com.suntide_20210418.advancedmemorycard.utils.TranslateHelper.CopyMode.*;
-import static com.suntide_20210418.advancedmemorycard.utils.TranslateHelper.Tooltip.*;
+import com.suntide_20210418.advancedmemorycard.AdvancedMemoryCardMod;
+import com.suntide_20210418.advancedmemorycard.config.ModConfigs;
+import com.suntide_20210418.advancedmemorycard.utils.BlockPos;
+
+import appeng.api.parts.IPart;
+import appeng.api.parts.IPartHost;
+import appeng.items.tools.ToolMemoryCard;
+import appeng.tile.AEBaseTile;
+import appeng.util.SettingsFrom;
 
 public class CopyMode extends CardMode {
 
@@ -184,8 +186,7 @@ public class CopyMode extends CardMode {
         } else if (endPos == null) {
             return copyInfo() + copyFirstPos(startPos.toString());
         } else {
-            return copyInfo() + copyFirstPos(startPos.toString())
-                    + copySecondPos(endPos.toString()) + copyReady();
+            return copyInfo() + copyFirstPos(startPos.toString()) + copySecondPos(endPos.toString()) + copyReady();
         }
     }
 
@@ -197,8 +198,8 @@ public class CopyMode extends CardMode {
     }
 
     @Override
-    public boolean onItemUseFirst(ItemStack stack, EntityPlayer player, World world,
-            int x, int y, int z, int side, float hitX, float hitY, float hitZ) {
+    public boolean onItemUseFirst(ItemStack stack, EntityPlayer player, World world, int x, int y, int z, int side,
+        float hitX, float hitY, float hitZ) {
         if (player != null) {
             if (startPos == null) {
                 startPos = new BlockPos(x, y, z);
@@ -218,8 +219,8 @@ public class CopyMode extends CardMode {
                 isCopying = true;
                 this.save(CardMode.getOrCreateRoot(stack));
                 int[] area = Area(startPos, endPos);
-                player.addChatMessage(new ChatComponentText(
-                        secondPosMarked(endPos.toString(), area[0], area[1], area[2])));
+                player.addChatMessage(
+                    new ChatComponentText(secondPosMarked(endPos.toString(), area[0], area[1], area[2])));
             }
         }
         return true;

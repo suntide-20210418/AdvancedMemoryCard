@@ -1,13 +1,14 @@
 package com.suntide_20210418.advancedmemorycard.client.gui.menu;
 
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.InventoryPlayer;
+import net.minecraft.inventory.Container;
+import net.minecraft.item.ItemStack;
+
 import com.suntide_20210418.advancedmemorycard.item.custom.AdvancedMemoryCardItem;
 import com.suntide_20210418.advancedmemorycard.item.custom.CardMode;
 import com.suntide_20210418.advancedmemorycard.item.custom.CopyMode;
 import com.suntide_20210418.advancedmemorycard.network.CopyModePacket;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.inventory.Container;
-import net.minecraft.entity.player.InventoryPlayer;
-import net.minecraft.item.ItemStack;
 import com.suntide_20210418.advancedmemorycard.utils.BlockPos;
 
 /**
@@ -74,7 +75,8 @@ public class CopyModeMenu extends Container implements CopyModePacket.ICopyMenu 
     public void sendClearPos() {
         ItemStack stack = playerInventory.player.getHeldItem();
         if (stack.getItem() instanceof AdvancedMemoryCardItem) {
-            ((AdvancedMemoryCardItem) stack.getItem()).clearCard(playerInventory.player, playerInventory.player.worldObj);
+            ((AdvancedMemoryCardItem) stack.getItem())
+                .clearCard(playerInventory.player, playerInventory.player.worldObj);
         }
     }
 
