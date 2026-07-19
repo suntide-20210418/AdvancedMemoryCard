@@ -2,7 +2,6 @@ package com.suntide_20210418.advancedmemorycard;
 
 import org.apache.logging.log4j.Logger;
 
-import com.suntide_20210418.advancedmemorycard.client.gui.ModGuiHandler;
 import com.suntide_20210418.advancedmemorycard.command.TeleportCommand;
 import com.suntide_20210418.advancedmemorycard.config.ModConfigs;
 import com.suntide_20210418.advancedmemorycard.item.ModItems;
@@ -27,6 +26,10 @@ public class AdvancedMemoryCardMod {
     public static final String NAME = "Advanced Memory Card";
     public static final String VERSION = "1.0.0";
 
+    // GUI 标识（服务端/客户端共用，避免通用代码引用 client 包下的类）
+    public static final int CONFIG_GUI_ID = 0;
+    public static final int COPY_GUI_ID = 1;
+
     public static AdvancedMemoryCardMod INSTANCE;
     @SidedProxy(
         clientSide = "com.suntide_20210418.advancedmemorycard.client.ClientProxy",
@@ -40,7 +43,7 @@ public class AdvancedMemoryCardMod {
         logger = event.getModLog();
         ModConfigs.init(event);
         NetworkHandler.register();
-        NetworkRegistry.INSTANCE.registerGuiHandler(this, new ModGuiHandler());
+        NetworkRegistry.INSTANCE.registerGuiHandler(this, new GuiHandler());
         CardMode.initializeModes();
         ModItems.register();
         proxy.preInit(event);

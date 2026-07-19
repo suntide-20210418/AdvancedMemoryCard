@@ -8,10 +8,10 @@ import net.minecraft.entity.player.EntityPlayer;
 
 import org.lwjgl.input.Mouse;
 
-import com.suntide_20210418.advancedmemorycard.client.gui.menu.ConfigModeMenu;
 import com.suntide_20210418.advancedmemorycard.client.gui.widgets.DetailPanelWidget;
 import com.suntide_20210418.advancedmemorycard.client.gui.widgets.P2PTreeWidget;
 import com.suntide_20210418.advancedmemorycard.config.ModConfigs;
+import com.suntide_20210418.advancedmemorycard.menu.ConfigModeMenu;
 import com.suntide_20210418.advancedmemorycard.network.ConfigModeSyncPacket;
 import com.suntide_20210418.advancedmemorycard.network.NetworkHandler;
 import com.suntide_20210418.advancedmemorycard.p2p.NodeType;

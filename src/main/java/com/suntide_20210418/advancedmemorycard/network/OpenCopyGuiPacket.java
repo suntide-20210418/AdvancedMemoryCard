@@ -3,7 +3,6 @@ package com.suntide_20210418.advancedmemorycard.network;
 import net.minecraft.entity.player.EntityPlayerMP;
 
 import com.suntide_20210418.advancedmemorycard.AdvancedMemoryCardMod;
-import com.suntide_20210418.advancedmemorycard.client.gui.ModGuiHandler;
 
 import cpw.mods.fml.common.network.simpleimpl.IMessage;
 import cpw.mods.fml.common.network.simpleimpl.IMessageHandler;
@@ -28,7 +27,7 @@ public class OpenCopyGuiPacket implements IMessage {
         @Override
         public IMessage onMessage(OpenCopyGuiPacket msg, MessageContext ctx) {
             EntityPlayerMP player = ctx.getServerHandler().playerEntity;
-            player.openGui(AdvancedMemoryCardMod.INSTANCE, ModGuiHandler.COPY_GUI_ID, player.worldObj, 0, 0, 0);
+            player.openGui(AdvancedMemoryCardMod.INSTANCE, AdvancedMemoryCardMod.COPY_GUI_ID, player.worldObj, 0, 0, 0);
             return null;
         }
     }

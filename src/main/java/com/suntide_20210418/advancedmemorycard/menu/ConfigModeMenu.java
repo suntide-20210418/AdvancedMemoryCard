@@ -1,4 +1,4 @@
-package com.suntide_20210418.advancedmemorycard.client.gui.menu;
+package com.suntide_20210418.advancedmemorycard.menu;
 
 import java.util.ArrayList;
 import java.util.HashMap;
