@@ -1,6 +1,6 @@
 # Advanced Memory Card 高级内存卡
 
-[简体中文](README.md) | **English**（见 [README_en.md](README_en.md)）
+**简体中文** | [English](README_en.md)
 
 一个 Applied Energistics 2（AE2）扩展模组，为 AE2 内存卡提供**批量复制**与**P2P 通道高级配置**两大增强功能。
 
