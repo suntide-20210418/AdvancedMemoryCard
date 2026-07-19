@@ -1,6 +1,8 @@
 package com.suntide_20210418.advancedmemorycard.utils;
 
-import net.minecraft.client.resources.I18n;
+import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 
 /**
  * 翻译助手工具类 提供统一的翻译、格式化与本地化功能（1.12.2 适配：返回 String）
@@ -104,8 +106,21 @@ public class TranslateHelper {
         public static final String TOOLTIP_CONFIG_INFO = TOOLTIP_PREFIX + "config.info";
     }
 
+    /**
+     * 按当前端分派翻译实现，使本类可在专用服务端安全加载与调用：
+     * 客户端走 {@code net.minecraft.client.resources.I18n}（仅在客户端 jar 中存在），
+     * 服务端走双端可用的 {@code net.minecraft.util.text.translation.I18n}。
+     */
     public static String translate(String key, Object... args) {
-        return I18n.format(key, args);
+        if (FMLCommonHandler.instance().getEffectiveSide() == Side.CLIENT) {
+            return translateClient(key, args);
+        }
+        return net.minecraft.util.text.translation.I18n.translateToLocalFormatted(key, args);
+    }
+
+    @SideOnly(Side.CLIENT)
+    private static String translateClient(String key, Object... args) {
+        return net.minecraft.client.resources.I18n.format(key, args);
     }
 
     public static String formatCoordinates(int x, int y, int z) {

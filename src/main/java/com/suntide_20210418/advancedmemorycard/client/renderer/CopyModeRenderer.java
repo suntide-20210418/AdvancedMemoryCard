@@ -77,7 +77,7 @@ public class CopyModeRenderer {
         GlStateManager.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
         GlStateManager.glLineWidth(2.0F);
 
-        int color = copyMode.getSelectionColor();
+        int color = getSelectionColor(copyMode);
         float[] rgb = RGB(color);
         float alpha = 1.0F;
 
@@ -110,6 +110,17 @@ public class CopyModeRenderer {
         GlStateManager.disableBlend();
         GlStateManager.enableTexture2D();
         GlStateManager.popMatrix();
+    }
+
+    /** 选择框状态颜色：仅客户端渲染使用，读取玩家本地客户端配置 */
+    private static int getSelectionColor(CopyMode copyMode) {
+        if (copyMode.isCopying()) {
+            return ModConfigs.getClientConfig().copySelectionReady;
+        } else if (copyMode.getEndPos() == null && copyMode.getStartPos() != null) {
+            return ModConfigs.getClientConfig().copySelectionSecond;
+        } else {
+            return ModConfigs.getClientConfig().copySelectionFirst;
+        }
     }
 
     private static void renderBlock(BufferBuilder buffer, Tessellator tessellator, BlockPos blockPos, int color) {
