@@ -9,7 +9,7 @@ import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.entity.player.EntityPlayer;
 
-import com.suntide_20210418.advancedmemorycard.client.gui.menu.CopyModeMenu;
+import com.suntide_20210418.advancedmemorycard.menu.CopyModeMenu;
 import com.suntide_20210418.advancedmemorycard.utils.BlockPos;
 import com.suntide_20210418.advancedmemorycard.utils.TranslateHelper;
 

@@ -1,4 +1,4 @@
-package com.suntide_20210418.advancedmemorycard.client.gui.menu;
+package com.suntide_20210418.advancedmemorycard.menu;
 
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.InventoryPlayer;
