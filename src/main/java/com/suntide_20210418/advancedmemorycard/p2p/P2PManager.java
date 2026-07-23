@@ -9,8 +9,6 @@ import appeng.parts.p2p.MEP2PTunnelPart;
 import appeng.api.ids.AEComponents;
 import appeng.parts.p2p.P2PTunnelPart;
 import appeng.util.SettingsFrom;
-import com.suntide_20210418.advancedmemorycard.client.renderer.P2PRenderer;
-import com.suntide_20210418.advancedmemorycard.config.ModConfigs;
 import com.suntide_20210418.advancedmemorycard.mixin.P2PTunnelPartMixin;
 import net.minecraft.core.component.DataComponentMap;
 import net.minecraft.network.chat.Component;
@@ -341,36 +339,6 @@ public class P2PManager {
     public static ResourceLocation getP2PType(P2PTunnelPart<?> p2pPart){
         IPartItem<?> partItem = p2pPart.getPartItem();
         return IPartItem.getId(partItem);
-    }
-
-    public void renderP2P(P2PTunnelPart<?> p2pPart) {
-        if (p2pPart == null) return;
-        P2PRenderer p2pRenderer = P2PRenderer.getInstance();
-        p2pRenderer.clearAllRenders();
-        p2pRenderer.triggerRender(p2pPart, ModConfigs.getClientConfig().highlightColorSelf.get());
-        if (p2pPart.getInput() != null) {
-            p2pRenderer.triggerRender(p2pPart.getInput(), ModConfigs.getClientConfig().highlightColorInput.get());
-        }
-        for (P2PTunnelPart<?> output : p2pPart.getOutputs()) {
-            if (output == p2pPart || output == null) continue;
-            p2pRenderer.triggerRender(output, ModConfigs.getClientConfig().highlightColorOutput.get());
-        }
-    }
-
-    public void renderP2P(String frequencyHex){
-        // 运行时重新获取 p2pService，避免因构造时网络未就绪导致渲染失败
-        IGrid currentGrid = getCurrentGrid();
-        if (currentGrid == null) return;
-        P2PService currentP2PService = P2PService.get(currentGrid);
-        if (currentP2PService == null) return;
-
-        P2PRenderer p2pRenderer = P2PRenderer.getInstance();
-        p2pRenderer.clearAllRenders();
-        short freq = (short) Integer.parseInt(frequencyHex, 16);
-        P2PTunnelPart<?> input = currentP2PService.getInput(freq);
-        if (input == null) return;
-        p2pRenderer.triggerRender(input, ModConfigs.getClientConfig().highlightColorInput.get());
-        input.getOutputs().forEach(output -> p2pRenderer.triggerRender(output, ModConfigs.getClientConfig().highlightColorOutput.get()));
     }
 
     /**
