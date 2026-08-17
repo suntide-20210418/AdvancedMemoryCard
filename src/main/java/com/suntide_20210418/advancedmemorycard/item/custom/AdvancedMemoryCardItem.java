@@ -42,7 +42,7 @@ public class AdvancedMemoryCardItem extends MemoryCardItem implements IMenuItem 
                     return InteractionResult.CONSUME;
                 }
             }
-            return CardMode.of(stack).onItemUseFirst(stack, context);
+            return cardMode.onItemUseFirst(stack, context);
         }
 
         return InteractionResult.sidedSuccess(level.isClientSide());

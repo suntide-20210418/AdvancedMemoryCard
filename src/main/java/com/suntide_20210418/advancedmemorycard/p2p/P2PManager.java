@@ -184,10 +184,11 @@ public class P2PManager {
             // 这会从旧频段的inputs/outputs映射中移除该设备
             currentP2PService.updateFreq(p2pPart, (short) 0);
 
-            // 重置为输出端模式
-            ((P2PTunnelPartMixin) p2pPart).invokeSetOutput(true);
-            // 重新用当前频段(0)调用 updateFreq，确保 P2PService 的 inputs/outputs map 被正确同步
-            currentP2PService.updateFreq(p2pPart, (short) 0);
+            // 角色修正交给 processSingleP2PPart：它遵循"有控制器方为输入端"的规则
+            // 来决定输入/输出端，而不是无条件把所有异常 P2P 重置为输出端。
+            // 这样可以避免把正常配置好的输入端误改成输出端并持久化到存档。
+            // 非 ME P2P 会被 processSingleP2PPart 内部忽略，保留玩家配置的角色。
+            processSingleP2PPart(p2pPart, currentP2PService);
         }
 
         // 验证：重新扫描网格中的P2P设备，刷新映射，确保异常状态已被彻底清除
@@ -227,17 +228,16 @@ public class P2PManager {
 
         IGridNode externalNode = meP2PTunnelPart.getExternalFacingNode();
         if (externalNode == null) {
-            // 节点已被破坏，默认设为输出
-            ((P2PTunnelPartMixin) p2pPart).invokeSetOutput(true);
-            // 同步 P2PService 的 inputs/outputs map
+            // 外部节点尚未就绪（刚放置或网络重建中），此时无法判断是否有控制器，
+            // 不强制改写输入/输出端角色，保留玩家/频道管理设定的角色，仅同步连接。
             p2pService.updateFreq(p2pPart, p2pPart.getFrequency());
             return;
         }
 
         IGrid externalGrid = externalNode.getGrid();
         if (externalGrid == null || externalGrid.isEmpty()) {
-            ((P2PTunnelPartMixin) p2pPart).invokeSetOutput(true);
-            // 同步 P2PService 的 inputs/outputs map
+            // 外部网络尚未就绪，同样无法判断控制器，保留当前角色，仅同步连接，
+            // 避免在重进存档的网络重建时序中把正常输入端误判为输出端。
             p2pService.updateFreq(p2pPart, p2pPart.getFrequency());
             return;
         }
