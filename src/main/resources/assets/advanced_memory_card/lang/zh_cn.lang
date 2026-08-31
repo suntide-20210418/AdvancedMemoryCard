@@ -1,3 +1,4 @@
+#PARSE_ESCAPES
 item.advanced_memory_card.advanced_memory_card=高级内存卡
 item.advanced_memory_card.advanced_memory_card.name=高级内存卡
 itemGroup.advanced_memory_card.tab=高级内存卡
