@@ -239,6 +239,13 @@ public class DetailPanelWidget extends AbstractWidget {
                 }
                 break;
             case 1: // 绑定
+                // 频段 0 是"未连接"分组，不是可绑定目标：绑上去等于静默解绑。
+                // 服务端 P2PManager.bind() 也会再拦一道，这里先给出即时反馈。
+                if ("0000".equals(frequency)) {
+                    Minecraft.getInstance().player.displayClientMessage(
+                            TranslateHelper.Tooltip.unconnectedNotBindable(), true);
+                    return;
+                }
                 actionCallback.onChannelBind(frequency);
                 break;
             case 2: // 高亮

@@ -113,7 +113,11 @@ public class ConfigModeMenu extends AEBaseMenu {
     }
 
     private void handleBindFrequency(String frequencyHex) {
+        if (p2pManager == null) return;
         p2pManager.bind(frequencyHex);
+        // 立即回读一次真实状态：否则界面要等下一个轮询周期才更新，
+        // 玩家会把"绑定失败/被拒绝"误读成绑定成功。
+        updateItemInfo();
     }
 
     // 发送时传递复合参数（格式：frequency|alias）

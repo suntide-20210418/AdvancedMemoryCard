@@ -33,9 +33,38 @@ public class P2PManager {
         this.p2pFrequencyAndAlias = new HashMap<>();
         this.player = player;
         analysisP2P();
-        this.p2pService = P2PService.get(grid);
+        // 部件的 freq/output 持久化在方块 NBT 里，而 P2PService 的 inputs/outputs
+        // 是纯运行时映射，只在节点被并入网格时由 addNode 重建。二者不是同一份状态：
+        // 重进存档 / 网络重建期间运行时映射尚未建全，isConnected() 的结果不可信。
+        // 这里先用部件自己持久化的频段把映射对齐（频段未变，不会写盘），让后续判定有意义。
+        synchronizeServiceMappings();
         // 初始化时立即处理频段为0但仍连接了设备的异常P2P
         fixZeroFrequencyAnomalies();
+    }
+
+    /**
+     * 用每个 P2P 部件自身持久化的频段，把 P2PService 的 inputs/outputs 映射与存档对齐。
+     *
+     * <p>因为传入的频段就是 {@code part.getFrequency()}，{@link P2PTunnelPart#setFrequency}
+     * 内部的 {@code oldf != freq} 判定不成立，所以这轮重登记既不会写盘，也不会触发
+     * 任何 onTunnelConfigChange —— 纯粹是修运行时状态。
+     */
+    private void synchronizeServiceMappings() {
+        IGrid currentGrid = getCurrentGrid();
+        if (currentGrid == null) return;
+
+        P2PService currentP2PService = P2PService.get(currentGrid);
+        if (currentP2PService == null) return;
+
+        for (P2PTunnelPart<?> p2pPart : new ArrayList<>(p2pDevicesMap.keySet())) {
+            if (p2pPart == null) continue;
+            IGridNode node = p2pPart.getGridNode();
+            if (node == null || node.getGrid() != currentGrid) continue;
+            currentP2PService.updateFreq(p2pPart, p2pPart.getFrequency());
+        }
+
+        this.grid = currentGrid;
+        this.p2pService = currentP2PService;
     }
 
     public void analysisP2P() {
@@ -72,6 +101,15 @@ public class P2PManager {
             return;
         }
 
+        // 频段 0 在 AE2 里代表"未绑定"，且 P2PService 会把 freq=0 的设备登记进
+        // inputs[0] / outputs[0]，让一堆未绑定设备在 GUI 里互相"连通"。
+        // 因此本方法只接受 1..0xFFFF 的真实频段：GUI 上的"未连接(0000)"频道
+        // 不是可绑定目标，绑定到它等于静默解绑，而 setFrequency 会把这个状态写进存档。
+        short freq = parseFrequency(frequencyHex);
+        if (freq == 0) {
+            return;
+        }
+
         // 运行时重新获取 grid 和 p2pService，避免因构造时网络未就绪导致绑定失败
         IGrid currentGrid = null;
         IGridNode gridNode = p2pTunnelPartBinding.getGridNode();
@@ -86,8 +124,6 @@ public class P2PManager {
         if (currentP2PService == null) {
             return;
         }
-
-        short freq = (short) Integer.parseInt(frequencyHex, 16);
 
         // 非 ME P2P 设备：智能判断输入/输出端角色
         // 检查目标频段中是否已有输入端：
@@ -109,10 +145,27 @@ public class P2PManager {
         }
 
         currentP2PService.updateFreq(p2pTunnelPartBinding, freq);
+        // updateFreq → setFrequency 在频段变化时会 markForSave；这里再显式标记一次，
+        // 保证"角色变了但频段没变"这类只改 output 的场景同样落盘。
+        p2pTunnelPartBinding.getHost().markForSave();
 
         // 更新内部缓存引用
         this.grid = currentGrid;
         this.p2pService = currentP2PService;
+    }
+
+    /**
+     * 解析 4 位十六进制频段。非法输入返回 0（即"未绑定"），由调用方拒绝。
+     */
+    private static short parseFrequency(String frequencyHex) {
+        if (frequencyHex == null || frequencyHex.isEmpty()) {
+            return 0;
+        }
+        try {
+            return (short) Integer.parseInt(frequencyHex, 16);
+        } catch (NumberFormatException e) {
+            return 0;
+        }
     }
 
     public void autoConfigP2PIO() {
@@ -181,10 +234,12 @@ public class P2PManager {
             // 这会从旧频段的inputs/outputs映射中移除该设备
             currentP2PService.updateFreq(p2pPart, (short) 0);
 
-            // 重置为输出端模式
-            ((P2PTunnelPartMixin) p2pPart).invokeSetOutput(true);
-            // 重新用当前频段(0)调用 updateFreq，确保 P2PService 的 inputs/outputs map 被正确同步
-            currentP2PService.updateFreq(p2pPart, (short) 0);
+            // 角色修正交给 processSingleP2PPart：它遵循"有控制器方为输入端"的规则
+            // 来决定输入/输出端，而不是无条件把所有异常 P2P 重置为输出端。
+            // 原来这里的 setOutput(true) 会 markForSave，把打开界面时的误判固化进存档，
+            // 重进后正常输入端变成输出端，通道随之失效（表现为"绑定丢失"）。
+            // 非 ME P2P 会被 processSingleP2PPart 内部忽略，保留玩家配置的角色。
+            processSingleP2PPart(p2pPart, currentP2PService);
         }
 
         // 验证：重新扫描网格中的P2P设备，刷新映射，确保异常状态已被彻底清除
@@ -224,18 +279,15 @@ public class P2PManager {
 
         IGridNode externalNode = meP2PTunnelPart.getExternalFacingNode();
         if (externalNode == null) {
-            // 节点已被破坏，默认设为输出
-            ((P2PTunnelPartMixin) p2pPart).invokeSetOutput(true);
-            // 同步 P2PService 的 inputs/outputs map
-            p2pService.updateFreq(p2pPart, p2pPart.getFrequency());
+            // 外部节点尚未就绪（刚放置或网络重建中），此时无法判断是否有控制器。
+            // 保留玩家/频道管理设定的角色，不做任何写入：setOutput 会 markForSave，
+            // 在重建时序里把它当成最终答案写进存档，重进后角色就再也回不去了。
             return;
         }
 
         IGrid externalGrid = externalNode.getGrid();
         if (externalGrid == null || externalGrid.isEmpty()) {
-            ((P2PTunnelPartMixin) p2pPart).invokeSetOutput(true);
-            // 同步 P2PService 的 inputs/outputs map
-            p2pService.updateFreq(p2pPart, p2pPart.getFrequency());
+            // 外部网络尚未就绪，同上：只读判断，不改角色。
             return;
         }
 
@@ -252,14 +304,14 @@ public class P2PManager {
             // 确保设为输入端（如果当前不是输入端）
             if (p2pPart.isOutput()) {
                 ((P2PTunnelPartMixin) p2pPart).invokeSetOutput(false);
-                // 同步 P2PService 的 inputs/outputs map
+                // 角色变了才重登记：P2PService.updateFreq 内部是按频段 key 去移除
+                // inputs 条目的，无条件调用会把同频段真正的输入端从映射里挤掉。
                 p2pService.updateFreq(p2pPart, p2pPart.getFrequency());
             }
         } else {
             // 外部网络没有控制器：应该设为输出端
             if (!p2pPart.isOutput()) {
                 ((P2PTunnelPartMixin) p2pPart).invokeSetOutput(true);
-                // 同步 P2PService 的 inputs/outputs map
                 p2pService.updateFreq(p2pPart, p2pPart.getFrequency());
             }
         }
@@ -303,10 +355,14 @@ public class P2PManager {
      * 为当前待绑定的非 ME P2P 设备分配一个新频段并设置为输入端。
      * 操作的是 p2pTunnelPartBinding（即 Memory Card 当前关联的 P2P 设备），而非外部传入的任意 P2P。
      * 流程：
-     * 1. 断开当前频段连接（设置为频段 0）
-     * 2. 确保该 P2P 为输入端（setOutput(false)）
-     * 3. 通过 p2pService.newFrequency() 获取新频段
-     * 4. 绑定到新频段
+     * 1. 确保该 P2P 为输入端（setOutput(false)）
+     * 2. 通过 p2pService.newFrequency() 获取新频段
+     * 3. 一次性绑定到新频段
+     *
+     * <p>注意：这里刻意<b>不</b>先写 freq=0 再分配。updateFreq 本身就会把部件从旧频段的
+     * inputs/outputs 中摘除再登记到新频段；先写 0 只会多产生一次 markForSave，并且一旦在
+     * 两次调用之间被打断（区块卸载、玩家退出存档），存档里留下的就是 freq=0 —— 已绑定设备
+     * 被静默改成未绑定。
      */
     public void assignNewFrequency() {
         if (p2pTunnelPartBinding == null) return;
@@ -317,22 +373,19 @@ public class P2PManager {
         P2PService currentP2PService = P2PService.get(currentGrid);
         if (currentP2PService == null) return;
 
-        // 先断开当前频段连接（设置为频段 0）
-        currentP2PService.updateFreq(p2pTunnelPartBinding, (short) 0);
-
         // 确保设为输入端（非 ME P2P 需要手动管理输入/输出端）
         if (p2pTunnelPartBinding.isOutput()) {
             ((P2PTunnelPartMixin) p2pTunnelPartBinding).invokeSetOutput(false);
-            // 用当前频段(0)同步 P2PService 的 inputs/outputs map，
-            // 确保从 outputs map 移到 inputs map
-            currentP2PService.updateFreq(p2pTunnelPartBinding, (short) 0);
         }
 
-        // 获取一个新频段并绑定
+        // 直接换到新频段：updateFreq 会把部件从旧频段映射中移除并登记到新频段
         short newFreq = currentP2PService.newFrequency();
         currentP2PService.updateFreq(p2pTunnelPartBinding, newFreq);
+        p2pTunnelPartBinding.getHost().markForSave();
 
         // 刷新内部映射
+        this.grid = currentGrid;
+        this.p2pService = currentP2PService;
         analysisP2P();
     }
 
@@ -379,7 +432,8 @@ public class P2PManager {
         P2PService currentP2PService = P2PService.get(currentGrid);
         if (currentP2PService == null) return;
 
-        short freq = (short) Integer.parseInt(frequency, 16);
+        short freq = parseFrequency(frequency);
+        if (freq == 0) return;
         P2PTunnelPart<?> input = currentP2PService.getInput(freq);
         if (input != null) {
             renameP2P(input, newName);
@@ -400,7 +454,8 @@ public class P2PManager {
         P2PService currentP2PService = P2PService.get(currentGrid);
         if (currentP2PService == null) return frequency;
 
-        short freq = (short) Integer.parseInt(frequency, 16);
+        short freq = parseFrequency(frequency);
+        if (freq == 0) return frequency;
         P2PTunnelPart<?> input = currentP2PService.getInput(freq);
         if (input != null && input.getCustomName() != null) {
             String name = input.getCustomName().getString();

@@ -42,6 +42,7 @@ public class ModZhcnLangProvider extends LanguageProvider {
 
         // 配置模式工具提示
         add(Keys.TOOLTIP_CONFIG_INFO, "配置模式\n");
+        add(Keys.TOOLTIP_UNCONNECTED_NOT_BINDABLE, "「未连接」不是可绑定的频段");
 
         // 复制模式屏幕
         add(Keys.COPY_MODE_SCREEN_START_POS, "开始坐标");

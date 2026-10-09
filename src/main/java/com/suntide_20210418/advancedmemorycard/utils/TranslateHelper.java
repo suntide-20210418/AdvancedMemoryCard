@@ -121,6 +121,9 @@ public class TranslateHelper {
         public static final String TOOLTIP_COPY_SECOND_POS = TOOLTIP_PREFIX + "copy.second_pos";
         public static final String TOOLTIP_COPY_READY = TOOLTIP_PREFIX + "copy.ready";
         public static final String TOOLTIP_CONFIG_INFO = TOOLTIP_PREFIX + "config.info";
+
+        // 频段 0（未连接）不是可绑定目标，绑定它等于静默解绑
+        public static final String TOOLTIP_UNCONNECTED_NOT_BINDABLE = TOOLTIP_PREFIX + "unconnected.not_bindable";
     }
 
     /**
@@ -392,6 +395,10 @@ public class TranslateHelper {
 
         public static MutableComponent configInfo() {
             return translate(Keys.TOOLTIP_CONFIG_INFO);
+        }
+
+        public static MutableComponent unconnectedNotBindable() {
+            return translate(Keys.TOOLTIP_UNCONNECTED_NOT_BINDABLE);
         }
     }
 

@@ -52,6 +52,7 @@
   "gui.advanced_memory_card.advanced_memory_card.tooltip.copy.info": "复制模式\n",
   "gui.advanced_memory_card.advanced_memory_card.tooltip.copy.ready": "准备粘贴",
   "gui.advanced_memory_card.advanced_memory_card.tooltip.copy.second_pos": "第二个位置：%s\n",
+  "gui.advanced_memory_card.advanced_memory_card.tooltip.unconnected.not_bindable": "「未连接」不是可绑定的频段",
   "item.advanced_memory_card.advanced_memory_card": "高级内存卡",
   "itemGroup.advanced_memory_card.tab": "高级内存卡",
   "key.advancedmemorycard.switch": "切换模式",

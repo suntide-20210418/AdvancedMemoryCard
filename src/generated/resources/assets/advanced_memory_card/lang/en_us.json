@@ -52,6 +52,7 @@
   "gui.advanced_memory_card.advanced_memory_card.tooltip.copy.info": "Copy Mode\n",
   "gui.advanced_memory_card.advanced_memory_card.tooltip.copy.ready": "Ready to paste",
   "gui.advanced_memory_card.advanced_memory_card.tooltip.copy.second_pos": "Second position:%s\n",
+  "gui.advanced_memory_card.advanced_memory_card.tooltip.unconnected.not_bindable": "\"Unconnected\" is not a bindable frequency",
   "item.advanced_memory_card.advanced_memory_card": "Advanced Memory Card",
   "itemGroup.advanced_memory_card.tab": "Advanced Memory Card",
   "key.advancedmemorycard.switch": "Switch Mode",
