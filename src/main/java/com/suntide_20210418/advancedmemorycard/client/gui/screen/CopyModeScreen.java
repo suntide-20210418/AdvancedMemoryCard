@@ -50,7 +50,7 @@ public class CopyModeScreen extends AEBaseScreen<CopyModeMenu> {
      * 与面板最外层描边贴合、不侵占面板内部；{@code y = 9} 让 16×16 图标顶端与标题文字对齐。
      */
     private static final int BUTTON_X = -17;
-    private static final int BUTTON_Y = 9;
+    private static final int BUTTON_Y = 0;
 
     private final Map<CopyOption, AECheckbox> checkboxes = new EnumMap<>(CopyOption.class);
 
