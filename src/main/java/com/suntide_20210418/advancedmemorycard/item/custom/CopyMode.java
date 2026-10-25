@@ -15,6 +15,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.component.DataComponentMap;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
@@ -33,13 +34,18 @@ public class CopyMode extends CardMode {
     private static final String START_POS = "start_pos";
     private static final String END_POS = "end_pos";
     private static final String IS_COPYING = "is_copying";
-    /** 粘贴时应用哪些内容（{@link CopyOption} 的位掩码）。旧卡没有这个键，按全选处理。 */
+    /**
+     * 粘贴时应用哪些内容（{@link CopyOption} 的位掩码）。
+     *
+     * <p>这是「每张卡的偏好」，不是当前模式的状态，因此存在卡片的根标签里而不是
+     * {@code mode_data} 里 —— 否则切换模式时 {@code CardMode#cycleMode} 会用新建的
+     * 模式实例覆盖 {@code mode_data}，把选项重置成默认值。
+     */
     private static final String APPLY_OPTIONS_MASK = "apply_options_mask";
 
     private BlockPos startPos;
     private BlockPos endPos;
     private boolean isCopying;
-    private int applyMask = CopyOption.ALL;
 
     public CopyMode() {}
 
@@ -62,11 +68,6 @@ public class CopyMode extends CardMode {
         // 处理 isCopying 为空的情况，默认为 false
         isCopying = tag.getBoolean(IS_COPYING);
 
-        // 旧卡没有该键：默认全选，保持改造前的粘贴行为
-        applyMask = tag.contains(APPLY_OPTIONS_MASK)
-                ? tag.getInt(APPLY_OPTIONS_MASK) & CopyOption.ALL
-                : CopyOption.ALL;
-
         return this;
     }
 
@@ -84,7 +85,6 @@ public class CopyMode extends CardMode {
         }
 
         tag.putBoolean(IS_COPYING, isCopying);
-        tag.putInt(APPLY_OPTIONS_MASK, applyMask);
         return tag;
     }
 
@@ -124,24 +124,25 @@ public class CopyMode extends CardMode {
         this.saveToStack(stack);
     }
 
-    /** 当前勾选的粘贴内容位掩码（见 {@link CopyOption}）。 */
-    public int getApplyMask() {
-        return applyMask;
-    }
-
     /**
-     * 写入勾选掩码并落盘。
+     * 读取这张卡的粘贴选项掩码。
      *
-     * <p>允许写入 0（四项全不选）：此时粘贴不会改动任何「可选项」覆盖的内容，
-     * 只有不在选项内的部分（重命名、P2P 类型/频段）仍会照常应用。
+     * <p>旧卡（或从没打开过选项界面）没有该键 → 全选，粘贴行为与改造前一致。
      */
-    public void setApplyMask(ItemStack stack, int mask) {
-        this.applyMask = mask & CopyOption.ALL;
-        this.saveToStack(stack);
+    public static int getApplyMask(ItemStack card) {
+        CompoundTag root = getRootData(card);
+        return root.contains(APPLY_OPTIONS_MASK, Tag.TAG_INT)
+                ? root.getInt(APPLY_OPTIONS_MASK) & CopyOption.ALL
+                : CopyOption.ALL;
     }
 
-    public boolean applies(CopyOption option) {
-        return (applyMask & option.mask()) != 0;
+    /** 写入粘贴选项掩码并落盘（卡级偏好，与当前模式无关，切模式不会丢）。 */
+    public static void setApplyMask(ItemStack card, int mask) {
+        CompoundTag root = getRootData(card);
+        // 允许写入 0（四项全不选）：此时粘贴不会改动任何「可选项」覆盖的内容，
+        // 只有不在选项内的部分（重命名、P2P 类型/频段）仍会照常应用。
+        root.putInt(APPLY_OPTIONS_MASK, mask & CopyOption.ALL);
+        setRootData(card, root);
     }
 
     /**
@@ -151,9 +152,10 @@ public class CopyMode extends CardMode {
      * 组件表在 {@code ItemStack#copy()} 里是浅拷贝，循环外算一次即可。
      */
     public ItemStack createFilteredCard(ItemStack card) {
+        int mask = getApplyMask(card);
         ItemStack filtered = card.copy();
         for (CopyOption option : CopyOption.values()) {
-            if (!applies(option)) {
+            if ((mask & option.mask()) == 0) {
                 filtered.remove(option.component());
             }
         }

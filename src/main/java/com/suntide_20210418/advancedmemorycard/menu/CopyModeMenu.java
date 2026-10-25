@@ -3,7 +3,6 @@ package com.suntide_20210418.advancedmemorycard.menu;
 import appeng.menu.AEBaseMenu;
 import appeng.menu.guisync.GuiSync;
 import com.suntide_20210418.advancedmemorycard.item.custom.AdvancedMemoryCardItem;
-import com.suntide_20210418.advancedmemorycard.item.custom.CardMode;
 import com.suntide_20210418.advancedmemorycard.item.custom.CopyMode;
 import com.suntide_20210418.advancedmemorycard.item.custom.CopyOption;
 import net.minecraft.network.FriendlyByteBuf;
@@ -14,7 +13,8 @@ import net.minecraft.world.item.ItemStack;
 /**
  * 复制模式选项界面的服务端 menu。
  *
- * <p>菜单只做一件事：把「粘贴时要应用哪些内容」的位掩码写进卡片 NBT，并把它同步回客户端。
+ * <p>菜单只做一件事：把「粘贴时要应用哪些内容」的位掩码写进卡片根标签，并把它同步回客户端。
+ * 掩码是卡片级偏好而不是当前模式的状态，所以切换模式不会把它覆盖成默认值。
  * 卡片持有 {@code InteractionHand}，所有动作都重新从手上取栈 —— 不能缓存构造时的
  * {@link ItemStack}，因为玩家可能在界面打开期间切换手持、切模式或丢掉卡片。
  *
@@ -62,10 +62,7 @@ public class CopyModeMenu extends AEBaseMenu {
         if (hand == null) {
             return CopyOption.ALL;
         }
-        ItemStack stack = getPlayer().getItemInHand(hand);
-        return CardMode.of(stack) instanceof CopyMode copyMode
-                ? copyMode.getApplyMask()
-                : CopyOption.ALL;
+        return CopyMode.getApplyMask(getPlayer().getItemInHand(hand));
     }
 
     /**
@@ -82,16 +79,16 @@ public class CopyModeMenu extends AEBaseMenu {
             return;
         }
 
-        // 界面打开期间玩家可能已经换手/换卡/切模式，这里必须重新取栈并校验
+        // 界面打开期间玩家可能换手/换卡，这里必须重新取栈
         ItemStack stack = getPlayer().getItemInHand(hand);
-        if (!(stack.getItem() instanceof AdvancedMemoryCardItem)
-                || !(CardMode.of(stack) instanceof CopyMode copyMode)) {
+        if (!(stack.getItem() instanceof AdvancedMemoryCardItem)) {
             return;
         }
 
-        copyMode.setApplyMask(stack, mask);
+        // 掩码是卡级偏好（存在根标签），不依赖当前模式，因此这里只校验物品
+        CopyMode.setApplyMask(stack, mask);
         // 回读真实值：掩码被 clamp 时客户端能靠同步自愈
-        this.applyMask = copyMode.getApplyMask();
+        this.applyMask = CopyMode.getApplyMask(stack);
     }
 
     public int getApplyMask() {
