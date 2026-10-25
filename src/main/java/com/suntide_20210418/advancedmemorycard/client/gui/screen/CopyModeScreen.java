@@ -25,13 +25,13 @@ import java.util.Map;
  * 复制模式选项界面。
  *
  * <p>竖直排列 1 个标题文字（由样式 JSON 的 {@code copy_options_title} 直接渲染）和 8 个
- * {@link AECheckbox}，每项控制粘贴时是否应用对应的导出组件；左侧工具栏放一个
+ * {@link AECheckbox}，每项控制粘贴时是否应用对应的导出组件；左上方一个
  * {@link AutoOpenButton} 切换「每次复制后是否自动弹出本界面」。
  *
- * <p>布局全部由 {@code copy_mode_menu.json} 定义，AE2 的 {@code WidgetContainer} 会按槽位
- * 位置放置控件并在 resize 时重新计算，因此这里只管状态，不管坐标：
+ * <p>复选框与标题的布局由 {@code copy_mode_menu.json} 定义，AE2 的 {@code WidgetContainer}
+ * 会按槽位位置放置控件并在 resize 时重新计算；左侧按钮则是手动摆位（见 {@link #init()}）：
  * <pre>
- *   左侧工具栏（verticalToolbar）：按钮 16x16，落在 (4,3)
+ *   按钮 16x16：(leftPos + 4, topPos + 3)
  *   标题 left = 30，top = 10，高 9（font.lineHeight）
  *   复选框 left = 30，top = 24 / 43 / 62 / 81 / 100 / 119 / 138 / 157
  *             高 14（AECheckbox.SIZE），步进 = 14 + 5
@@ -42,16 +42,19 @@ import java.util.Map;
  */
 public class CopyModeScreen extends AEBaseScreen<CopyModeMenu> {
 
+    /** 按钮相对 GUI 左上角的位置。 */
+    private static final int BUTTON_X = 4;
+    private static final int BUTTON_Y = 3;
+
     private final Map<CopyOption, AECheckbox> checkboxes = new EnumMap<>(CopyOption.class);
 
     /** 上一次已应用到界面上的同步值，用于避免每 tick 重设导致点击瞬间被旧值覆盖。 */
     private int lastSyncedMask = -1;
 
+    private AutoOpenButton autoOpenButton;
+
     public CopyModeScreen(CopyModeMenu menu, Inventory playerInventory, Component title, ScreenStyle style) {
         super(menu, playerInventory, title, style);
-
-        // 左侧工具栏：COG = 复制后弹界面，COG_DISABLED = 不弹
-        addToLeftToolbar(new AutoOpenButton(menu, this::toggleAutoOpen));
 
         // 必须在构造期注册：AEBaseScreen.init() 会统一把这些控件放进 renderables 并按 JSON 槽位摆位
         for (CopyOption option : CopyOption.values()) {
@@ -63,6 +66,29 @@ public class CopyModeScreen extends AEBaseScreen<CopyModeMenu> {
             checkbox.setSelected(false);
             checkboxes.put(option, checkbox);
         }
+    }
+
+    /**
+     * 不用 AE2 的左侧竖排工具栏（{@code VerticalButtonBar}）：它的背景条自带边框与底部阴影，
+     * 只有一个按钮时那条阴影会横在按钮下方的空白处，和面板背景对不上。
+     * 这里改成手动摆位，界面里只留按钮自己的背景。
+     */
+    @Override
+    protected boolean shouldAddToolbar() {
+        return false;
+    }
+
+    @Override
+    protected void init() {
+        super.init();
+
+        if (autoOpenButton == null) {
+            autoOpenButton = new AutoOpenButton(menu, this::toggleAutoOpen);
+        }
+        autoOpenButton.setX(leftPos + BUTTON_X);
+        autoOpenButton.setY(topPos + BUTTON_Y);
+        // rebuildWidgets() 会先清空 renderables，所以 resize 后重新加入不会重复
+        addRenderableWidget(autoOpenButton);
     }
 
     private static String widgetId(CopyOption option) {

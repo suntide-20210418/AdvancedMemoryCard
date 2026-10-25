@@ -14,10 +14,6 @@
     }
   },
   "widgets": {
-    "verticalToolbar": {
-      "left": 22,
-      "top": 1
-    },
     "opt_upgrades": {
       "left": 30,
       "top": 24,
