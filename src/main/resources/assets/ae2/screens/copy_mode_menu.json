@@ -1,63 +1,70 @@
 {
   "$schema": "../schema.json",
-  "includes": ["common/common.json"],
+  "includes": [
+    "common/common.json"
+  ],
   "background": {
     "texture": "guis/copy_mode_menu.png",
     "textureWidth": 256,
     "textureHeight": 256,
-    "srcRect": [0, 0, 196, 181]
+    "srcRect": [0, 0, 176, 181]
   },
   "text": {
     "copy_options_title": {
-      "position": { "left": 30, "top": 10 },
-      "text": { "translate": "screen.advanced_memory_card.advanced_memory_card.player.copy.options_title" }
+      "position": {
+        "left": 10,
+        "top": 10
+      },
+      "text": {
+        "translate": "screen.advanced_memory_card.advanced_memory_card.player.copy.options_title"
+      }
     }
   },
   "widgets": {
     "opt_upgrades": {
-      "left": 30,
+      "left": 10,
       "top": 24,
       "width": 150,
       "height": 14
     },
     "opt_settings": {
-      "left": 30,
+      "left": 10,
       "top": 43,
       "width": 150,
       "height": 14
     },
     "opt_priority": {
-      "left": 30,
+      "left": 10,
       "top": 62,
       "width": 150,
       "height": 14
     },
     "opt_config_inv": {
-      "left": 30,
+      "left": 10,
       "top": 81,
       "width": 150,
       "height": 14
     },
     "opt_patterns": {
-      "left": 30,
+      "left": 10,
       "top": 100,
       "width": 150,
       "height": 14
     },
     "opt_p2p_type": {
-      "left": 30,
+      "left": 10,
       "top": 119,
       "width": 150,
       "height": 14
     },
     "opt_p2p_frequency": {
-      "left": 30,
+      "left": 10,
       "top": 138,
       "width": 150,
       "height": 14
     },
     "opt_custom_name": {
-      "left": 30,
+      "left": 10,
       "top": 157,
       "width": 150,
       "height": 14

@@ -25,15 +25,15 @@ import java.util.Map;
  * 复制模式选项界面。
  *
  * <p>竖直排列 1 个标题文字（由样式 JSON 的 {@code copy_options_title} 直接渲染）和 8 个
- * {@link AECheckbox}，每项控制粘贴时是否应用对应的导出组件；左上方一个
+ * {@link AECheckbox}，每项控制粘贴时是否应用对应的导出组件；面板左侧外挂一个
  * {@link AutoOpenButton} 切换「每次复制后是否自动弹出本界面」。
  *
  * <p>复选框与标题的布局由 {@code copy_mode_menu.json} 定义，AE2 的 {@code WidgetContainer}
  * 会按槽位位置放置控件并在 resize 时重新计算；左侧按钮则是手动摆位（见 {@link #init()}）：
  * <pre>
- *   按钮 16x16：(leftPos + 4, topPos + 3)
- *   标题 left = 30，top = 10，高 9（font.lineHeight）
- *   复选框 left = 30，top = 24 / 43 / 62 / 81 / 100 / 119 / 138 / 157
+ *   按钮 16x16：(leftPos - 17, topPos + 9)，背景板落在 leftPos-18 .. leftPos-1（面板外侧）
+ *   标题 left = 10，top = 10，高 9（font.lineHeight）
+ *   复选框 left = 10，top = 24 / 43 / 62 / 81 / 100 / 119 / 138 / 157
  *             高 14（AECheckbox.SIZE），步进 = 14 + 5
  * </pre>
  *
@@ -42,9 +42,15 @@ import java.util.Map;
  */
 public class CopyModeScreen extends AEBaseScreen<CopyModeMenu> {
 
-    /** 按钮相对 GUI 左上角的位置。 */
-    private static final int BUTTON_X = 4;
-    private static final int BUTTON_Y = 3;
+    /**
+     * 按钮相对 GUI 左上角的位置。
+     *
+     * <p>按钮挂在面板**外侧**的左边缘：背景板 18×20 由 {@code IconButton} 画在
+     * {@code (x-1, y+1)}，所以 {@code x = leftPos - 17} 时背景正好占 {@code leftPos-18 .. leftPos-1}，
+     * 与面板最外层描边贴合、不侵占面板内部；{@code y = 9} 让 16×16 图标顶端与标题文字对齐。
+     */
+    private static final int BUTTON_X = -17;
+    private static final int BUTTON_Y = 9;
 
     private final Map<CopyOption, AECheckbox> checkboxes = new EnumMap<>(CopyOption.class);
 
