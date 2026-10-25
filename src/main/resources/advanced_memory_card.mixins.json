@@ -5,7 +5,8 @@
   "minVersion": "0.8",
   "refmap": "advancedmemorycard.refmap.json",
   "mixins": [
-    "P2PTunnelPartMixin"
+    "P2PTunnelPartMixin",
+    "AEBasePartAccessor"
   ],
   "client": [],
   "server": []

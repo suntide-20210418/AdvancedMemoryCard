@@ -6,11 +6,9 @@ import appeng.api.parts.IPartItem;
 import appeng.blockentity.networking.ControllerBlockEntity;
 import appeng.me.service.P2PService;
 import appeng.parts.p2p.MEP2PTunnelPart;
-import appeng.api.ids.AEComponents;
 import appeng.parts.p2p.P2PTunnelPart;
-import appeng.util.SettingsFrom;
+import com.suntide_20210418.advancedmemorycard.mixin.AEBasePartAccessor;
 import com.suntide_20210418.advancedmemorycard.mixin.P2PTunnelPartMixin;
-import net.minecraft.core.component.DataComponentMap;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
@@ -446,12 +444,30 @@ public class P2PManager {
         }
     }
 
-    public void renameP2P(P2PTunnelPart<?> p2pPart, String name){
-        // 1.21.1：部件自定义名经 importSettings(MEMORY_CARD) 从 EXPORTED_CUSTOM_NAME 组件读取
-        DataComponentMap nameData = DataComponentMap.builder()
-                .set(AEComponents.EXPORTED_CUSTOM_NAME, Component.literal(name))
-                .build();
-        p2pPart.importSettings(SettingsFrom.MEMORY_CARD, nameData, player);
+    /**
+     * 设置 P2P 部件的自定义名（空字符串表示清除名称）。
+     *
+     * <p>不走 {@code importSettings(SettingsFrom.MEMORY_CARD, ...)}：那条路会额外执行
+     * {@code MemoryCardItem.importGenericSettings}（升级卡 / 优先级 / 配置项），而且
+     * {@code P2PTunnelPart#importSettings} 在数据里带 EXPORTED_P2P_FREQUENCY 时还会
+     * {@code setOutput(true)} + {@code updateFreq} —— 改名不该有这些副作用。
+     * AE2 没有公开 setter，所以直接写 {@code AEBasePart.customName}。
+     *
+     * <p>写完必须显式落盘：{@code AEBasePart.writeToNBT} 只在 customName 非 null 时写这个键，
+     * 而改名字段本身不经过任何 setFrequency/setOutput，没有任何地方会顺带 markForSave，
+     * 于是"界面里改了、重进存档又没了"。
+     */
+    public void renameP2P(P2PTunnelPart<?> p2pPart, String name) {
+        if (p2pPart == null) {
+            return;
+        }
+        String trimmed = name == null ? "" : name.trim();
+        ((AEBasePartAccessor) p2pPart)
+                .setCustomName(trimmed.isEmpty() ? null : Component.literal(trimmed));
+
+        // 落盘 + 让客户端重新同步该部件（customName 不在 writeToStream 里，只能靠方块更新包）
+        p2pPart.getHost().markForSave();
+        p2pPart.getHost().markForUpdate();
     }
 
     /**

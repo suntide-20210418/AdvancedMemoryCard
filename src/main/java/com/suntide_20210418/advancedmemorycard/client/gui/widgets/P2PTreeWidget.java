@@ -165,8 +165,7 @@ public class P2PTreeWidget extends AbstractWidget {
 
         // 如果存在待导航目标，覆盖选中节点 ID 以确保导航到该目标
         if (pendingNavigateTarget != null) {
-            selectedNodeId = "p2p:" + pendingNavigateTarget.hashCode()
-                    + ":" + pendingNavigateTarget.frequency();
+            selectedNodeId = TreeNode.p2pNodeId(pendingNavigateTarget);
         }
 
         // 重建树
