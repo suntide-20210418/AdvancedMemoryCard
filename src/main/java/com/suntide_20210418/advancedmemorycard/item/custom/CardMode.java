@@ -51,15 +51,33 @@ public abstract class CardMode {
         return new CompoundTag();
     }
 
-    /** 保存数据到 ItemStack 的方法 */
+    /**
+     * 整张卡的根标签（CUSTOM_DATA 全文）。
+     *
+     * <p>根标签下同时存着两样东西：{@code mode_data}（当前模式的数据）和跨模式共享的
+     * 卡片级偏好（例如复制模式的粘贴选项）。后者必须放在 {@code mode_data} 外面，
+     * 否则每次切模式写 {@code mode_data} 都会把它覆盖成默认值。
+     */
+    public static CompoundTag getRootData(ItemStack stack) {
+        CustomData customData = stack.get(DataComponents.CUSTOM_DATA);
+        return customData != null ? customData.copyTag() : new CompoundTag();
+    }
+
+    public static void setRootData(ItemStack stack, CompoundTag rootTag) {
+        if (rootTag.isEmpty()) {
+            stack.remove(DataComponents.CUSTOM_DATA);
+        } else {
+            stack.set(DataComponents.CUSTOM_DATA, CustomData.of(rootTag));
+        }
+    }
+
+    /** 保存当前模式的数据到 ItemStack（保留根标签里的其它键） */
     public static void saveDataToStack(ItemStack stack, CompoundTag modeData) {
-        // 1.21.1 方法：创建或更新 CustomData 组件
-        CompoundTag rootTag = new CompoundTag();
+        // 1.21.1 方法：读出现有根标签再替换 mode_data，避免把卡片级偏好一起抹掉
+        CompoundTag rootTag = getRootData(stack);
         rootTag.put(MODE_DATA, modeData);
 
-        // 使用 update 方法更新 CustomData 组件
-        stack.update(DataComponents.CUSTOM_DATA, CustomData.EMPTY,
-                existing -> CustomData.of(rootTag));
+        setRootData(stack, rootTag);
     }
 
     public static void register(ResourceLocation key, Supplier<CardMode> supplier) {

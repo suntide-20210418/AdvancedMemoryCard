@@ -48,11 +48,24 @@ public class ModEnusLangProvider extends LanguageProvider {
 
         // 配置模式工具提示
         add(Keys.TOOLTIP_CONFIG_INFO, "Config Mode\n");
+        add(Keys.TOOLTIP_UNCONNECTED_NOT_BINDABLE, "\"Unconnected\" is not a bindable frequency");
 
         // 复制模式屏幕
         add(Keys.COPY_MODE_SCREEN_START_POS, "Start Pos");
         add(Keys.COPY_MODE_SCREEN_END_POS, "End Pos");
         add(Keys.COPY_MODE_SCREEN_CLEAR_TOOLTIP, "Clear positions");
+
+        // 复制模式粘贴选项
+        add(Keys.COPY_MODE_SCREEN_OPTIONS_TITLE, "Paste options");
+        add(Keys.COPY_MODE_SCREEN_AUTO_OPEN, "Open these options after each copy");
+        add(Keys.COPY_MODE_OPTION_UPGRADES, "Apply upgrades");
+        add(Keys.COPY_MODE_OPTION_SETTINGS, "Apply settings");
+        add(Keys.COPY_MODE_OPTION_PRIORITY, "Apply priority");
+        add(Keys.COPY_MODE_OPTION_CONFIG_INV, "Apply config inventory");
+        add(Keys.COPY_MODE_OPTION_PATTERNS, "Apply patterns");
+        add(Keys.COPY_MODE_OPTION_P2P_TYPE, "Apply P2P type");
+        add(Keys.COPY_MODE_OPTION_P2P_FREQUENCY, "Apply P2P frequency");
+        add(Keys.COPY_MODE_OPTION_CUSTOM_NAME, "Apply name");
 
         // 配置模式屏幕
         add(Keys.CONFIG_MODE_SCREEN_SEARCH_PLACEHOLDER, "Search...");
@@ -112,5 +125,6 @@ public class ModEnusLangProvider extends LanguageProvider {
         // 按键绑定
         add("key.categories.advanced_memory_card", "Advanced Memory Card");
         add("key.advancedmemorycard.switch", "Switch Mode");
+        add("key.advancedmemorycard.copy_options", "Copy Options");
     }
 }

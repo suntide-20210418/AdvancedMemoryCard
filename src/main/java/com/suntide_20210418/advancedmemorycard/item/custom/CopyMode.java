@@ -14,7 +14,9 @@ import com.suntide_20210418.advancedmemorycard.config.ModConfigs;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.component.DataComponentMap;
+import net.minecraft.core.component.DataComponentType;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
@@ -33,6 +35,20 @@ public class CopyMode extends CardMode {
     private static final String START_POS = "start_pos";
     private static final String END_POS = "end_pos";
     private static final String IS_COPYING = "is_copying";
+    /**
+     * 粘贴时应用哪些内容（{@link CopyOption} 的位掩码）。
+     *
+     * <p>这是「每张卡的偏好」，不是当前模式的状态，因此存在卡片的根标签里而不是
+     * {@code mode_data} 里 —— 否则切换模式时 {@code CardMode#cycleMode} 会用新建的
+     * 模式实例覆盖 {@code mode_data}，把选项重置成默认值。
+     */
+    private static final String APPLY_OPTIONS_MASK = "apply_options_mask";
+    /**
+     * 每次「复制完成」（第二个角确定）后是否自动弹出选项界面。
+     *
+     * <p>与掩码一样属于卡片级偏好，存在根标签里，切模式不会丢。
+     */
+    private static final String AUTO_OPEN_OPTIONS = "auto_open_options";
 
     private BlockPos startPos;
     private BlockPos endPos;
@@ -115,13 +131,102 @@ public class CopyMode extends CardMode {
         this.saveToStack(stack);
     }
 
+    /**
+     * 读取这张卡的粘贴选项掩码。
+     *
+     * <p>从未配置过的卡默认 0（全不选）：粘贴默认不改动任何可选项，
+     * 玩家在自动弹出的界面里显式勾选后才会写回并沿用。
+     */
+    public static int getApplyMask(ItemStack card) {
+        CompoundTag root = getRootData(card);
+        return root.contains(APPLY_OPTIONS_MASK, Tag.TAG_INT)
+                ? root.getInt(APPLY_OPTIONS_MASK) & CopyOption.ALL
+                : 0;
+    }
+
+    /** 写入粘贴选项掩码并落盘（卡级偏好，与当前模式无关，切模式不会丢）。 */
+    public static void setApplyMask(ItemStack card, int mask) {
+        CompoundTag root = getRootData(card);
+        // 允许写入 0（全不选）：此时粘贴不会改动任何「可选项」覆盖的内容，
+        // 只有不在选项内的部分（重命名、P2P 类型/频段）仍会照常应用。
+        root.putInt(APPLY_OPTIONS_MASK, mask & CopyOption.ALL);
+        setRootData(card, root);
+    }
+
+    /** 复制完成后是否自动弹出选项界面（未配置过的卡默认弹出）。 */
+    public static boolean isAutoOpenOptions(ItemStack card) {
+        CompoundTag root = getRootData(card);
+        return !root.contains(AUTO_OPEN_OPTIONS, Tag.TAG_BYTE) || root.getBoolean(AUTO_OPEN_OPTIONS);
+    }
+
+    public static void setAutoOpenOptions(ItemStack card, boolean enabled) {
+        CompoundTag root = getRootData(card);
+        root.putBoolean(AUTO_OPEN_OPTIONS, enabled);
+        setRootData(card, root);
+    }
+
+    /**
+     * 生成一张「只保留已勾选导出组件」的卡片副本，供粘贴时作为数据源使用。
+     *
+     * <p>不能改写原卡：原卡是玩家手上的真实物品，且复制内容（导出结果）与粘贴选项是两件事。
+     * 组件表在 {@code ItemStack#copy()} 里是浅拷贝，循环外算一次即可。
+     */
+    public ItemStack createFilteredCard(ItemStack card) {
+        int mask = getApplyMask(card);
+        ItemStack filtered = card.copy();
+        for (CopyOption option : CopyOption.values()) {
+            if ((mask & option.mask()) == 0) {
+                filtered.remove(option.component());
+            }
+        }
+        return filtered;
+    }
+
+    /**
+     * 用目标自身导出的值回填「未勾选但不能靠缺失表达」的选项。
+     *
+     * <p>AE2 有几处导入实现把「组件缺失」当成「把目标清空」：名称被置 null、样板被清空、
+     * P2P 类型分支整段不执行。对这些选项，取消勾选时必须把目标当前值填回去，
+     * 语义才等于「这一项不复制、目标保持原样」。只在真的存在这类未勾选项时才调用。
+     */
+    private static ItemStack withTargetValues(ItemStack template, DataComponentMap targetValues, int applyMask) {
+        ItemStack patched = template.copy();
+        for (CopyOption option : CopyOption.values()) {
+            if (!option.preserveTargetValue() || (applyMask & option.mask()) != 0) {
+                continue;
+            }
+            copyComponent(patched, targetValues, option.component());
+        }
+        return patched;
+    }
+
+    /** 目标没有该项时不填（保持缺失，等价于「目标本来就没有」）。 */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private static void copyComponent(ItemStack target, DataComponentMap source, DataComponentType<?> type) {
+        Object value = source.get(type);
+        if (value != null) {
+            target.set((DataComponentType) type, value);
+        }
+    }
+
+    private static DataComponentMap exportPartSettings(IPart part) {
+        DataComponentMap.Builder builder = DataComponentMap.builder();
+        part.exportSettings(SettingsFrom.MEMORY_CARD, builder);
+        return builder.build();
+    }
+
     @Override
     public InteractionResultHolder<ItemStack> onItemUse(
             Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
         if (this.isCopying) {
+            // 只把「勾选了的」导出组件交给导入方：未勾选的组件直接从卡片副本上移除，
+            // AE2 的 importGenericSettings 取不到就跳过对应步骤（方块实体与 P2P 部件都走这条数据）。
+            int applyMask = getApplyMask(stack);
+            ItemStack template = createFilteredCard(stack);
+            boolean needsTargetValues = CopyOption.needsTargetValues(applyMask);
             // 1.21.1 方式：获取 DataComponentMap
-            DataComponentMap dataComponents = stack.getComponents();
+            DataComponentMap dataComponents = template.getComponents();
 
             int count = 0;
 
@@ -130,8 +235,12 @@ public class CopyMode extends CardMode {
                 for (BlockPos pos : positions) {
                     BlockEntity blockEntity = level.getBlockEntity(pos);
                     if (blockEntity instanceof AEBaseBlockEntity aeBlockEntity) {
-                        // 注意：AE2 的 SettingsFrom 和 importSettings 可能也需要适配
-                        aeBlockEntity.importSettings(SettingsFrom.MEMORY_CARD, dataComponents, player);
+                        DataComponentMap source = needsTargetValues
+                                ? withTargetValues(template,
+                                        aeBlockEntity.exportSettings(SettingsFrom.MEMORY_CARD, player),
+                                        applyMask).getComponents()
+                                : dataComponents;
+                        aeBlockEntity.importSettings(SettingsFrom.MEMORY_CARD, source, player);
                         count++;
                     }
                     // 处理AE2部件宿主（IPartHost）
@@ -140,8 +249,12 @@ public class CopyMode extends CardMode {
                         for (Direction direction : Direction.values()) {
                             IPart part = partHost.getPart(direction);
                             if (part != null) {
-                                // 尝试导入设置到部件
-                                part.onUseItemOn(stack, player, InteractionHand.MAIN_HAND, pos.getCenter());
+                                // 部件内部读的是传入栈自己的组件，所以回填也要落在栈副本上。
+                                // 必须传真实手持，AE2 在 OFF_HAND 时会直接忽略
+                                ItemStack partCard = needsTargetValues
+                                        ? withTargetValues(template, exportPartSettings(part), applyMask)
+                                        : template;
+                                part.onUseItemOn(partCard, player, hand, pos.getCenter());
                                 count++;
                             }
                         }

@@ -6,6 +6,7 @@ import appeng.menu.AEBaseMenu;
 import appeng.menu.guisync.GuiSync;
 import appeng.parts.p2p.MEP2PTunnelPart;
 import appeng.parts.p2p.P2PTunnelPart;
+import com.mojang.logging.LogUtils;
 import com.suntide_20210418.advancedmemorycard.config.ModConfigs;
 import com.suntide_20210418.advancedmemorycard.item.custom.CardMode;
 import com.suntide_20210418.advancedmemorycard.network.ConfigModeSyncPacket;
@@ -30,6 +31,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -42,6 +44,8 @@ import java.util.Objects;
  * 服务端界面 menu，继承 AEBaseMenu，负责接收客户端数据并进行操作
  */
 public class ConfigModeMenu extends AEBaseMenu {
+
+    private static final Logger LOGGER = LogUtils.getLogger();
 
     //action 标识符
     private static final String REFRESH_P2P = "refresh_p2p";
@@ -113,7 +117,11 @@ public class ConfigModeMenu extends AEBaseMenu {
     }
 
     private void handleBindFrequency(String frequencyHex) {
+        if (p2pManager == null) return;
         p2pManager.bind(frequencyHex);
+        // 立即回读一次真实状态：否则界面要等下一个轮询周期才更新，
+        // 玩家会把"绑定失败/被拒绝"误读成绑定成功。
+        updateItemInfo();
     }
 
     // 发送时传递复合参数（格式：frequency|alias）
@@ -356,7 +364,12 @@ public class ConfigModeMenu extends AEBaseMenu {
 
     // 接收时解析
     private void setChannelAlias(String data) {
-        String[] parts = data.split("\\|");
+        // 限制切分次数：名称里出现分隔符时不要把后半段截断
+        String[] parts = data.split("\\|", 2);
+        if (parts.length < 2) {
+            LOGGER.warn("Malformed channel alias payload: {}", data);
+            return;
+        }
         String frequency = parts[0];
         String alias = parts[1];
 
@@ -377,7 +390,12 @@ public class ConfigModeMenu extends AEBaseMenu {
 
     // 接收时解析并重新获取 P2P 部件
     private void setP2PAlias(String data) {
-        String[] parts = data.split("::");
+        // 限制切分次数：名称里出现 "::" 时不要把后半段截断
+        String[] parts = data.split("::", 2);
+        if (parts.length < 2) {
+            LOGGER.warn("Malformed P2P alias payload: {}", data);
+            return;
+        }
         String positionData = parts[0];
         String alias = parts[1];
 
@@ -386,17 +404,36 @@ public class ConfigModeMenu extends AEBaseMenu {
     }
 
     private void setP2PAlias(P2PTunnelPart<?> p2p, String alias) {
-        if (p2p != null && p2pManager != null) {
-            p2pManager.renameP2P(p2p, alias);
-            updateItemInfo();
+        if (p2pManager == null) {
+            return;
         }
+        if (p2p == null) {
+            // 不要静默失败：解析不到部件时界面只会"看起来没反应"，日志里至少要留证据
+            LOGGER.warn("Cannot resolve P2P part for rename to '{}'", alias);
+            return;
+        }
+        p2pManager.renameP2P(p2p, alias);
+        // 回读校验：改名失败以前是彻底静默的（界面被乐观值掩盖，重开界面才发现名字没变）
+        Component applied = p2p.getCustomName();
+        if (applied == null || !alias.equals(applied.getString())) {
+            LOGGER.warn("Rename did not apply to P2P at {}: expected '{}', got '{}'",
+                    p2p.getBlockEntity() != null ? p2p.getBlockEntity().getBlockPos() : null,
+                    alias,
+                    applied != null ? applied.getString() : null);
+        }
+        updateItemInfo();
     }
 
     /**
-     * 解析位置数据字符串，从对应维度的世界中重新获取 P2P 部件。
+     * 解析位置数据字符串，取出对应的 P2P 部件。
      * 支持两种格式：
      *   - 旧格式（向后兼容）: x|y|z|side
      *   - 新格式:            x|y|z|side|dimension （dimension 为完整 ResourceLocation，如 minecraft:overworld）
+     *
+     * <p>优先在本菜单已经扫描到的 {@link #p2pDevicesMap} 里匹配：那些就是网格里正在运行的
+     * 部件实例，坐标/朝向/维度都来自服务端自己的扫描结果，不受"区块是否加载""getLevel() 是否
+     * 拿得到目标维度"影响。只有匹配不到时才退回按坐标去世界里查 —— 那条路在跨维度、
+     * 区块未加载等情况下会安静地返回 null，让调用方以为操作成功了。
      */
     private P2PTunnelPart<?> parsingP2P(String data) {
         String[] posParts = data.split("\\|");
@@ -404,7 +441,25 @@ public class ConfigModeMenu extends AEBaseMenu {
                 Integer.parseInt(posParts[1]),
                 Integer.parseInt(posParts[2]));
         Direction side = Direction.values()[Integer.parseInt(posParts[3])];
+        String dimension = posParts.length >= 5 ? posParts[4] : null;
 
+        // 1. 先在本次扫描到的部件里找
+        for (P2PTunnelPart<?> candidate : p2pDevicesMap.keySet()) {
+            if (candidate == null || candidate.getSide() != side) {
+                continue;
+            }
+            BlockEntity host = candidate.getBlockEntity();
+            if (host == null || host.getLevel() == null || !host.getBlockPos().equals(pos)) {
+                continue;
+            }
+            if (dimension != null
+                    && !host.getLevel().dimension().location().toString().equals(dimension)) {
+                continue;
+            }
+            return candidate;
+        }
+
+        // 2. 回退：按坐标去世界里查
         Player player = getPlayer();
 
         // 确定目标维度：优先使用编码中的维度，否则回退到玩家当前维度（向后兼容旧格式）

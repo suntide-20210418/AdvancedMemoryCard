@@ -42,11 +42,24 @@ public class ModZhcnLangProvider extends LanguageProvider {
 
         // 配置模式工具提示
         add(Keys.TOOLTIP_CONFIG_INFO, "配置模式\n");
+        add(Keys.TOOLTIP_UNCONNECTED_NOT_BINDABLE, "「未连接」不是可绑定的频段");
 
         // 复制模式屏幕
         add(Keys.COPY_MODE_SCREEN_START_POS, "开始坐标");
         add(Keys.COPY_MODE_SCREEN_END_POS, "结束坐标");
         add(Keys.COPY_MODE_SCREEN_CLEAR_TOOLTIP, "清除坐标");
+
+        // 复制模式粘贴选项
+        add(Keys.COPY_MODE_SCREEN_OPTIONS_TITLE, "粘贴时应用的选项");
+        add(Keys.COPY_MODE_SCREEN_AUTO_OPEN, "每次复制后自动弹出本界面");
+        add(Keys.COPY_MODE_OPTION_UPGRADES, "升级");
+        add(Keys.COPY_MODE_OPTION_SETTINGS, "设置");
+        add(Keys.COPY_MODE_OPTION_PRIORITY, "优先级");
+        add(Keys.COPY_MODE_OPTION_CONFIG_INV, "配置物品");
+        add(Keys.COPY_MODE_OPTION_PATTERNS, "样板");
+        add(Keys.COPY_MODE_OPTION_P2P_TYPE, "P2P 类型");
+        add(Keys.COPY_MODE_OPTION_P2P_FREQUENCY, "P2P 频率");
+        add(Keys.COPY_MODE_OPTION_CUSTOM_NAME, "名称");
 
         // 配置模式屏幕
         add(Keys.CONFIG_MODE_SCREEN_SEARCH_PLACEHOLDER, "搜索...");
@@ -106,5 +119,6 @@ public class ModZhcnLangProvider extends LanguageProvider {
         // 按键绑定
         add("key.categories.advanced_memory_card", "高级内存卡");
         add("key.advancedmemorycard.switch", "切换模式");
+        add("key.advancedmemorycard.copy_options", "复制选项");
     }
 }
