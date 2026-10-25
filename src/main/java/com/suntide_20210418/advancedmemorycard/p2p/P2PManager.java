@@ -36,18 +36,30 @@ public class P2PManager {
         // 部件的 freq/output 持久化在方块 NBT 里，而 P2PService 的 inputs/outputs
         // 是纯运行时映射，只在节点被并入网格时由 addNode 重建。二者不是同一份状态：
         // 重进存档 / 网络重建期间运行时映射尚未建全，isConnected() 的结果不可信。
-        // 这里先用部件自己持久化的频段把映射对齐（频段未变，不会写盘），让后续判定有意义。
+        // 这里只补登缺失的条目，不动已经正确的条目，让后续判定有意义。
         synchronizeServiceMappings();
+        // 修复"同一频段登记了多个输入端、却一个输出端都没有"的坏通道（历史版本写坏的存档）
+        repairChannelInputs();
         // 初始化时立即处理频段为0但仍连接了设备的异常P2P
         fixZeroFrequencyAnomalies();
     }
 
     /**
-     * 用每个 P2P 部件自身持久化的频段，把 P2PService 的 inputs/outputs 映射与存档对齐。
+     * 补登 P2PService 中缺失的 inputs/outputs 条目。
      *
-     * <p>因为传入的频段就是 {@code part.getFrequency()}，{@link P2PTunnelPart#setFrequency}
-     * 内部的 {@code oldf != freq} 判定不成立，所以这轮重登记既不会写盘，也不会触发
-     * 任何 onTunnelConfigChange —— 纯粹是修运行时状态。
+     * <p>为什么不能像以前那样无脑对每个部件调用 {@code updateFreq(part, part.getFrequency())}：
+     *
+     * <ul>
+     *   <li>{@code P2PService.inputs} 是 {@code HashMap<Short, P2PTunnelPart>} —— 一个频段只
+     *       存一个输入端。{@code updateFreq} 在入口处是
+     *       {@code if (inputs.containsValue(part)) inputs.remove(part.getFrequency())}，
+     *       即按频段 key 整条删，然后重新 put。</li>
+     *   <li>因此当同一频段存在两个输入端时，谁最后被迭代到谁就占据 {@code inputs[F]}。
+     *       而部件集合是 HashMap 的 keySet，迭代顺序不稳定 —— 表现为"同一条通道，
+     *       重进存档前后显示的状态/别名会变"。</li>
+     * </ul>
+     *
+     * <p>所以这里只在"该频段当前确实没有任何登记"时补一次；已经有人占位就不去抢。
      */
     private void synchronizeServiceMappings() {
         IGrid currentGrid = getCurrentGrid();
@@ -60,11 +72,104 @@ public class P2PManager {
             if (p2pPart == null) continue;
             IGridNode node = p2pPart.getGridNode();
             if (node == null || node.getGrid() != currentGrid) continue;
-            currentP2PService.updateFreq(p2pPart, p2pPart.getFrequency());
+
+            short freq = p2pPart.getFrequency();
+            // 频段 0 在 AE2 里是"未绑定"，不属于任何通道，不参与对齐。
+            if (freq == 0) continue;
+
+            if (p2pPart.isOutput()) {
+                P2PTunnelPart<?> input = currentP2PService.getInput(freq);
+                if (input != null && input.getClass() == p2pPart.getClass()
+                        && input.getOutputs().contains(p2pPart)) {
+                    continue; // 已在 outputs 映射中
+                }
+                // outputs 是 LinkedHashMultimap（SetMultimap），重复登记是幂等的
+                currentP2PService.updateFreq(p2pPart, freq);
+            } else {
+                // 输入端只在频段空缺时补登记，避免把同频段真正的输入端挤出映射
+                if (currentP2PService.getInput(freq) != null) continue;
+                currentP2PService.updateFreq(p2pPart, freq);
+            }
         }
 
         this.grid = currentGrid;
         this.p2pService = currentP2PService;
+    }
+
+    /**
+     * 修复"同一频段有多个输入端、但没有输出端"的通道。
+     *
+     * <p>这种状态是旧版 {@link #bind(String)} 留下的：它对 ME P2P 跳过了输入/输出端仲裁，
+     * 于是把第二个设备绑到已有通道时只是又登记了一个输入端 ——
+     * {@code P2PService.inputs} 是单槽 HashMap，后来的输入把先前的挤出映射，
+     * {@code outputs} 永远为空。而 {@link #isConnected} 对输入端要求"至少有一个同频输出端"，
+     * 所以整条通道（包括被挤出去的那个）在界面上永久显示"未连接"，且这个坏状态
+     * 已经由 {@code setOutput}/{@code updateFreq} 写进了存档，重进存档照旧。
+     *
+     * <p>修复策略：只在"该频段没有任何输出端"时动手 —— 这种通道当前不传递任何东西，
+     * 把多余的那个输入端降级为输出端，只会让玩家当初的绑定意图（连起来）成立。
+     * 保留哪个作为输入端：优先取有自定义名的那个（频段别名就是输入端名称，玩家改名
+     * 的那一端才是他认定的输入端），否则取 P2PService 当前登记的那个。
+     */
+    private void repairChannelInputs() {
+        IGrid currentGrid = getCurrentGrid();
+        if (currentGrid == null) return;
+
+        P2PService currentP2PService = P2PService.get(currentGrid);
+        if (currentP2PService == null) return;
+
+        // 按频段归类输入端
+        HashMap<Short, List<P2PTunnelPart<?>>> inputsByFreq = new HashMap<>();
+        for (P2PTunnelPart<?> p2pPart : new ArrayList<>(p2pDevicesMap.keySet())) {
+            if (p2pPart == null || p2pPart.isOutput()) continue;
+            short freq = p2pPart.getFrequency();
+            if (freq == 0) continue;
+            inputsByFreq.computeIfAbsent(freq, k -> new ArrayList<>()).add(p2pPart);
+        }
+
+        for (var entry : inputsByFreq.entrySet()) {
+            List<P2PTunnelPart<?>> candidates = entry.getValue();
+            if (candidates.size() < 2) continue;
+
+            P2PTunnelPart<?> registered = currentP2PService.getInput(entry.getKey());
+            if (registered == null) continue;
+
+            // 节点未上线时 getOutputs() 恒为空，无法判断该频段是否已有输出端 —— 保持原状
+            IGridNode registeredNode = registered.getGridNode();
+            if (registeredNode == null || !registeredNode.isOnline()) continue;
+
+            if (!registered.getOutputs().isEmpty()) continue; // 通道已有输出端，不动
+
+            P2PTunnelPart<?> keeper = pickChannelInput(candidates, registered);
+            for (P2PTunnelPart<?> p2pPart : candidates) {
+                if (p2pPart == keeper) continue;
+                // 不同隧道类型之间的输入/输出概念不通用，跨类型不做改写
+                if (p2pPart.getClass() != keeper.getClass()) continue;
+                // 先改角色再重登记：updateFreq 内部按 isOutput() 决定放进 inputs 还是 outputs。
+                // 被降级的部件本来就不在 inputs 里（它被后来的输入挤掉了），
+                // 所以 inputs.containsValue(part) 为 false，不会误删保留者的条目。
+                ((P2PTunnelPartMixin) p2pPart).invokeSetOutput(true);
+                currentP2PService.updateFreq(p2pPart, p2pPart.getFrequency());
+            }
+        }
+    }
+
+    /**
+     * 从同一频段的多个输入端中挑出"作为通道输入端"的那一个。
+     * 有且仅有一个带自定义名时取它，否则回退到 P2PService 当前登记的输入端。
+     */
+    private static P2PTunnelPart<?> pickChannelInput(List<P2PTunnelPart<?>> candidates,
+                                                     P2PTunnelPart<?> registered) {
+        P2PTunnelPart<?> named = null;
+        int namedCount = 0;
+        for (P2PTunnelPart<?> p2pPart : candidates) {
+            if (p2pPart.getClass() != registered.getClass()) continue;
+            Component customName = p2pPart.getCustomName();
+            if (customName == null || customName.getString().isEmpty()) continue;
+            named = p2pPart;
+            namedCount++;
+        }
+        return namedCount == 1 ? named : registered;
     }
 
     public void analysisP2P() {
@@ -125,23 +230,21 @@ public class P2PManager {
             return;
         }
 
-        // 非 ME P2P 设备：智能判断输入/输出端角色
-        // 检查目标频段中是否已有输入端：
-        //   - 如果有输入端：当前设备作为输出端（setOutput(true)）
-        //   - 如果没有输入端：当前设备作为输入端（setOutput(false)）
-        if (!(p2pTunnelPartBinding instanceof MEP2PTunnelPart)) {
-            P2PTunnelPart<?> existingInput = currentP2PService.getInput(freq);
-            if (existingInput != null) {
-                // 频段中已有输入端，当前设备作为输出端
-                if (!p2pTunnelPartBinding.isOutput()) {
-                    ((P2PTunnelPartMixin) p2pTunnelPartBinding).invokeSetOutput(true);
-                }
-            } else {
-                // 频段中没有输入端，当前设备作为输入端
-                if (p2pTunnelPartBinding.isOutput()) {
-                    ((P2PTunnelPartMixin) p2pTunnelPartBinding).invokeSetOutput(false);
-                }
-            }
+        // 角色仲裁（对所有 P2P 类型统一，不再跳过 ME P2P）：
+        //   - 目标频段已有【其他】设备的输入端 → 当前设备作为输出端（setOutput(true)）
+        //   - 没有输入端（或输入端就是自己）   → 当前设备作为输入端（setOutput(false)）
+        //
+        // 为什么 ME P2P 也必须走这段：P2PService.inputs 是 HashMap<Short, P2PTunnelPart>，
+        // 一个频段只存一个输入端，后登记的输入会把先前的挤出映射；而 outputs 是独立的
+        // Multimap。旧实现对 ME P2P 跳过仲裁，于是"把第二个 ME P2P 绑到已有通道"
+        // 只会再登记一个输入端 —— outputs 永远为空，isConnected() 对输入端的判定
+        // （要求至少一个同频输出端）恒为 false，界面永久显示"未连接"；
+        // 而且这个坏状态会随 setOutput/updateFreq 的 markForSave 一起写进存档，
+        // 重进存档后照样是未连接。
+        P2PTunnelPart<?> existingInput = currentP2PService.getInput(freq);
+        boolean shouldBeOutput = existingInput != null && existingInput != p2pTunnelPartBinding;
+        if (shouldBeOutput != p2pTunnelPartBinding.isOutput()) {
+            ((P2PTunnelPartMixin) p2pTunnelPartBinding).invokeSetOutput(shouldBeOutput);
         }
 
         currentP2PService.updateFreq(p2pTunnelPartBinding, freq);

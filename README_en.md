@@ -30,7 +30,7 @@ Right-click any **P2P tunnel part** to open the configuration GUI and visually m
 - **P2P tree list**: Automatically scans the network and displays all P2P devices grouped by type / channel, with expand/collapse and search filtering.
 - **Detail panel**: Selecting a node shows its type, frequency, input/output role, connection status, and more.
 - **Rename / alias**: Set a custom name for an individual P2P device, or set an alias for an entire channel (the channel's input side) for easy identification.
-- **Bind frequency**: Bind the selected P2P to a specific 4-digit hexadecimal frequency (e.g. `0A1B`). Non-ME P2Ps automatically and intelligently determine their input/output role.
+- **Bind frequency**: Bind the selected P2P to a specific 4-digit hexadecimal frequency (e.g. `0A1B`). Every P2P type arbitrates its input/output role automatically: if the target frequency already has another input, the current tunnel becomes an output, otherwise it becomes the input.
 - **Assign new channel**: Assign a brand-new free frequency to the selected non-ME P2P and set it as the input side with one click.
 - **Auto-configure input/output (ME P2P only)**: Automatically decides whether an ME P2P should act as input or output based on whether its external network is connected to an ME Controller, and assigns a frequency automatically.
 - **Highlight & locate**: Highlights P2P tunnels in the world (self / input / output rendered in different colors), optionally auto-turns your head toward the target, and sends location info and a teleport link to the chat bar.
