@@ -1,0 +1,69 @@
+# 构建校验（持续集成）
+#
+# 触发面：任意分支的推送、任意分支发起的 PR、以及手动触发。
+# 只声明 branches 不声明 tags，因此**标签推送不会触发本流程** —— 打标签只跑 release.yml，
+# 不会重复构建。这是有意为之，不要顺手补上 tags。
+#
+# 只做两件事：编译打包、上传 jar 作为可下载产物。
+#
+# 刻意不在这里跑 runData 与 runGameTestServer：
+#   1. 两者都是长任务（客户端注册表初始化 + 资源生成），放进 CI 只会带来超长耗时；
+#   2. 本仓已提交 src/generated/resources，构建本身不需要重新生成数据 ——
+#      若 datagen 输出与已提交内容不一致，说明本地漏提交，应由本地 `./gradlew runData` + diff 发现。
+# 需要的话可以另开一个独立 job，不要挂进这条链路。
+#
+# 关于格式检查：本仓 build.gradle 没有应用 spotless 插件，不存在 spotlessCheck 任务，
+# 因此这里没有独立的格式步骤（从 DimensionTech 同步过来时必须删掉那一步，否则 CI 直接失败）。
+# 将来若引入 spotless，注意 enforceCheck 默认为 false、spotlessCheck 不会自动挂到 check 上，
+# 那时必须在这里显式加一步，否则等于没有检查。
+name: Build
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+  workflow_dispatch:
+
+# 同一分支的重复推送只保留最新一次，避免为旧提交排队。
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Gradle build (JDK 21)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      # cache-read-only: false 是必需的，不是调优。
+      # setup-gradle 默认「只在仓库默认分支写缓存」，而本仓默认分支是 master，
+      # 日常开发却在 suntide/1.21.1 —— 不放行的话缓存永远只读、永远为空，
+      # 每次 CI 都要重新下载整套 NeoForge 依赖与 AE2 依赖。
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-read-only: false
+
+      - name: Build
+        run: ./gradlew build --stacktrace
+
+      - name: Upload jar
+        uses: actions/upload-artifact@v7
+        with:
+          name: advanced_memory_card-jar
+          path: build/libs/*.jar
+          if-no-files-found: error
