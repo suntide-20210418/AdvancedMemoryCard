@@ -55,6 +55,10 @@ public class ModZhcnLangProvider extends LanguageProvider {
         add(Keys.COPY_MODE_OPTION_SETTINGS, "设置");
         add(Keys.COPY_MODE_OPTION_PRIORITY, "优先级");
         add(Keys.COPY_MODE_OPTION_CONFIG_INV, "配置物品");
+        add(Keys.COPY_MODE_OPTION_PATTERNS, "样板");
+        add(Keys.COPY_MODE_OPTION_P2P_TYPE, "P2P 类型");
+        add(Keys.COPY_MODE_OPTION_P2P_FREQUENCY, "P2P 频率");
+        add(Keys.COPY_MODE_OPTION_CUSTOM_NAME, "名称");
 
         // 配置模式屏幕
         add(Keys.CONFIG_MODE_SCREEN_SEARCH_PLACEHOLDER, "搜索...");

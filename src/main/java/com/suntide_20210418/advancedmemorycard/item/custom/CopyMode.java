@@ -14,6 +14,7 @@ import com.suntide_20210418.advancedmemorycard.config.ModConfigs;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.component.DataComponentMap;
+import net.minecraft.core.component.DataComponentType;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
@@ -162,6 +163,39 @@ public class CopyMode extends CardMode {
         return filtered;
     }
 
+    /**
+     * 用目标自身导出的值回填「未勾选但不能靠缺失表达」的选项。
+     *
+     * <p>AE2 有几处导入实现把「组件缺失」当成「把目标清空」：名称被置 null、样板被清空、
+     * P2P 类型分支整段不执行。对这些选项，取消勾选时必须把目标当前值填回去，
+     * 语义才等于「这一项不复制、目标保持原样」。只在真的存在这类未勾选项时才调用。
+     */
+    private static ItemStack withTargetValues(ItemStack template, DataComponentMap targetValues, int applyMask) {
+        ItemStack patched = template.copy();
+        for (CopyOption option : CopyOption.values()) {
+            if (!option.preserveTargetValue() || (applyMask & option.mask()) != 0) {
+                continue;
+            }
+            copyComponent(patched, targetValues, option.component());
+        }
+        return patched;
+    }
+
+    /** 目标没有该项时不填（保持缺失，等价于「目标本来就没有」）。 */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private static void copyComponent(ItemStack target, DataComponentMap source, DataComponentType<?> type) {
+        Object value = source.get(type);
+        if (value != null) {
+            target.set((DataComponentType) type, value);
+        }
+    }
+
+    private static DataComponentMap exportPartSettings(IPart part) {
+        DataComponentMap.Builder builder = DataComponentMap.builder();
+        part.exportSettings(SettingsFrom.MEMORY_CARD, builder);
+        return builder.build();
+    }
+
     @Override
     public InteractionResultHolder<ItemStack> onItemUse(
             Level level, Player player, InteractionHand hand) {
@@ -169,7 +203,9 @@ public class CopyMode extends CardMode {
         if (this.isCopying) {
             // 只把「勾选了的」导出组件交给导入方：未勾选的组件直接从卡片副本上移除，
             // AE2 的 importGenericSettings 取不到就跳过对应步骤（方块实体与 P2P 部件都走这条数据）。
+            int applyMask = getApplyMask(stack);
             ItemStack template = createFilteredCard(stack);
+            boolean needsTargetValues = CopyOption.needsTargetValues(applyMask);
             // 1.21.1 方式：获取 DataComponentMap
             DataComponentMap dataComponents = template.getComponents();
 
@@ -180,7 +216,12 @@ public class CopyMode extends CardMode {
                 for (BlockPos pos : positions) {
                     BlockEntity blockEntity = level.getBlockEntity(pos);
                     if (blockEntity instanceof AEBaseBlockEntity aeBlockEntity) {
-                        aeBlockEntity.importSettings(SettingsFrom.MEMORY_CARD, dataComponents, player);
+                        DataComponentMap source = needsTargetValues
+                                ? withTargetValues(template,
+                                        aeBlockEntity.exportSettings(SettingsFrom.MEMORY_CARD, player),
+                                        applyMask).getComponents()
+                                : dataComponents;
+                        aeBlockEntity.importSettings(SettingsFrom.MEMORY_CARD, source, player);
                         count++;
                     }
                     // 处理AE2部件宿主（IPartHost）
@@ -189,8 +230,12 @@ public class CopyMode extends CardMode {
                         for (Direction direction : Direction.values()) {
                             IPart part = partHost.getPart(direction);
                             if (part != null) {
-                                // 尝试导入设置到部件。必须传真实手持，AE2 在 OFF_HAND 时会直接忽略
-                                part.onUseItemOn(template, player, hand, pos.getCenter());
+                                // 部件内部读的是传入栈自己的组件，所以回填也要落在栈副本上。
+                                // 必须传真实手持，AE2 在 OFF_HAND 时会直接忽略
+                                ItemStack partCard = needsTargetValues
+                                        ? withTargetValues(template, exportPartSettings(part), applyMask)
+                                        : template;
+                                part.onUseItemOn(partCard, player, hand, pos.getCenter());
                                 count++;
                             }
                         }

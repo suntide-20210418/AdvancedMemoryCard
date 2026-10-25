@@ -61,6 +61,10 @@ public class ModEnusLangProvider extends LanguageProvider {
         add(Keys.COPY_MODE_OPTION_SETTINGS, "Apply settings");
         add(Keys.COPY_MODE_OPTION_PRIORITY, "Apply priority");
         add(Keys.COPY_MODE_OPTION_CONFIG_INV, "Apply config inventory");
+        add(Keys.COPY_MODE_OPTION_PATTERNS, "Apply patterns");
+        add(Keys.COPY_MODE_OPTION_P2P_TYPE, "Apply P2P type");
+        add(Keys.COPY_MODE_OPTION_P2P_FREQUENCY, "Apply P2P frequency");
+        add(Keys.COPY_MODE_OPTION_CUSTOM_NAME, "Apply name");
 
         // 配置模式屏幕
         add(Keys.CONFIG_MODE_SCREEN_SEARCH_PLACEHOLDER, "Search...");

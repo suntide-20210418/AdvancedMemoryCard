@@ -56,6 +56,10 @@ public class TranslateHelper {
         public static final String COPY_MODE_OPTION_SETTINGS = COPY_MODE_SCREEN_PREFIX + "option.settings";
         public static final String COPY_MODE_OPTION_PRIORITY = COPY_MODE_SCREEN_PREFIX + "option.priority";
         public static final String COPY_MODE_OPTION_CONFIG_INV = COPY_MODE_SCREEN_PREFIX + "option.config_inv";
+        public static final String COPY_MODE_OPTION_PATTERNS = COPY_MODE_SCREEN_PREFIX + "option.patterns";
+        public static final String COPY_MODE_OPTION_P2P_TYPE = COPY_MODE_SCREEN_PREFIX + "option.p2p_type";
+        public static final String COPY_MODE_OPTION_P2P_FREQUENCY = COPY_MODE_SCREEN_PREFIX + "option.p2p_frequency";
+        public static final String COPY_MODE_OPTION_CUSTOM_NAME = COPY_MODE_SCREEN_PREFIX + "option.custom_name";
 
         public static final String CONFIG_MODE_SCREEN_PREFIX = SCREEN_PREFIX + "advanced_memory_card.player.config.";
         public static final String CONFIG_MODE_SCREEN_TITLE = CONFIG_MODE_SCREEN_PREFIX + "title";
