@@ -1,176 +1,108 @@
 package com.suntide_20210418.advancedmemorycard.client.gui.screen;
 
 import appeng.client.gui.AEBaseScreen;
-import appeng.client.gui.Icon;
 import appeng.client.gui.style.ScreenStyle;
-import appeng.client.gui.widgets.IconButton;
+import appeng.client.gui.widgets.AECheckbox;
+import com.suntide_20210418.advancedmemorycard.item.ModItems;
+import com.suntide_20210418.advancedmemorycard.item.custom.CardMode;
+import com.suntide_20210418.advancedmemorycard.item.custom.CopyMode;
+import com.suntide_20210418.advancedmemorycard.item.custom.CopyOption;
 import com.suntide_20210418.advancedmemorycard.menu.CopyModeMenu;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.client.gui.components.Tooltip;
-import net.minecraft.core.BlockPos;
+import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.ItemStack;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
+import java.util.EnumMap;
+import java.util.Locale;
+import java.util.Map;
 
 /**
- * 采用ae2界面，样式文件定义于ae2/guis/advanced_memory_card.json
+ * 复制模式选项界面。
  *
+ * <p>竖直排列 1 个标题文字（由样式 JSON 的 {@code copy_options_title} 直接渲染）和 4 个
+ * {@link AECheckbox}，每项控制粘贴时是否应用对应的导出组件。
+ *
+ * <p>布局全部由 {@code copy_mode_menu.json} 定义，AE2 的 {@code WidgetContainer} 会按槽位
+ * 位置放置控件并在 resize 时重新计算，因此这里只管状态，不管坐标：
+ * <pre>
+ *   left = 10（全部元素）
+ *   标题 top = 10，高 9（font.lineHeight）
+ *   复选框 top = 24 / 43 / 62 / 81，高 14（AECheckbox.SIZE），步进 = 14 + 5
+ * </pre>
+ *
+ * <p>状态以服务端为准（{@link CopyModeMenu#getApplyMask()}），客户端点击只负责提交整张掩码；
+ * 服务端回读后的同步值才是最终显示状态。
  */
-
 public class CopyModeScreen extends AEBaseScreen<CopyModeMenu> {
 
-    // 标识符，用于.setValue时不被监听器捕捉，重新定义数据
-    private boolean suppressListener = true;
-    private IconButton clearButton;
+    private final Map<CopyOption, AECheckbox> checkboxes = new EnumMap<>(CopyOption.class);
 
-    private BlockPos startPos;
-    private BlockPos endPos;
-
-    private EditBox sX;
-    private EditBox sY;
-    private EditBox sZ;
-    private EditBox eX;
-    private EditBox eY;
-    private EditBox eZ;
-
+    /** 上一次已应用到界面上的同步值，用于避免每 tick 重设导致点击瞬间被旧值覆盖。 */
+    private int lastSyncedMask = -1;
 
     public CopyModeScreen(CopyModeMenu menu, Inventory playerInventory, Component title, ScreenStyle style) {
         super(menu, playerInventory, title, style);
-        menu.sendUpdateItemInf();
 
-        sX = registerFields("sX");
-        sY = registerFields("sY");
-        sZ = registerFields("sZ");
-        eX = registerFields("eX");
-        eY = registerFields("eY");
-        eZ = registerFields("eZ");
-
-        clearButton = new IconButton(button -> {
-            menu.sendClearPos();
-            menu.sendUpdateItemInf();
-        })
-
-        {
-            @Override
-            protected Icon getIcon() {
-                return Icon.CONDENSER_OUTPUT_TRASH;
-            }
-        };
-
-        clearButton.setTooltip(Tooltip.create(Component.translatable(com.suntide_20210418.advancedmemorycard.utils.TranslateHelper.Keys.COPY_MODE_SCREEN_CLEAR_TOOLTIP)));
-        this.addToLeftToolbar(clearButton);
-        updateFieldsFromHeldItem();
+        // 必须在构造期注册：AEBaseScreen.init() 会统一把这些控件放进 renderables 并按 JSON 槽位摆位
+        for (CopyOption option : CopyOption.values()) {
+            AECheckbox checkbox = this.widgets.addCheckbox(
+                    widgetId(option),
+                    Component.translatable(option.translationKey()),
+                    () -> onToggle(option));
+            // 默认全选：卡片没有该 NBT 键时就是这个状态，同步值到达后会立刻校正
+            checkbox.setSelected(true);
+            checkboxes.put(option, checkbox);
+        }
     }
 
-    private EditBox registerFields(String fieldName){
-        EditBox field = new EditBox(this.font, 0, 0, 0, 0, Component.translatable(fieldName));
-        field.setBordered(true);
-        field.setFilter(this::isDigitsWithOptionalSign);
-        field.setResponder(this::onInputChange);
-        this.widgets.add(fieldName, field);
-        return field;
+    private static String widgetId(CopyOption option) {
+        return "opt_" + option.name().toLowerCase(Locale.ROOT);
+    }
+
+    private void onToggle(CopyOption option) {
+        int mask = CopyOption.maskOf(o -> checkboxes.get(o).isSelected());
+        if (mask == 0) {
+            // 禁止全部取消。AECheckbox.onPress() 会先翻转自身状态再回调，这里把它拨回去。
+            // 不能只靠服务端拒绝：服务端掩码没变化就不会产生 @GuiSync 更新，客户端会停在错误视觉上。
+            checkboxes.get(option).setSelected(true);
+            return;
+        }
+        menu.dispatchSetApplyMask(mask);
     }
 
     @Override
-    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
-        super.render(guiGraphics, mouseX, mouseY, partialTicks);
+    public void containerTick() {
+        super.containerTick();
 
-        getPos();
-        updateFieldsFromHeldItem();
-
-        setTextContent("start_pos", Component.translatable(com.suntide_20210418.advancedmemorycard.utils.TranslateHelper.Keys.COPY_MODE_SCREEN_START_POS));
-        setTextContent("end_pos", Component.translatable(com.suntide_20210418.advancedmemorycard.utils.TranslateHelper.Keys.COPY_MODE_SCREEN_END_POS));
-
-    }
-
-    //从服务端拿到数据并处理，获取的数据必须有@GuiSync注解
-    private void getPos(){
-        startPos = parseBlockPos(menu.getStartPos());
-        endPos = parseBlockPos(menu.getEndPos());
-    }
-
-    //更新输入框数据
-    private void updateFieldsFromHeldItem(){
-        suppressListener = false;
-        if (startPos != null){
-            if (isNullOrEmpty(sX.getValue())) sX.setValue(String.valueOf(startPos.getX()));
-            if (isNullOrEmpty(sY.getValue())) sY.setValue(String.valueOf(startPos.getY()));
-            if (isNullOrEmpty(sZ.getValue())) sZ.setValue(String.valueOf(startPos.getZ()));
-        } else {
-            sX.setValue("");
-            sY.setValue("");
-            sZ.setValue("");
-        }
-        if (endPos != null){
-            if (isNullOrEmpty(eX.getValue())) eX.setValue(String.valueOf(endPos.getX()));
-            if (isNullOrEmpty(eY.getValue())) eY.setValue(String.valueOf(endPos.getY()));
-            if (isNullOrEmpty(eZ.getValue())) eZ.setValue(String.valueOf(endPos.getZ()));
-        } else {
-            eX.setValue("");
-            eY.setValue("");
-            eZ.setValue("");
-        }
-        suppressListener = true;
-    }
-
-    private boolean isNullOrEmpty(String s){
-        return s == null || s.trim().isEmpty();
-    }
-
-    private boolean isDigitsWithOptionalSign(String input) {
-        if (input == null || input.isEmpty()) {
-            return true; // 允许空输入
-        }
-        return input.matches("-?\\d*"); // 匹配可选负号和数字
-    }
-
-    public BlockPos parseBlockPos(String input) {
-        if (input.isEmpty()){
-            return null;
-        }
-        // 使用正则表达式提取数字
-        String regex = "BlockPos\\{x=\\s*(-?\\d+),\\s*y=\\s*(-?\\d+),\\s*z=\\s*(-?\\d+)}";
-        Pattern pattern = java.util.regex.Pattern.compile(regex);
-        Matcher matcher = pattern.matcher(input);
-
-        if (matcher.matches()) {
-            // 提取 x, y, z 的值
-            String x = matcher.group(1);
-            String y = matcher.group(2);
-            String z = matcher.group(3);
-
-            return new BlockPos(Integer.parseInt(x), Integer.parseInt(y), Integer.parseInt(z));
-            // 返回目标格式
-
-        } else {
-            throw new IllegalArgumentException("输入字符串格式不正确: " + input);
-        }
-    }
-    private void onInputChange(String ignored) {
-        if (suppressListener) {
-            if (!isNullOrEmpty(sX.getValue()) && !isNullOrEmpty(sY.getValue()) && !isNullOrEmpty(sZ.getValue())) {
-                try {
-                    int sx = Integer.parseInt(sX.getValue().trim());
-                    int sy = Integer.parseInt(sY.getValue().trim());
-                    int sz = Integer.parseInt(sZ.getValue().trim());
-                    this.getMenu().sendReviseStartPos(new BlockPos(sx, sy, sz));
-                } catch (NumberFormatException ignoredEx) {
-                }
-            }
-
-            if (!isNullOrEmpty(eX.getValue()) && !isNullOrEmpty(eY.getValue()) && !isNullOrEmpty(eZ.getValue())) {
-                try {
-                    int ex = Integer.parseInt(eX.getValue().trim());
-                    int ey = Integer.parseInt(eY.getValue().trim());
-                    int ez = Integer.parseInt(eZ.getValue().trim());
-                    this.getMenu().sendReviseEndPos(new BlockPos(ex, ey, ez));
-                } catch (NumberFormatException ignoredEx) {
-                }
+        int mask = menu.getApplyMask();
+        if (mask != lastSyncedMask) {
+            lastSyncedMask = mask;
+            for (Map.Entry<CopyOption, AECheckbox> entry : checkboxes.entrySet()) {
+                entry.getValue().setSelected((mask & entry.getKey().mask()) != 0);
             }
         }
+
+        // 卡片被换走或切到别的模式后，这个界面已经没有写入目标，直接关掉
+        if (!isHandStillCopyMode()) {
+            onClose();
+        }
+    }
+
+    private boolean isHandStillCopyMode() {
+        InteractionHand hand = menu.getHand();
+        if (hand == null) {
+            // 同步值还没到，未知即视为有效，避免刚打开就被关掉
+            return true;
+        }
+
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.player == null) {
+            return false;
+        }
+        ItemStack stack = minecraft.player.getItemInHand(hand);
+        return stack.is(ModItems.ADVANCED_MEMORY_CARD.get())
+                && CardMode.of(stack) instanceof CopyMode;
     }
 }

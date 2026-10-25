@@ -49,6 +49,13 @@ public class ModZhcnLangProvider extends LanguageProvider {
         add(Keys.COPY_MODE_SCREEN_END_POS, "结束坐标");
         add(Keys.COPY_MODE_SCREEN_CLEAR_TOOLTIP, "清除坐标");
 
+        // 复制模式粘贴选项
+        add(Keys.COPY_MODE_SCREEN_OPTIONS_TITLE, "粘贴时应用的选项");
+        add(Keys.COPY_MODE_OPTION_UPGRADES, "应用升级");
+        add(Keys.COPY_MODE_OPTION_SETTINGS, "应用设置");
+        add(Keys.COPY_MODE_OPTION_PRIORITY, "应用优先级");
+        add(Keys.COPY_MODE_OPTION_CONFIG_INV, "应用配置物品");
+
         // 配置模式屏幕
         add(Keys.CONFIG_MODE_SCREEN_SEARCH_PLACEHOLDER, "搜索...");
         add(Keys.CONFIG_MODE_SCREEN_TITLE, "P2P 配置模式");
@@ -107,5 +114,6 @@ public class ModZhcnLangProvider extends LanguageProvider {
         // 按键绑定
         add("key.categories.advanced_memory_card", "高级内存卡");
         add("key.advancedmemorycard.switch", "切换模式");
+        add("key.advancedmemorycard.copy_options", "复制选项");
     }
 }

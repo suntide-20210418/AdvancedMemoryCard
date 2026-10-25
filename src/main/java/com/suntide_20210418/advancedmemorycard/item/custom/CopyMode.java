@@ -33,10 +33,13 @@ public class CopyMode extends CardMode {
     private static final String START_POS = "start_pos";
     private static final String END_POS = "end_pos";
     private static final String IS_COPYING = "is_copying";
+    /** 粘贴时应用哪些内容（{@link CopyOption} 的位掩码）。旧卡没有这个键，按全选处理。 */
+    private static final String APPLY_OPTIONS_MASK = "apply_options_mask";
 
     private BlockPos startPos;
     private BlockPos endPos;
     private boolean isCopying;
+    private int applyMask = CopyOption.ALL;
 
     public CopyMode() {}
 
@@ -59,6 +62,11 @@ public class CopyMode extends CardMode {
         // 处理 isCopying 为空的情况，默认为 false
         isCopying = tag.getBoolean(IS_COPYING);
 
+        // 旧卡没有该键：默认全选，保持改造前的粘贴行为
+        applyMask = tag.contains(APPLY_OPTIONS_MASK)
+                ? tag.getInt(APPLY_OPTIONS_MASK) & CopyOption.ALL
+                : CopyOption.ALL;
+
         return this;
     }
 
@@ -76,6 +84,7 @@ public class CopyMode extends CardMode {
         }
 
         tag.putBoolean(IS_COPYING, isCopying);
+        tag.putInt(APPLY_OPTIONS_MASK, applyMask);
         return tag;
     }
 
@@ -115,13 +124,56 @@ public class CopyMode extends CardMode {
         this.saveToStack(stack);
     }
 
+    /** 当前勾选的粘贴内容位掩码（见 {@link CopyOption}）。 */
+    public int getApplyMask() {
+        return applyMask;
+    }
+
+    /**
+     * 写入勾选掩码并落盘。
+     *
+     * <p>掩码为 0 时直接忽略（保留原值）：UI 侧也会回弹最后一个复选框，
+     * 这里只作为服务端兜底，防止伪造客户端动作把卡片写成「什么也不应用」。
+     */
+    public void setApplyMask(ItemStack stack, int mask) {
+        int clamped = mask & CopyOption.ALL;
+        if (clamped == 0) {
+            return;
+        }
+        this.applyMask = clamped;
+        this.saveToStack(stack);
+    }
+
+    public boolean applies(CopyOption option) {
+        return (applyMask & option.mask()) != 0;
+    }
+
+    /**
+     * 生成一张「只保留已勾选导出组件」的卡片副本，供粘贴时作为数据源使用。
+     *
+     * <p>不能改写原卡：原卡是玩家手上的真实物品，且复制内容（导出结果）与粘贴选项是两件事。
+     * 组件表在 {@code ItemStack#copy()} 里是浅拷贝，循环外算一次即可。
+     */
+    public ItemStack createFilteredCard(ItemStack card) {
+        ItemStack filtered = card.copy();
+        for (CopyOption option : CopyOption.values()) {
+            if (!applies(option)) {
+                filtered.remove(option.component());
+            }
+        }
+        return filtered;
+    }
+
     @Override
     public InteractionResultHolder<ItemStack> onItemUse(
             Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
         if (this.isCopying) {
+            // 只把「勾选了的」导出组件交给导入方：未勾选的组件直接从卡片副本上移除，
+            // AE2 的 importGenericSettings 取不到就跳过对应步骤（方块实体与 P2P 部件都走这条数据）。
+            ItemStack template = createFilteredCard(stack);
             // 1.21.1 方式：获取 DataComponentMap
-            DataComponentMap dataComponents = stack.getComponents();
+            DataComponentMap dataComponents = template.getComponents();
 
             int count = 0;
 
@@ -130,7 +182,6 @@ public class CopyMode extends CardMode {
                 for (BlockPos pos : positions) {
                     BlockEntity blockEntity = level.getBlockEntity(pos);
                     if (blockEntity instanceof AEBaseBlockEntity aeBlockEntity) {
-                        // 注意：AE2 的 SettingsFrom 和 importSettings 可能也需要适配
                         aeBlockEntity.importSettings(SettingsFrom.MEMORY_CARD, dataComponents, player);
                         count++;
                     }
@@ -140,8 +191,8 @@ public class CopyMode extends CardMode {
                         for (Direction direction : Direction.values()) {
                             IPart part = partHost.getPart(direction);
                             if (part != null) {
-                                // 尝试导入设置到部件
-                                part.onUseItemOn(stack, player, InteractionHand.MAIN_HAND, pos.getCenter());
+                                // 尝试导入设置到部件。必须传真实手持，AE2 在 OFF_HAND 时会直接忽略
+                                part.onUseItemOn(template, player, hand, pos.getCenter());
                                 count++;
                             }
                         }

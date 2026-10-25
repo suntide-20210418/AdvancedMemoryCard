@@ -22,8 +22,19 @@ public class ModKey {
             KEY_CATEGORY            // 按键分类
     );
 
+    // 2. 打开复制模式选项界面（默认 G 键）
+    //    键位可在「选项 → 控制 → 按键绑定 → 高级内存卡」中修改，
+    //    因此代码里只通过 KeyMapping 判断，不要直接比较 GLFW 键码。
+    public static final KeyMapping COPY_OPTIONS_KEY = new KeyMapping(
+            "key.advancedmemorycard.copy_options",
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_G,
+            KEY_CATEGORY
+    );
+
     @SubscribeEvent
     public static void registerKeyBindings(RegisterKeyMappingsEvent event) {
         event.register(MODE_SWITCH_KEY);
+        event.register(COPY_OPTIONS_KEY);
     }
 }

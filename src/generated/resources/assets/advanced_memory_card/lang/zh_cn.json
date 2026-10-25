@@ -55,6 +55,7 @@
   "gui.advanced_memory_card.advanced_memory_card.tooltip.unconnected.not_bindable": "「未连接」不是可绑定的频段",
   "item.advanced_memory_card.advanced_memory_card": "高级内存卡",
   "itemGroup.advanced_memory_card.tab": "高级内存卡",
+  "key.advancedmemorycard.copy_options": "复制选项",
   "key.advancedmemorycard.switch": "切换模式",
   "key.categories.advanced_memory_card": "高级内存卡",
   "screen.advanced_memory_card.advanced_memory_card.player.config.info": "选择一个 P2P 节点查看详情",
@@ -62,5 +63,10 @@
   "screen.advanced_memory_card.advanced_memory_card.player.config.title": "P2P 配置模式",
   "screen.advanced_memory_card.advanced_memory_card.player.copy.clear_tooltip": "清除坐标",
   "screen.advanced_memory_card.advanced_memory_card.player.copy.end_pos": "结束坐标",
+  "screen.advanced_memory_card.advanced_memory_card.player.copy.option.config_inv": "应用配置物品",
+  "screen.advanced_memory_card.advanced_memory_card.player.copy.option.priority": "应用优先级",
+  "screen.advanced_memory_card.advanced_memory_card.player.copy.option.settings": "应用设置",
+  "screen.advanced_memory_card.advanced_memory_card.player.copy.option.upgrades": "应用升级",
+  "screen.advanced_memory_card.advanced_memory_card.player.copy.options_title": "粘贴时应用的选项",
   "screen.advanced_memory_card.advanced_memory_card.player.copy.start_pos": "开始坐标"
 }

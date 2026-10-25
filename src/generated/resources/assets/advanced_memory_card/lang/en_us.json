@@ -55,6 +55,7 @@
   "gui.advanced_memory_card.advanced_memory_card.tooltip.unconnected.not_bindable": "\"Unconnected\" is not a bindable frequency",
   "item.advanced_memory_card.advanced_memory_card": "Advanced Memory Card",
   "itemGroup.advanced_memory_card.tab": "Advanced Memory Card",
+  "key.advancedmemorycard.copy_options": "Copy Options",
   "key.advancedmemorycard.switch": "Switch Mode",
   "key.categories.advanced_memory_card": "Advanced Memory Card",
   "screen.advanced_memory_card.advanced_memory_card.player.config.info": "Select a P2P node to view details",
@@ -62,5 +63,10 @@
   "screen.advanced_memory_card.advanced_memory_card.player.config.title": "P2P Config Mode",
   "screen.advanced_memory_card.advanced_memory_card.player.copy.clear_tooltip": "Clear positions",
   "screen.advanced_memory_card.advanced_memory_card.player.copy.end_pos": "End Pos",
+  "screen.advanced_memory_card.advanced_memory_card.player.copy.option.config_inv": "Apply config inventory",
+  "screen.advanced_memory_card.advanced_memory_card.player.copy.option.priority": "Apply priority",
+  "screen.advanced_memory_card.advanced_memory_card.player.copy.option.settings": "Apply settings",
+  "screen.advanced_memory_card.advanced_memory_card.player.copy.option.upgrades": "Apply upgrades",
+  "screen.advanced_memory_card.advanced_memory_card.player.copy.options_title": "Paste options",
   "screen.advanced_memory_card.advanced_memory_card.player.copy.start_pos": "Start Pos"
 }

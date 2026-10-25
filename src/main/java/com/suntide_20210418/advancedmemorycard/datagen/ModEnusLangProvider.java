@@ -55,6 +55,13 @@ public class ModEnusLangProvider extends LanguageProvider {
         add(Keys.COPY_MODE_SCREEN_END_POS, "End Pos");
         add(Keys.COPY_MODE_SCREEN_CLEAR_TOOLTIP, "Clear positions");
 
+        // 复制模式粘贴选项
+        add(Keys.COPY_MODE_SCREEN_OPTIONS_TITLE, "Paste options");
+        add(Keys.COPY_MODE_OPTION_UPGRADES, "Apply upgrades");
+        add(Keys.COPY_MODE_OPTION_SETTINGS, "Apply settings");
+        add(Keys.COPY_MODE_OPTION_PRIORITY, "Apply priority");
+        add(Keys.COPY_MODE_OPTION_CONFIG_INV, "Apply config inventory");
+
         // 配置模式屏幕
         add(Keys.CONFIG_MODE_SCREEN_SEARCH_PLACEHOLDER, "Search...");
         add(Keys.CONFIG_MODE_SCREEN_TITLE, "P2P Config Mode");
@@ -113,5 +120,6 @@ public class ModEnusLangProvider extends LanguageProvider {
         // 按键绑定
         add("key.categories.advanced_memory_card", "Advanced Memory Card");
         add("key.advancedmemorycard.switch", "Switch Mode");
+        add("key.advancedmemorycard.copy_options", "Copy Options");
     }
 }

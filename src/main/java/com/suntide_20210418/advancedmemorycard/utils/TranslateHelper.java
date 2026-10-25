@@ -49,6 +49,13 @@ public class TranslateHelper {
         public static final String COPY_MODE_SCREEN_START_POS = COPY_MODE_SCREEN_PREFIX + "start_pos";
         public static final String COPY_MODE_SCREEN_END_POS = COPY_MODE_SCREEN_PREFIX + "end_pos";
         public static final String COPY_MODE_SCREEN_CLEAR_TOOLTIP = COPY_MODE_SCREEN_PREFIX + "clear_tooltip";
+        public static final String COPY_MODE_SCREEN_OPTIONS_TITLE = COPY_MODE_SCREEN_PREFIX + "options_title";
+
+        // 复制模式粘贴选项（对应 CopyOption）
+        public static final String COPY_MODE_OPTION_UPGRADES = COPY_MODE_SCREEN_PREFIX + "option.upgrades";
+        public static final String COPY_MODE_OPTION_SETTINGS = COPY_MODE_SCREEN_PREFIX + "option.settings";
+        public static final String COPY_MODE_OPTION_PRIORITY = COPY_MODE_SCREEN_PREFIX + "option.priority";
+        public static final String COPY_MODE_OPTION_CONFIG_INV = COPY_MODE_SCREEN_PREFIX + "option.config_inv";
 
         public static final String CONFIG_MODE_SCREEN_PREFIX = SCREEN_PREFIX + "advanced_memory_card.player.config.";
         public static final String CONFIG_MODE_SCREEN_TITLE = CONFIG_MODE_SCREEN_PREFIX + "title";
