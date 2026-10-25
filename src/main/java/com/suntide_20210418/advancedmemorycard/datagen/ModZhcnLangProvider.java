@@ -51,10 +51,10 @@ public class ModZhcnLangProvider extends LanguageProvider {
 
         // 复制模式粘贴选项
         add(Keys.COPY_MODE_SCREEN_OPTIONS_TITLE, "粘贴时应用的选项");
-        add(Keys.COPY_MODE_OPTION_UPGRADES, "应用升级");
-        add(Keys.COPY_MODE_OPTION_SETTINGS, "应用设置");
-        add(Keys.COPY_MODE_OPTION_PRIORITY, "应用优先级");
-        add(Keys.COPY_MODE_OPTION_CONFIG_INV, "应用配置物品");
+        add(Keys.COPY_MODE_OPTION_UPGRADES, "升级");
+        add(Keys.COPY_MODE_OPTION_SETTINGS, "设置");
+        add(Keys.COPY_MODE_OPTION_PRIORITY, "优先级");
+        add(Keys.COPY_MODE_OPTION_CONFIG_INV, "配置物品");
 
         // 配置模式屏幕
         add(Keys.CONFIG_MODE_SCREEN_SEARCH_PLACEHOLDER, "搜索...");

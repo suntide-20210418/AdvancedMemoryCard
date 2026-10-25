@@ -50,7 +50,7 @@ public class CopyModeScreen extends AEBaseScreen<CopyModeMenu> {
             AECheckbox checkbox = this.widgets.addCheckbox(
                     widgetId(option),
                     Component.translatable(option.translationKey()),
-                    () -> onToggle(option));
+                    this::pushMask);
             // 默认全选：卡片没有该 NBT 键时就是这个状态，同步值到达后会立刻校正
             checkbox.setSelected(true);
             checkboxes.put(option, checkbox);
@@ -61,15 +61,9 @@ public class CopyModeScreen extends AEBaseScreen<CopyModeMenu> {
         return "opt_" + option.name().toLowerCase(Locale.ROOT);
     }
 
-    private void onToggle(CopyOption option) {
-        int mask = CopyOption.maskOf(o -> checkboxes.get(o).isSelected());
-        if (mask == 0) {
-            // 禁止全部取消。AECheckbox.onPress() 会先翻转自身状态再回调，这里把它拨回去。
-            // 不能只靠服务端拒绝：服务端掩码没变化就不会产生 @GuiSync 更新，客户端会停在错误视觉上。
-            checkboxes.get(option).setSelected(true);
-            return;
-        }
-        menu.dispatchSetApplyMask(mask);
+    /** 提交整张掩码而不是 delta：天然幂等，重复包/丢包都不会把状态写歪。 */
+    private void pushMask() {
+        menu.dispatchSetApplyMask(CopyOption.maskOf(o -> checkboxes.get(o).isSelected()));
     }
 
     @Override

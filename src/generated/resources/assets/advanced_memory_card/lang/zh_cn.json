@@ -63,10 +63,10 @@
   "screen.advanced_memory_card.advanced_memory_card.player.config.title": "P2P 配置模式",
   "screen.advanced_memory_card.advanced_memory_card.player.copy.clear_tooltip": "清除坐标",
   "screen.advanced_memory_card.advanced_memory_card.player.copy.end_pos": "结束坐标",
-  "screen.advanced_memory_card.advanced_memory_card.player.copy.option.config_inv": "应用配置物品",
-  "screen.advanced_memory_card.advanced_memory_card.player.copy.option.priority": "应用优先级",
-  "screen.advanced_memory_card.advanced_memory_card.player.copy.option.settings": "应用设置",
-  "screen.advanced_memory_card.advanced_memory_card.player.copy.option.upgrades": "应用升级",
+  "screen.advanced_memory_card.advanced_memory_card.player.copy.option.config_inv": "配置物品",
+  "screen.advanced_memory_card.advanced_memory_card.player.copy.option.priority": "优先级",
+  "screen.advanced_memory_card.advanced_memory_card.player.copy.option.settings": "设置",
+  "screen.advanced_memory_card.advanced_memory_card.player.copy.option.upgrades": "升级",
   "screen.advanced_memory_card.advanced_memory_card.player.copy.options_title": "粘贴时应用的选项",
   "screen.advanced_memory_card.advanced_memory_card.player.copy.start_pos": "开始坐标"
 }

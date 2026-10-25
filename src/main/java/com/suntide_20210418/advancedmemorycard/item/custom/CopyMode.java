@@ -132,15 +132,11 @@ public class CopyMode extends CardMode {
     /**
      * 写入勾选掩码并落盘。
      *
-     * <p>掩码为 0 时直接忽略（保留原值）：UI 侧也会回弹最后一个复选框，
-     * 这里只作为服务端兜底，防止伪造客户端动作把卡片写成「什么也不应用」。
+     * <p>允许写入 0（四项全不选）：此时粘贴不会改动任何「可选项」覆盖的内容，
+     * 只有不在选项内的部分（重命名、P2P 类型/频段）仍会照常应用。
      */
     public void setApplyMask(ItemStack stack, int mask) {
-        int clamped = mask & CopyOption.ALL;
-        if (clamped == 0) {
-            return;
-        }
-        this.applyMask = clamped;
+        this.applyMask = mask & CopyOption.ALL;
         this.saveToStack(stack);
     }
 
