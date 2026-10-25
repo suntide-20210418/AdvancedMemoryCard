@@ -1,13 +1,16 @@
 package com.suntide_20210418.advancedmemorycard.client.gui.screen;
 
 import appeng.client.gui.AEBaseScreen;
+import appeng.client.gui.Icon;
 import appeng.client.gui.style.ScreenStyle;
 import appeng.client.gui.widgets.AECheckbox;
+import appeng.client.gui.widgets.IconButton;
 import com.suntide_20210418.advancedmemorycard.item.ModItems;
 import com.suntide_20210418.advancedmemorycard.item.custom.CardMode;
 import com.suntide_20210418.advancedmemorycard.item.custom.CopyMode;
 import com.suntide_20210418.advancedmemorycard.item.custom.CopyOption;
 import com.suntide_20210418.advancedmemorycard.menu.CopyModeMenu;
+import com.suntide_20210418.advancedmemorycard.utils.TranslateHelper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionHand;
@@ -21,19 +24,21 @@ import java.util.Map;
 /**
  * 复制模式选项界面。
  *
- * <p>竖直排列 1 个标题文字（由样式 JSON 的 {@code copy_options_title} 直接渲染）和 4 个
- * {@link AECheckbox}，每项控制粘贴时是否应用对应的导出组件。
+ * <p>竖直排列 1 个标题文字（由样式 JSON 的 {@code copy_options_title} 直接渲染）和 8 个
+ * {@link AECheckbox}，每项控制粘贴时是否应用对应的导出组件；左侧工具栏放一个
+ * {@link AutoOpenButton} 切换「每次复制后是否自动弹出本界面」。
  *
  * <p>布局全部由 {@code copy_mode_menu.json} 定义，AE2 的 {@code WidgetContainer} 会按槽位
  * 位置放置控件并在 resize 时重新计算，因此这里只管状态，不管坐标：
  * <pre>
- *   left = 10（全部元素）
- *   标题 top = 10，高 9（font.lineHeight）
- *   复选框 top = 24 / 43 / 62 / 81，高 14（AECheckbox.SIZE），步进 = 14 + 5
+ *   左侧工具栏（verticalToolbar）：按钮 16x16，落在 (4,3)
+ *   标题 left = 30，top = 10，高 9（font.lineHeight）
+ *   复选框 left = 30，top = 24 / 43 / 62 / 81 / 100 / 119 / 138 / 157
+ *             高 14（AECheckbox.SIZE），步进 = 14 + 5
  * </pre>
  *
- * <p>状态以服务端为准（{@link CopyModeMenu#getApplyMask()}），客户端点击只负责提交整张掩码；
- * 服务端回读后的同步值才是最终显示状态。
+ * <p>状态以服务端为准（{@link CopyModeMenu#getApplyMask()} / {@link CopyModeMenu#isAutoOpen()}），
+ * 客户端点击只负责提交新值；服务端回读后的同步值才是最终显示状态。
  */
 public class CopyModeScreen extends AEBaseScreen<CopyModeMenu> {
 
@@ -45,14 +50,17 @@ public class CopyModeScreen extends AEBaseScreen<CopyModeMenu> {
     public CopyModeScreen(CopyModeMenu menu, Inventory playerInventory, Component title, ScreenStyle style) {
         super(menu, playerInventory, title, style);
 
+        // 左侧工具栏：COG = 复制后弹界面，COG_DISABLED = 不弹
+        addToLeftToolbar(new AutoOpenButton(menu, this::toggleAutoOpen));
+
         // 必须在构造期注册：AEBaseScreen.init() 会统一把这些控件放进 renderables 并按 JSON 槽位摆位
         for (CopyOption option : CopyOption.values()) {
             AECheckbox checkbox = this.widgets.addCheckbox(
                     widgetId(option),
                     Component.translatable(option.translationKey()),
                     this::pushMask);
-            // 默认全选：卡片没有该 NBT 键时就是这个状态，同步值到达后会立刻校正
-            checkbox.setSelected(true);
+            // 未配置过的卡默认全不选；同步值到达后会立刻校正
+            checkbox.setSelected(false);
             checkboxes.put(option, checkbox);
         }
     }
@@ -64,6 +72,10 @@ public class CopyModeScreen extends AEBaseScreen<CopyModeMenu> {
     /** 提交整张掩码而不是 delta：天然幂等，重复包/丢包都不会把状态写歪。 */
     private void pushMask() {
         menu.dispatchSetApplyMask(CopyOption.maskOf(o -> checkboxes.get(o).isSelected()));
+    }
+
+    private void toggleAutoOpen() {
+        menu.dispatchSetAutoOpen(!menu.isAutoOpen());
     }
 
     @Override
@@ -98,5 +110,26 @@ public class CopyModeScreen extends AEBaseScreen<CopyModeMenu> {
         ItemStack stack = minecraft.player.getItemInHand(hand);
         return stack.is(ModItems.ADVANCED_MEMORY_CARD.get())
                 && CardMode.of(stack) instanceof CopyMode;
+    }
+
+    /**
+     * 左侧「复制后自动弹界面」开关。
+     *
+     * <p>图标直接由同步值决定（每帧取一次），因此不需要额外维护按钮状态：
+     * 服务端写入成功后同步回客户端，下一帧图标就变了。
+     */
+    private static final class AutoOpenButton extends IconButton {
+        private final CopyModeMenu menu;
+
+        AutoOpenButton(CopyModeMenu menu, Runnable onPress) {
+            super(btn -> onPress.run());
+            this.menu = menu;
+            setMessage(Component.translatable(TranslateHelper.Keys.COPY_MODE_SCREEN_AUTO_OPEN));
+        }
+
+        @Override
+        protected Icon getIcon() {
+            return menu.isAutoOpen() ? Icon.COG : Icon.COG_DISABLED;
+        }
     }
 }

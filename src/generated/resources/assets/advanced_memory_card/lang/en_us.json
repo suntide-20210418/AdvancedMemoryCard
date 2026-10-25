@@ -61,6 +61,7 @@
   "screen.advanced_memory_card.advanced_memory_card.player.config.info": "Select a P2P node to view details",
   "screen.advanced_memory_card.advanced_memory_card.player.config.search_placeholder": "Search...",
   "screen.advanced_memory_card.advanced_memory_card.player.config.title": "P2P Config Mode",
+  "screen.advanced_memory_card.advanced_memory_card.player.copy.auto_open": "Open these options after each copy",
   "screen.advanced_memory_card.advanced_memory_card.player.copy.clear_tooltip": "Clear positions",
   "screen.advanced_memory_card.advanced_memory_card.player.copy.end_pos": "End Pos",
   "screen.advanced_memory_card.advanced_memory_card.player.copy.option.config_inv": "Apply config inventory",

@@ -61,6 +61,7 @@
   "screen.advanced_memory_card.advanced_memory_card.player.config.info": "选择一个 P2P 节点查看详情",
   "screen.advanced_memory_card.advanced_memory_card.player.config.search_placeholder": "搜索...",
   "screen.advanced_memory_card.advanced_memory_card.player.config.title": "P2P 配置模式",
+  "screen.advanced_memory_card.advanced_memory_card.player.copy.auto_open": "每次复制后自动弹出本界面",
   "screen.advanced_memory_card.advanced_memory_card.player.copy.clear_tooltip": "清除坐标",
   "screen.advanced_memory_card.advanced_memory_card.player.copy.end_pos": "结束坐标",
   "screen.advanced_memory_card.advanced_memory_card.player.copy.option.config_inv": "配置物品",

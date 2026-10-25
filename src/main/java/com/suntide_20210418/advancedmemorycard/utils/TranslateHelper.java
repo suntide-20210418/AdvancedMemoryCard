@@ -50,6 +50,7 @@ public class TranslateHelper {
         public static final String COPY_MODE_SCREEN_END_POS = COPY_MODE_SCREEN_PREFIX + "end_pos";
         public static final String COPY_MODE_SCREEN_CLEAR_TOOLTIP = COPY_MODE_SCREEN_PREFIX + "clear_tooltip";
         public static final String COPY_MODE_SCREEN_OPTIONS_TITLE = COPY_MODE_SCREEN_PREFIX + "options_title";
+        public static final String COPY_MODE_SCREEN_AUTO_OPEN = COPY_MODE_SCREEN_PREFIX + "auto_open";
 
         // 复制模式粘贴选项（对应 CopyOption）
         public static final String COPY_MODE_OPTION_UPGRADES = COPY_MODE_SCREEN_PREFIX + "option.upgrades";

@@ -57,6 +57,7 @@ public class ModEnusLangProvider extends LanguageProvider {
 
         // 复制模式粘贴选项
         add(Keys.COPY_MODE_SCREEN_OPTIONS_TITLE, "Paste options");
+        add(Keys.COPY_MODE_SCREEN_AUTO_OPEN, "Open these options after each copy");
         add(Keys.COPY_MODE_OPTION_UPGRADES, "Apply upgrades");
         add(Keys.COPY_MODE_OPTION_SETTINGS, "Apply settings");
         add(Keys.COPY_MODE_OPTION_PRIORITY, "Apply priority");

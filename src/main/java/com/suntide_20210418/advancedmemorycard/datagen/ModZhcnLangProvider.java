@@ -51,6 +51,7 @@ public class ModZhcnLangProvider extends LanguageProvider {
 
         // 复制模式粘贴选项
         add(Keys.COPY_MODE_SCREEN_OPTIONS_TITLE, "粘贴时应用的选项");
+        add(Keys.COPY_MODE_SCREEN_AUTO_OPEN, "每次复制后自动弹出本界面");
         add(Keys.COPY_MODE_OPTION_UPGRADES, "升级");
         add(Keys.COPY_MODE_OPTION_SETTINGS, "设置");
         add(Keys.COPY_MODE_OPTION_PRIORITY, "优先级");

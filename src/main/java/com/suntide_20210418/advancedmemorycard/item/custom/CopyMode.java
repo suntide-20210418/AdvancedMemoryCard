@@ -43,6 +43,12 @@ public class CopyMode extends CardMode {
      * 模式实例覆盖 {@code mode_data}，把选项重置成默认值。
      */
     private static final String APPLY_OPTIONS_MASK = "apply_options_mask";
+    /**
+     * 每次「复制完成」（第二个角确定）后是否自动弹出选项界面。
+     *
+     * <p>与掩码一样属于卡片级偏好，存在根标签里，切模式不会丢。
+     */
+    private static final String AUTO_OPEN_OPTIONS = "auto_open_options";
 
     private BlockPos startPos;
     private BlockPos endPos;
@@ -128,21 +134,34 @@ public class CopyMode extends CardMode {
     /**
      * 读取这张卡的粘贴选项掩码。
      *
-     * <p>旧卡（或从没打开过选项界面）没有该键 → 全选，粘贴行为与改造前一致。
+     * <p>从未配置过的卡默认 0（全不选）：粘贴默认不改动任何可选项，
+     * 玩家在自动弹出的界面里显式勾选后才会写回并沿用。
      */
     public static int getApplyMask(ItemStack card) {
         CompoundTag root = getRootData(card);
         return root.contains(APPLY_OPTIONS_MASK, Tag.TAG_INT)
                 ? root.getInt(APPLY_OPTIONS_MASK) & CopyOption.ALL
-                : CopyOption.ALL;
+                : 0;
     }
 
     /** 写入粘贴选项掩码并落盘（卡级偏好，与当前模式无关，切模式不会丢）。 */
     public static void setApplyMask(ItemStack card, int mask) {
         CompoundTag root = getRootData(card);
-        // 允许写入 0（四项全不选）：此时粘贴不会改动任何「可选项」覆盖的内容，
+        // 允许写入 0（全不选）：此时粘贴不会改动任何「可选项」覆盖的内容，
         // 只有不在选项内的部分（重命名、P2P 类型/频段）仍会照常应用。
         root.putInt(APPLY_OPTIONS_MASK, mask & CopyOption.ALL);
+        setRootData(card, root);
+    }
+
+    /** 复制完成后是否自动弹出选项界面（未配置过的卡默认弹出）。 */
+    public static boolean isAutoOpenOptions(ItemStack card) {
+        CompoundTag root = getRootData(card);
+        return !root.contains(AUTO_OPEN_OPTIONS, Tag.TAG_BYTE) || root.getBoolean(AUTO_OPEN_OPTIONS);
+    }
+
+    public static void setAutoOpenOptions(ItemStack card, boolean enabled) {
+        CompoundTag root = getRootData(card);
+        root.putBoolean(AUTO_OPEN_OPTIONS, enabled);
         setRootData(card, root);
     }
 
