@@ -133,6 +133,7 @@ public class TranslateHelper {
         public static final String TOOLTIP_COPY_FIRST_POS = TOOLTIP_PREFIX + "copy.first_pos";
         public static final String TOOLTIP_COPY_SECOND_POS = TOOLTIP_PREFIX + "copy.second_pos";
         public static final String TOOLTIP_COPY_READY = TOOLTIP_PREFIX + "copy.ready";
+        public static final String TOOLTIP_UNCONNECTED_NOT_BINDABLE = TOOLTIP_PREFIX + "unconnected.not_bindable";
         public static final String TOOLTIP_CONFIG_INFO = TOOLTIP_PREFIX + "config.info";
     }
 
@@ -406,6 +407,11 @@ public class TranslateHelper {
 
         public static MutableComponent configInfo() {
             return translate(Keys.TOOLTIP_CONFIG_INFO);
+        }
+
+        /** 「未连接(0000)」不是可绑定的频段，绑上去等于静默解绑。 */
+        public static MutableComponent unconnectedNotBindable() {
+            return translate(Keys.TOOLTIP_UNCONNECTED_NOT_BINDABLE);
         }
     }
 

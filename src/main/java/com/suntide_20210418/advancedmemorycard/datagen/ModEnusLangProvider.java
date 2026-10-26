@@ -53,6 +53,7 @@ public class ModEnusLangProvider extends LanguageProvider {
 
         // 配置模式工具提示
         add(Keys.TOOLTIP_CONFIG_INFO, "Config Mode\n");
+        add(Keys.TOOLTIP_UNCONNECTED_NOT_BINDABLE, "\"Unconnected\" is not a bindable frequency");
 
         // 复制模式屏幕
         add(Keys.COPY_MODE_SCREEN_START_POS, "Start Pos");
