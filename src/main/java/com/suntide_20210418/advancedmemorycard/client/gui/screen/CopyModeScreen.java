@@ -54,20 +54,15 @@ public class CopyModeScreen extends AEBaseScreen<CopyModeMenu> {
         for (CopyOption option : CopyOption.values()) {
             AECheckbox checkbox = this.widgets.addCheckbox(
                     widgetId(option), Component.translatable(option.translationKey()), this::pushMask);
-            // 未配置过的卡默认全不选；同步值到达后会立刻校正
+            // 未配置过的卡默认全不选；同步值到达后立刻校正
             checkbox.setSelected(false);
             checkboxes.put(option, checkbox);
         }
-    }
 
-    @Override
-    protected void init() {
-        super.init();
-
-        if (autoOpenButton == null) {
-            autoOpenButton = new AutoOpenButton(menu, this::toggleAutoOpen);
-        }
-        // rebuildWidgets() 会先清空 renderables，所以 resize 后重新加入不会重复
+        // 同样必须在构造期加入左侧工具栏：VerticalButtonBar#populateScreen 只在 init() 时
+        // 遍历一次当时的按钮列表，把按钮交给 addRenderableWidget。放到 init() 之后再 add，
+        // 按钮会留在列表里，却从来没有进入 renderables —— 表现为"按钮不显示"。
+        autoOpenButton = new AutoOpenButton(menu, this::toggleAutoOpen);
         addToLeftToolbar(autoOpenButton);
     }
 
