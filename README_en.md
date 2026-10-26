@@ -4,6 +4,9 @@
 
 An Applied Energistics 2 (AE2) add-on that gives the AE2 Memory Card two major capabilities: **bulk region pasting** and **centralized P2P tunnel configuration**.
 
+> **Current version: `1.1.0-1.21.1`** · Minecraft 1.21.1 / NeoForge 21.1.219+ / AE2 1.21.1 line
+> See [CHANGELOG.md](CHANGELOG.md) for what changed.
+
 ## 🌟 Features
 
 ### 🔧 Two Working Modes
@@ -27,19 +30,19 @@ The mode and the per-card preferences are stored in the item's `CUSTOM_DATA` com
 
 Which parts of the copied configuration get applied is controlled by 8 toggles:
 
-| Option | AE2 component | Description |
+| Option | Applies | Description |
 | --- | --- | --- |
-| Upgrades | `EXPORTED_UPGRADES` | Upgrade cards |
-| Settings | `EXPORTED_SETTINGS` | Generic settings of `IConfigurableObject` |
-| Priority | `EXPORTED_PRIORITY` | Priority |
-| Config inventory | `EXPORTED_CONFIG_INV` | Config slot contents (filter/marker items, etc.) |
-| Patterns | `EXPORTED_PATTERNS` | Patterns of a pattern provider |
-| P2P type | `EXPORTED_P2P_TYPE` | Tunnel type (decides whether a part is swapped) |
-| P2P frequency | `EXPORTED_P2P_FREQUENCY` | Tunnel frequency |
-| Name | `EXPORTED_CUSTOM_NAME` | Custom name |
+| Upgrades | Upgrade cards | Upgrade slots |
+| Settings | Generic settings | Generic settings of `IConfigurableObject` |
+| Priority | Priority | Priority |
+| Config inventory | Config slots | Config slot contents (filter/marker items, etc.) |
+| Patterns | Patterns | Patterns of a pattern provider |
+| P2P type | P2P type | Tunnel type (decides whether a part is swapped) |
+| P2P frequency | P2P frequency | Frequency the tunnel is bound to |
+| Name | Custom name | Custom name |
 
 - **Opening it**: Press `G` while holding the card in Copy Mode (rebindable in Controls). By default it also pops up **on every copy** (Shift + Right-click to copy a device's settings onto the card).
-- **Auto-open toggle**: The cog button attached to the left of the panel — `COG` = pop up after every copy, `COG_DISABLED` = never, also saved per card.
+- **Auto-open toggle**: The button in the vertical toolbar to the left of the panel — highlighted = pop up after every copy, greyed out = never, also saved per card.
 - **All unchecked by default**: A card that was never configured applies nothing, so you must opt in explicitly; the selection is written to the card and reused afterwards.
 - **"Not applied" means "target keeps its value"**: Unticking an option keeps it out of the paste. For patterns / P2P type / name, AE2 treats a missing component as "clear the target", so the paste refills the target's own current value instead — which is equivalent to leaving it untouched.
 - **Independent of mode switching**: The options live in the card's root tag (outside `mode_data`), so switching modes or copying again does not reset them.
@@ -125,7 +128,7 @@ Used to personalize the UI and rendering, organized by section:
 3. **Right-click** the opposite corner to mark the end point (white); the selection is now ready to paste (green).
 4. **Right-click air** to apply the configuration to every AE2 device inside the region.
 
-> The panel can be closed at any time; the options stay on the card. Click the cog button on its left to switch it to `COG_DISABLED` if you don't want it to pop up every time.
+> The panel can be closed at any time; the options stay on the card. Grey out the toggle in the left toolbar if you don't want it to pop up every time.
 
 ### Config Mode
 
@@ -157,6 +160,16 @@ Used to personalize the UI and rendering, organized by section:
   - `P2PTunnelPartMixin`: exposes AE2's `P2PTunnelPart#setOutput`;
   - `AEBasePartAccessor`: an `@Accessor` that writes `AEBasePart#customName` directly, used for P2P renaming without the side effects of `importSettings`.
 - Resources are produced by the generators under `src/main/java/.../datagen` into `src/generated/resources/`: `ModRecipesProvider`, `ModItemModelsProvider`, `ModEnusLangProvider`, `ModZhcnLangProvider`.
+
+## 📝 Changelog
+
+Full history in [CHANGELOG.md](CHANGELOG.md). Latest release:
+
+### 1.1.0-1.21.1
+
+- **Added** a paste-options panel for Copy Mode (upgrades / settings / priority / config inventory / patterns / P2P type / P2P frequency / name), opened with `G`, auto-opened after copying, stored per card.
+- **Fixed** P2P bindings being lost after relogging, channels permanently showing "not connected" when two inputs shared a frequency, renames not being saved, and part pasting failing when the card is in the off hand.
+- **Note** cards never configured now default to nothing selected.
 
 ## 📄 License
 
