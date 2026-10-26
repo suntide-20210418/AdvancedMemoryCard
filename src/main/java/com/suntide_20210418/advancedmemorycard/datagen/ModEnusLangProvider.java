@@ -20,6 +20,11 @@ public class ModEnusLangProvider extends LanguageProvider {
         // 物品组相关
         add(Keys.ITEM_GROUP_TAB, "Advanced Memory Card");
 
+        // 键位
+        add("key.categories.advanced_memory_card", "Advanced Memory Card");
+        add("key.advancedmemorycard.switch", "Switch Mode");
+        add("key.advancedmemorycard.copy_options", "Copy Options");
+
         // 复制模式工具提示
         add(Keys.TOOLTIP_COPY_INFO, "Copy Mode\n");
         add(Keys.TOOLTIP_COPY_FIRST_POS, "First position:%s\n");
@@ -53,6 +58,18 @@ public class ModEnusLangProvider extends LanguageProvider {
         add(Keys.COPY_MODE_SCREEN_START_POS, "Start Pos");
         add(Keys.COPY_MODE_SCREEN_END_POS, "End Pos");
         add(Keys.COPY_MODE_SCREEN_CLEAR_TOOLTIP, "Clear positions");
+
+        // 粘贴选项界面
+        add(Keys.COPY_MODE_SCREEN_OPTIONS_TITLE, "Paste options");
+        add(Keys.COPY_MODE_SCREEN_AUTO_OPEN, "Open these options after each copy");
+        add(Keys.COPY_MODE_OPTION_UPGRADES, "Apply upgrades");
+        add(Keys.COPY_MODE_OPTION_SETTINGS, "Apply settings");
+        add(Keys.COPY_MODE_OPTION_PRIORITY, "Apply priority");
+        add(Keys.COPY_MODE_OPTION_CONFIG_INV, "Apply config inventory");
+        add(Keys.COPY_MODE_OPTION_PATTERNS, "Apply patterns");
+        add(Keys.COPY_MODE_OPTION_P2P_TYPE, "Apply P2P type");
+        add(Keys.COPY_MODE_OPTION_P2P_FREQUENCY, "Apply P2P frequency");
+        add(Keys.COPY_MODE_OPTION_CUSTOM_NAME, "Apply name");
 
         // 配置模式屏幕
         add(Keys.CONFIG_MODE_SCREEN_SEARCH_PLACEHOLDER, "Search...");

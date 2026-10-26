@@ -20,6 +20,7 @@ The mod stores its state as a "mode" inside the item's NBT, and you can switch b
 - **Bulk region copy**: Copy a single AE2 device's configuration first, then select two opposite corner blocks to define a region, and right-click on air to apply the config in bulk.
 - **Supports AE2 blocks and parts**: Every `AEBaseBlockEntity` (ME controllers, interfaces, storage buses, etc.) and every part on an `IPartHost` within the region is processed.
 - **Volume limit protection**: If the region volume exceeds the server config `maxCopyVolume` (default 2048 blocks), the paste is rejected with a message to prevent accidental oversized selections and lag.
+- **Selective paste**: Choose per-item what a paste applies (upgrades / settings / priority / config inventory / patterns / P2P type / P2P frequency / name); the choice is stored on the card. For patterns, P2P type and name, unchecking copies the target's own value back instead of clearing it.
 - **Visual selection box**: The selection is color-coded in real time (red = pick first point / white = pick second point / green = ready to paste), with distinct colors for the targeted block and out-of-range blocks.
 - **Real-time feedback**: The item tooltip and chat bar display marked coordinates, region size, and the number of blocks pasted.
 
@@ -30,16 +31,19 @@ Right-click any **P2P tunnel part** to open the configuration GUI and visually m
 - **P2P tree list**: Automatically scans the network and displays all P2P devices grouped by type / channel, with expand/collapse and search filtering.
 - **Detail panel**: Selecting a node shows its type, frequency, input/output role, connection status, and more.
 - **Rename / alias**: Set a custom name for an individual P2P device, or set an alias for an entire channel (the channel's input side) for easy identification.
-- **Bind frequency**: Bind the selected P2P to a specific 4-digit hexadecimal frequency (e.g. `0A1B`). Non-ME P2Ps automatically and intelligently determine their input/output role.
-- **Assign new channel**: Assign a brand-new free frequency to the selected non-ME P2P and set it as the input side with one click.
+- **Bind frequency**: Bind the selected P2P to a specific 4-digit hexadecimal frequency (e.g. `0A1B`). All tunnel types go through the same input/output arbitration: if the target frequency already has another device as its input, the current device becomes an output; otherwise it becomes the input.
+- **Assign new channel**: Assign a brand-new free frequency to the selected P2P and set it as the input side with one click.
 - **Auto-configure input/output (ME P2P only)**: Automatically decides whether an ME P2P should act as input or output based on whether its external network is connected to an ME Controller, and assigns a frequency automatically.
+- **Broken channel repair**: Opening the screen repairs channels that have several registered inputs but no output at all (a state older versions could write into the save). Repair only happens when the frequency really has no output.
 - **Highlight & locate**: Highlights P2P tunnels in the world (self / input / output rendered in different colors), optionally auto-turns your head toward the target, and sends location info and a teleport link to the chat bar.
-- **Cross-dimension connections**: Fixes the vanilla issue where the client only sent coordinates, making cross-dimension P2Ps impossible to locate. The encoding now carries dimension info, allowing P2P devices to be correctly located and highlighted across dimensions.
+- **Cross-dimension connections**: Location encoding carries dimension info, allowing P2P devices to be correctly located and highlighted across dimensions.
 
-### ⌨️ Mode Switching
+### ⌨️ Mode Switching and Paste Options
 
 - **`V` key** (default, rebindable in the game's Controls settings) — press while holding the Advanced Memory Card to switch modes.
-- **Shift + Right-click** — quickly switch between the two modes (in Copy Mode, Shift + Right-click performs the native AE2 copy action instead of switching).
+- **`G` key** (default, rebindable) — open the paste-options panel in Copy Mode and choose what a paste applies (upgrades / settings / priority / config inventory / patterns / P2P type / P2P frequency / name).
+- **Shift + Right-click (on air)** — quickly switch between the two modes.
+- **Shift + Right-click (on an AE device)** — in Copy Mode this performs the native AE2 export; if the card has "auto-open" enabled, the paste-options panel then opens. The toggle is stored on the card.
 
 ## 📦 Installation
 
