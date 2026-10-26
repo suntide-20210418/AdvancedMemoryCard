@@ -1,7 +1,7 @@
 package com.suntide_20210418.advancedmemorycard;
 
 import com.mojang.logging.LogUtils;
-import com.suntide_20210418.advancedmemorycard.client.gui.ModMenu;
+import com.suntide_20210418.advancedmemorycard.menu.ModMenu;
 import com.suntide_20210418.advancedmemorycard.config.ModConfigs;
 import com.suntide_20210418.advancedmemorycard.item.ModCreativeModeTabs;
 import com.suntide_20210418.advancedmemorycard.item.ModItems;

@@ -50,6 +50,19 @@ public class TranslateHelper {
         public static final String COPY_MODE_SCREEN_END_POS = COPY_MODE_SCREEN_PREFIX + "end_pos";
         public static final String COPY_MODE_SCREEN_CLEAR_TOOLTIP = COPY_MODE_SCREEN_PREFIX + "clear_tooltip";
 
+        // 粘贴选项（与 1.21.1 的 CopyOption 一一对应）
+        public static final String COPY_MODE_SCREEN_OPTIONS_TITLE = COPY_MODE_SCREEN_PREFIX + "options_title";
+        public static final String COPY_MODE_SCREEN_AUTO_OPEN = COPY_MODE_SCREEN_PREFIX + "auto_open";
+        public static final String COPY_MODE_OPTION_PREFIX = COPY_MODE_SCREEN_PREFIX + "option.";
+        public static final String COPY_MODE_OPTION_UPGRADES = COPY_MODE_OPTION_PREFIX + "upgrades";
+        public static final String COPY_MODE_OPTION_SETTINGS = COPY_MODE_OPTION_PREFIX + "settings";
+        public static final String COPY_MODE_OPTION_PRIORITY = COPY_MODE_OPTION_PREFIX + "priority";
+        public static final String COPY_MODE_OPTION_CONFIG_INV = COPY_MODE_OPTION_PREFIX + "config_inv";
+        public static final String COPY_MODE_OPTION_PATTERNS = COPY_MODE_OPTION_PREFIX + "patterns";
+        public static final String COPY_MODE_OPTION_P2P_TYPE = COPY_MODE_OPTION_PREFIX + "p2p_type";
+        public static final String COPY_MODE_OPTION_P2P_FREQUENCY = COPY_MODE_OPTION_PREFIX + "p2p_frequency";
+        public static final String COPY_MODE_OPTION_CUSTOM_NAME = COPY_MODE_OPTION_PREFIX + "custom_name";
+
         public static final String CONFIG_MODE_SCREEN_PREFIX = SCREEN_PREFIX + "advanced_memory_card.player.config.";
         public static final String CONFIG_MODE_SCREEN_TITLE = CONFIG_MODE_SCREEN_PREFIX + "title";
         public static final String CONFIG_MODE_SCREEN_SEARCH_PLACEHOLDER = CONFIG_MODE_SCREEN_PREFIX + "search_placeholder";
@@ -120,6 +133,7 @@ public class TranslateHelper {
         public static final String TOOLTIP_COPY_FIRST_POS = TOOLTIP_PREFIX + "copy.first_pos";
         public static final String TOOLTIP_COPY_SECOND_POS = TOOLTIP_PREFIX + "copy.second_pos";
         public static final String TOOLTIP_COPY_READY = TOOLTIP_PREFIX + "copy.ready";
+        public static final String TOOLTIP_UNCONNECTED_NOT_BINDABLE = TOOLTIP_PREFIX + "unconnected.not_bindable";
         public static final String TOOLTIP_CONFIG_INFO = TOOLTIP_PREFIX + "config.info";
     }
 
@@ -393,6 +407,11 @@ public class TranslateHelper {
 
         public static MutableComponent configInfo() {
             return translate(Keys.TOOLTIP_CONFIG_INFO);
+        }
+
+        /** 「未连接(0000)」不是可绑定的频段，绑上去等于静默解绑。 */
+        public static MutableComponent unconnectedNotBindable() {
+            return translate(Keys.TOOLTIP_UNCONNECTED_NOT_BINDABLE);
         }
     }
 

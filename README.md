@@ -2,44 +2,76 @@
 
 **简体中文** | [English](README_en.md)
 
-一个 Applied Energistics 2（AE2）扩展模组，为 AE2 内存卡提供**批量复制**与**P2P 通道高级配置**两大增强功能。
+一个 Applied Energistics 2（AE2）扩展模组，为 AE2 内存卡提供**区域批量粘贴**与**P2P 通道集中配置**两大能力。
+
+> **当前版本：`1.2.0-1.20.1`** · Minecraft 1.20.1 / Forge 47.4.10+ / AE2 15.4.10+
+> 更新内容见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 🌟 功能特性
 
 ### 🔧 两种工作模式
 
-模组在物品 NBT 中以「模式」形式存储状态，可随时切换：
+模式与卡片级偏好都存在物品的 NBT 里（`mode_data` 加上若干偏好键），可随时切换：
 
 | 模式 | 说明 |
 | --- | --- |
-| **复制模式（Copy Mode）** | 框选一个区域，将已复制的 AE2 设备配置一次性批量粘贴到区域内所有 AE2 方块与部件 |
-| **配置模式（P2P 通道 配置模式）** | 对着 P2P 隧道部件右键打开图形化界面，对网络内的 P2P 通道进行集中管理与配置 |
+| **复制模式（Copy Mode）** | 先把一个 AE2 设备的配置复制进卡片，再框选区域，把配置批量粘贴到区域内所有 AE2 方块与部件 |
+| **配置模式（P2P 通道管理）** | 对着 P2P 隧道部件右键打开图形界面，集中管理与配置当前 AE 网络内的 P2P 通道 |
 
 ### 📋 复制模式（Copy Mode）
 
-- **区域批量复制**：先复制单个 AE2 设备的配置，再框选两个对角方块确定区域，对着空气右键即可把配置批量应用。
-- **支持 AE2 方块与部件**：区域内所有 `AEBaseBlockEntity`（如 ME 控制器、接口、存储总线等）以及 `IPartHost` 上的所有部件都会被处理。
-- **体积上限保护**：区域体积超过服务端配置 `maxCopyVolume`（默认 2048 个方块）时会被拒绝并提示，避免误选超大范围卡顿。
-- **可视化选择框**：框选过程用不同颜色实时提示状态（红色=选第一点 / 白色=选第二点 / 绿色=待粘贴），目标方块、超范围方块也有独立配色。
-- **实时状态提示**：物品 tooltip 与聊天栏会显示已标记坐标、区域大小、粘贴完成数量等信息。
+- **区域批量粘贴**：Shift + 右键复制单个 AE2 设备的配置 → 右键标记两个对角方块 → 右键空气批量应用。
+- **方块与部件都覆盖**：区域内所有 `AEBaseBlockEntity`（ME 控制器、接口、存储总线等）与 `IPartHost` 上的所有部件都会被处理。
+- **体积上限保护**：区域体积超过服务端配置 `maxCopyVolume`（默认 2048 个方块）时会被拒绝并重置选区，避免误选超大范围卡顿。
+- **可视化选区**：起始点、结束点、准星指向的方块、超范围的方块各自使用独立配色。
+- **实时状态提示**：物品 tooltip 与聊天栏显示已标记坐标、区域大小、粘贴完成的方块数量。
 
-### 🕸 配置模式（P2P 通道 配置模式）
+#### 粘贴选项（8 项，按卡保存）
+
+粘贴时具体应用哪些内容由 8 个开关控制：
+
+| 选项 | 对应数据 | 说明 |
+| --- | --- | --- |
+| 升级 | 升级卡 | 升级卡槽 |
+| 设置 | 通用配置 | `IConfigurableObject` 的通用配置 |
+| 优先级 | 优先级 | 优先级 |
+| 配置物品 | 配置槽 | 配置槽内容（过滤/标记物品等） |
+| 样板 | 样板 | 样板供应器的样板 |
+| P2P 类型 | P2P 类型 | P2P 隧道类型（决定部件是否换型） |
+| P2P 频率 | P2P 频段 | P2P 隧道绑定的频段 |
+| 名称 | 自定义名称 | 自定义名称 |
+
+- **打开方式**：手持卡且处于复制模式时按 `G`（默认键位，可在控制设置中修改）；默认在**每次复制时**（Shift + 右键把设备配置复制进卡片）自动弹出。
+- **自动弹出开关**：面板左侧（挂在面板外的竖排工具栏里）有一个开关按钮 —— 亮起 = 每次复制后弹出，灰化 = 不弹出，状态同样按卡保存。
+- **首次默认全不选**：从未配置过的卡片默认不应用任何项，需要显式勾选；勾选结果写在卡片上，之后每次弹出都沿用。
+- **「不应用」= 目标保持原值**：勾掉某项后，该项不会被写入目标。其中样板 / P2P 类型 / 名称三项在 AE2 的实现里「数据缺失 = 清空目标」，所以粘贴时会把目标自身的当前值回填，效果等同于保持原样。
+- **与模式切换无关**：选项存在卡片根标签（`mode_data` 之外），切换模式、重新复制都不会被重置。
+
+### 🕸 配置模式（P2P 通道管理）
 
 对着任意 **P2P 隧道部件**右键即可打开配置界面，对当前 AE 网络内的所有 P2P 设备进行可视化管理：
 
 - **P2P 树形列表**：自动扫描所在网络，按类型 / 频道分组展示所有 P2P 设备，支持展开折叠与搜索过滤。
 - **详情面板**：选中节点后展示该 P2P 的类型、频段、输入/输出状态、连接状态等信息。
 - **重命名 / 别名**：为单个 P2P 设备设置自定义名称，也可为整个频道（频段输入端）设置别名，便于识别。
-- **绑定频段**：将选中的 P2P 绑定到指定 4 位十六进制频段（如 `0A1B`）。非 ME P2P 会自动智能判断输入/输出端角色。
+- **绑定频段**：将选中的 P2P 绑定到指定 4 位十六进制频段（如 `0A1B`）。所有类型的 P2P 都会自动判断输入/输出端角色：目标频段已有其他输入端时当前设备作为输出端，否则作为输入端。
 - **分配新频道**：为当前选中的非 ME P2P 一键分配一个全新的空闲频段并设为输入端。
 - **自动配置输入/输出（仅 ME P2P）**：根据外部网络是否连接「ME 控制器」自动判定该 ME P2P 应作为输入端还是输出端，并自动分配频段。
 - **高亮定位**：在世界上高亮渲染 P2P 通道（自身 / 输入端 / 输出端使用不同颜色），可选自动转头面向目标，并在聊天栏发送位置与传送链接。
-- **跨维度连接**：修复了原版客户端只发送坐标导致跨维度 P2P 无法定位的问题，编码格式携带维度信息，可正确跨维度查找并高亮 P2P 设备。
+- **跨维度连接**：编码格式携带维度信息，可正确跨维度查找并高亮 P2P 设备。
 
-### ⌨️ 模式切换
+### ⌨️ 按键一览
 
-- **`V` 键**（默认键位，可在游戏控制设置中修改）—— 手持高级内存卡时按下切换模式。
-- **Shift + 右键** —— 在两种模式间快速切换（复制模式下 Shift+右键为原生 AE2 复制行为，不触发切换）。
+| 按键 | 生效场景 | 作用 |
+| --- | --- | --- |
+| `V` | 手持卡 | 在复制模式 / 配置模式之间切换 |
+| `G` | 手持卡且处于复制模式 | 打开粘贴选项面板 |
+| Shift + 右键（空气） | 手持卡 | 快速切换模式 |
+| Shift + 右键（AE 方块 / 部件） | 复制模式 | 把该设备的配置复制进卡片（原生 AE2 行为），并按设置自动弹出选项面板 |
+| 右键（空气） | 复制模式 | 批量粘贴；尚未完成选区时给出提示 |
+| 右键（P2P 部件） | 配置模式 | 打开 P2P 配置界面 |
+
+> `V` 与 `G` 均可在「选项 → 控制 → 按键绑定 → 高级内存卡」中修改。
 
 ## 📦 安装说明
 
@@ -47,52 +79,56 @@
 
 | 依赖 | 版本要求 |
 | --- | --- |
-| Minecraft | 1.20.1 |
-| Forge | 47.4.10 或更高（loader 范围 `[47,)`） |
-| Applied Energistics 2 (AE2) | `15.4.10` 或更高（`[15.4.10,)`） |
+| Minecraft | `1.20.1` |
+| Forge | `47.4.10` 或更高（`[47,)`） |
+| Applied Energistics 2 (AE2) | `15.4.10` 或更高（`[15.4.10,)`，`mods.toml` 中声明） |
 
-> 模组运行时尚依赖 Jade、Guideme、JEI（均为 AE2 生态常用附属，建议一并安装以获得最佳体验）。
+> 除以上三项外没有声明其他运行时依赖（`mods.toml` 里 `mixinextras` 为可选）。Jade、GuideME、JEI 只在开发环境引入以便调试，发行包不依赖它们。
 
 ### 安装步骤
 
 1. 从发布页下载最新版本的 `advanced_memory_card-<版本>.jar`。
 2. 将 `.jar` 文件放入 Minecraft 的 `mods` 文件夹。
-3. 确保已安装上述前置模组。
-4. 启动游戏即可在创造模式物品栏「高级内存卡」分组中找到该物品。
+3. 确保已安装上述前置模组（Forge 与 AE2）。
+4. 启动游戏，在创造模式物品栏「高级内存卡」分组（`advanced_memory_card:advanced_memory_card_tab`）中找到物品 `advanced_memory_card:advanced_memory_card`。
 
 ## 🛠 配置说明
 
 模组提供客户端与服务端两套配置文件（位于 `config/` 目录）：
 
-### 服务端配置（`advanced_memory_card-server.toml`）
+### 服务端配置（`advanced_memory_card-server.toml`，`[server]` 段）
 
 | 配置项 | 默认值 | 说明 |
 | --- | --- | --- |
-| `maxCopyVolume` | `2048` | 复制模式允许的最大区域体积（方块数），超出则拒绝粘贴 |
+| `maxCopyVolume` | `2048` | 复制模式允许的最大区域体积（方块数，范围 1 – `Integer.MAX_VALUE`），超出则拒绝粘贴 |
 | `sendHighlightToChat` | `true` | 高亮 P2P 设备时是否在聊天栏发送位置信息与传送链接 |
 
 ### 客户端配置（`advanced_memory_card-client.toml`）
 
-主要用于界面与渲染外观的个性化，可调整：
+主要用于界面与渲染外观的个性化，按片段组织：
 
-- **高亮行为**：`rotateHeadOnHighlight`（高亮时自动转头）、`p2pHighlightDurationSec`（高亮持续时间，1–60 秒）。
-- **P2P 树控件**：背景 / 选中 / 悬停颜色，缩进、行高、图标间距、频道警告阈值、名称最大长度等。
-- **详情面板**：背景、标题、标签、值、状态（未激活 / 未连接 / 已连接）等颜色与布局尺寸。
-- **通用按钮（FlatButton）**：默认 / 悬停 / 按下 / 文字颜色。
-- **复制模式选择框**：起始点、结束点、目标点、超范围以及三种选择状态的颜色。
-- **P2P 高亮渲染**：自身 / 输入端 / 输出端三种颜色。
-- **物品颜色**：物品主色与着色色。
+- `[client.highlight]`：`rotateHeadOnHighlight`（高亮时自动转头）、`p2pHighlightDurationSec`（高亮持续时间，1–60 秒）。
+- `[client.treeColors]`：`bg` / `selected` / `hover`。
+- `[client.treeLayout]`：`indentWidth`、`rowHeight`、`iconTextSpacing`、`expandIconWidth`、`channelWarningThreshold`、`p2pNameMaxLength`。
+- `[client.panelColors]`：`bg` / `title` / `label` / `value` / `placeholder` / `separator` / `buttonAreaBg`，以及 `[client.panelColors.status]` 下的 `notActive` / `notConnected` / `connected`。
+- `[client.panelLayout]`：`buttonWidth`、`buttonHeight`、`buttonSpacing`、`lineHeight`、`paddingLeft`、`paddingTop`、`buttonCountMax` 等布局参数。
+- `[client.buttonColors]`：`bg` / `hover` / `click` / `text`（通用 FlatButton 按钮）。
+- `[client.copyColors]`：`startPos` / `endPos` / `targetedPos` / `overLimit`，以及 `[client.copyColors.selection]` 下的 `ready` / `first` / `second`。
+- `[client.highlightColors]`：`self` / `input` / `output`（P2P 高亮渲染）。
+- `[client.itemColors]`：`color`（物品主色）与 `tintColor`（着色色）。
 
-> 所有颜色为十六进制数值（GUI 类为 ARGB，渲染类为 RGB），可直接在配置文件中修改。
+> 颜色为十六进制数值（GUI 类为 ARGB，世界渲染类为 RGB），可直接在配置文件中修改。
 
 ## 📖 使用流程速览
 
 ### 复制模式
 
-1. 手持高级内存卡处于复制模式，对着源 AE2 设备 **Shift + 右键** 复制其配置。
+1. 手持高级内存卡处于复制模式，对着源 AE2 设备 **Shift + 右键** 复制其配置（此时会按设置弹出粘贴选项面板，按需勾选）。
 2. 对着第一个角落方块 **普通右键** 标记起点（红色）。
 3. 对着对角方块 **普通右键** 标记终点（白色），此时进入待粘贴状态（绿色）。
-4. 对着空气 **普通右键** 将配置批量应用到区域内所有 AE2 设备。
+4. 对着空气 **普通右键**，把配置批量应用到区域内所有 AE2 设备。
+
+> 面板可以随时关闭，选项会保留在卡片上；不想每次都弹出就把左侧工具栏的开关切成灰化状态。
 
 ### 配置模式
 
@@ -106,16 +142,33 @@
 # 客户端运行（开发环境）
 ./gradlew runClient
 
+# 专用服务端运行
+./gradlew runServer
+
+# 游戏测试服务端
+./gradlew gameTestServer
+
 # 构建发布 jar
 ./gradlew build
 
-# 生成数据包 / 语言文件
+# 生成配方 / 物品模型 / 语言文件
 ./gradlew runData
 ```
 
-- 基于 Forge Gradle 6.x，Java 17 工具链。
-- 使用 Mixin（`advanced_memory_card.mixins.json`）对 AE2 的 `P2PTunnelPart` 进行扩展。
-- 资源文件由 `src/main/java/.../datagen` 下的数据生成器产出至 `src/generated/resources/`。
+- 基于 **Forge 47.4.10** 与 **ForgeGradle 6.x**，Java 17 工具链，Parchment 映射 `2023.09.03-1.20.1`。
+- 使用 Mixin（`advanced_memory_card.mixins.json`，`compatibilityLevel: JAVA_17`）公开 AE2 的 `P2PTunnelPart#setOutput`；P2P 改名不额外加 mixin，走 `CustomNameUtil` + `importSettings`（只写 `display.Name`，不带升级/优先级副作用）。
+- 资源由 `src/main/java/.../datagen` 下的生成器产出到 `src/generated/resources/`：`ModRecipesProvider`、`ModItemModelsProvider`、`ModEnusLangProvider`、`ModZhcnLangProvider`。
+- CI：`.github/workflows/build.yml` 负责构建校验（并检查 mixin refmap 是否真的进了 jar）；`.github/workflows/release.yml` 在推送版本标签时构建并发布。
+
+## 📝 更新日志
+
+完整日志见 [CHANGELOG.md](CHANGELOG.md)。最近一版：
+
+### 1.2.0-1.20.1
+
+- **新增** 复制模式的粘贴选项面板（升级 / 设置 / 优先级 / 配置物品 / 样板 / P2P 类型 / P2P 频率 / 名称），`G` 键打开，复制后自动弹出，选择随卡片保存。
+- **修复** P2P 重进存档后绑定丢失、同频双输入端导致通道永久「未连接」、绑定到「未连接(0000)」被静默解绑、改名不落盘、副手持卡粘贴无效。
+- **注意** 未配置过的卡片默认全不选，需要先勾选；Shift + 右键空气改为切换模式。
 
 ## 📄 许可
 

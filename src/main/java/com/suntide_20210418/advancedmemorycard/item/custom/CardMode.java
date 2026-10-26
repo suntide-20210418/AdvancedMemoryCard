@@ -40,6 +40,26 @@ public abstract class CardMode {
         return tag == null ? new CompoundTag() : tag.getCompound(MODE_DATA);
     }
 
+    /**
+     * 整张卡的根标签（副本）。
+     *
+     * <p>根标签下同时存着两样东西：{@code mode_data}（当前模式的数据）和跨模式共享的
+     * 卡片级偏好（例如复制模式的粘贴选项）。后者必须放在 {@code mode_data} 外面，
+     * 否则每次切模式写 {@code mode_data} 都会把偏好一起丢掉。
+     */
+    public static CompoundTag getRootData(ItemStack stack) {
+        CompoundTag tag = stack.getTag();
+        return tag == null ? new CompoundTag() : tag.copy();
+    }
+
+    public static void setRootData(ItemStack stack, CompoundTag rootTag) {
+        if (rootTag.isEmpty()) {
+            stack.setTag(null);
+        } else {
+            stack.setTag(rootTag);
+        }
+    }
+
     public static void register(ResourceLocation key, Supplier<CardMode> supplier) {
         REGISTRY.put(key, supplier);
         CYCLE_ORDER.add(key);

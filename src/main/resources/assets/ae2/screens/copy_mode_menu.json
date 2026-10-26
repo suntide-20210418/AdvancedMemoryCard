@@ -3,94 +3,64 @@
   "includes": ["common/common.json"],
   "background": {
     "texture": "guis/copy_mode_menu.png",
-    "srcRect": [0, 0, 175, 141],
-    "border": {
-      "left": 7,
-      "right": 149,
-      "top": 14,
-      "bottom": 126
-    }
+    "srcRect": [0, 0, 176, 181]
   },
   "text": {
-    "start_pos": {
-      "position": { "left": 5, "top": 16 }
-    },
-    "end_pos": {
-      "position": { "left": 5 , "top": 27 }
-    },
-    "sx": {
+    "copy_options_title": {
+      "position": { "left": 10, "top": 10 },
       "text": {
-        "translate": "x:"
-      },
-      "position": { "left": 44, "top": 15 }
-    },
-    "sy": {
-      "text": {
-        "translate": "y:"
-      },
-      "position": { "left": 94, "top": 15 }
-    },
-    "sz": {
-      "text": {
-        "translate": "z:"
-      },
-      "position": { "left": 158, "top": 15 }
-    },
-    "ex": {
-      "text": {
-        "translate": "x:"
-      },
-      "position": { "left": 44, "top": 26 }
-    },
-    "ey": {
-      "text": {
-        "translate": "y:"
-      },
-      "position": { "left": 94, "top": 26 }
-    },
-    "ez": {
-      "text": {
-        "translate": "z:"
-      },
-      "position": { "left": 158, "top": 26 }
+        "translate": "screen.advanced_memory_card.advanced_memory_card.player.copy.options_title"
+      }
     }
   },
   "widgets": {
-    "sX": {
-      "left": 53,
-      "top": 15,
-      "width": 40,
-      "height": 10
+    "opt_upgrades": {
+      "left": 10,
+      "top": 24,
+      "width": 150,
+      "height": 14
     },
-    "sY": {
-      "left": 108,
-      "top": 15,
-      "width": 40,
-      "height": 10
+    "opt_settings": {
+      "left": 10,
+      "top": 43,
+      "width": 150,
+      "height": 14
     },
-    "sZ": {
-      "left": 165,
-      "top": 15,
-      "width": 40,
-      "height": 10
+    "opt_priority": {
+      "left": 10,
+      "top": 62,
+      "width": 150,
+      "height": 14
     },
-    "eX": {
-      "left": 53,
-      "top": 26,
-      "width": 40,
-      "height": 10
+    "opt_config_inv": {
+      "left": 10,
+      "top": 81,
+      "width": 150,
+      "height": 14
     },
-    "eY": {
-      "left": 108,
-      "top": 26,
-      "width": 40,
-      "height": 10
+    "opt_patterns": {
+      "left": 10,
+      "top": 100,
+      "width": 150,
+      "height": 14
     },
-    "eZ": {
-      "left": 165,
-      "top": 26,
-      "width": 40,
-      "height": 10
+    "opt_p2p_type": {
+      "left": 10,
+      "top": 119,
+      "width": 150,
+      "height": 14
+    },
+    "opt_p2p_frequency": {
+      "left": 10,
+      "top": 138,
+      "width": 150,
+      "height": 14
+    },
+    "opt_custom_name": {
+      "left": 10,
+      "top": 157,
+      "width": 150,
+      "height": 14
     }
   }
 }

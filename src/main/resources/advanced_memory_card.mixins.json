@@ -3,7 +3,7 @@
   "package": "com.suntide_20210418.advancedmemorycard.mixin",
   "compatibilityLevel": "JAVA_17",
   "minVersion": "0.8",
-  "refmap": "advancedmemorycard.refmap.json",
+  "refmap": "advanced_memory_card.refmap.json",
   "client": [],
   "server": [],
   "mixins": [

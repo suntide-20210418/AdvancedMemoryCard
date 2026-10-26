@@ -1,8 +1,6 @@
-package com.suntide_20210418.advancedmemorycard.client.gui;
+package com.suntide_20210418.advancedmemorycard.menu;
 
 import com.suntide_20210418.advancedmemorycard.AdvancedMemoryCardMod;
-import com.suntide_20210418.advancedmemorycard.client.gui.menu.ConfigModeMenu;
-import com.suntide_20210418.advancedmemorycard.client.gui.menu.CopyModeMenu;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraftforge.common.extensions.IForgeMenuType;

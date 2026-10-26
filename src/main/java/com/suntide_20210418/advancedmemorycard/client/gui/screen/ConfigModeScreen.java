@@ -6,7 +6,8 @@ import appeng.client.gui.style.ScreenStyle;
 import appeng.client.gui.widgets.AETextField;
 import appeng.client.gui.widgets.ConfirmableTextField;
 import appeng.client.gui.widgets.Scrollbar;
-import com.suntide_20210418.advancedmemorycard.client.gui.menu.ConfigModeMenu;
+import com.suntide_20210418.advancedmemorycard.client.P2PRenderHelper;
+import com.suntide_20210418.advancedmemorycard.menu.ConfigModeMenu;
 import com.suntide_20210418.advancedmemorycard.client.gui.widgets.DetailPanelWidget;
 import com.suntide_20210418.advancedmemorycard.client.gui.widgets.P2PTreeWidget;
 import com.suntide_20210418.advancedmemorycard.config.ModConfigs;
@@ -331,6 +332,8 @@ public class ConfigModeScreen extends AEBaseScreen<ConfigModeMenu> {
     public void actionHighlightP2P(P2PInfo p2pInfo) {
         String positionData = encodeP2PPosition(p2pInfo);
         menu.dispatchClientAction("highlight_p2p", positionData);
+        // 渲染只能在客户端进行：依据已同步到客户端的 P2P 数据触发高亮
+        P2PRenderHelper.renderP2P(p2pInfo, menu.getClientChannelInfoMap().get(p2pInfo.frequency()));
     }
 
     /**
@@ -338,6 +341,8 @@ public class ConfigModeScreen extends AEBaseScreen<ConfigModeMenu> {
      */
     public void actionHighlightP2PTunnel(String frequencyHex) {
         menu.dispatchClientAction("highlight_p2p_tunnel", frequencyHex);
+        // 渲染只能在客户端进行：依据已同步到客户端的 P2P 数据触发整个频段高亮
+        P2PRenderHelper.renderP2PTunnel(menu.getClientChannelInfoMap().get(frequencyHex));
     }
 
     /**
