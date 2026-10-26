@@ -1,0 +1,82 @@
+# 构建校验（持续集成）
+#
+# 触发面：任意分支的推送、任意分支发起的 PR、以及手动触发。
+# 只声明 branches 不声明 tags，因此标签推送不会触发本流程。
+#
+# 只做三件事：编译打包、校验 mixin refmap 是否真的进了 jar、上传 jar 作为可下载产物。
+#
+# 刻意不在这里跑 runData 与 runGameTestServer：
+#   1. 两者都是长任务（客户端注册表初始化 + 资源生成 / 世界生成），放进 CI 只会带来超长耗时；
+#   2. 本仓已提交 src/generated/resources，构建本身不需要重新生成数据 ——
+#      若 datagen 输出与已提交内容不一致，说明本地漏提交，应由本地 `./gradlew runData` + diff 发现。
+#
+# 刻意不跑 spotlessCheck：本仓 build.gradle 里 spotless 配置了 enforceCheck = false，
+# 该任务即使发现格式问题也不会让构建失败，跑它等于没有检查。真要启用格式门禁，
+# 必须先改 enforceCheck，再在这里加一步。
+name: Build
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+  workflow_dispatch:
+
+# 同一分支的重复推送只保留最新一次，避免为旧提交排队。
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Gradle build (JDK 17)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      # 1.20.1 / ForgeGradle 6 的编译目标是 Java 17，构建本身也必须跑在 17 上。
+      - name: Set up JDK 17
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      # cache-read-only: false 是必需的，不是调优。
+      # setup-gradle 默认「只在仓库默认分支写缓存」，而本仓默认分支是 master，
+      # 日常开发却在 suntide/1.20.1 —— 不放行的话缓存永远只读、永远为空，
+      # 每次 CI 都要重新下载整套 Forge 依赖与 AE2 依赖。
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-read-only: false
+
+      # 仓库里的 gradlew 是 100644，没有可执行位，Linux runner 上直接 ./gradlew 会 permission denied。
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      - name: Build
+        run: ./gradlew build --stacktrace
+
+      # 这条不是形式检查：mixins.json 里的 refmap 名与实际产物名不一致时，Mixin 不会报错，
+      # 只是静默不注入，直到运行时 (P2PTunnelPartMixin) 强转抛 ClassCastException 才暴露。
+      # jar 里没有 refmap 就等于这条链路已经断了。
+      - name: Verify mixin refmap is packaged
+        run: |
+          set -euo pipefail
+          jar_file=$(ls build/libs/advanced_memory_card-*.jar | grep -v -- '-sources' | head -n1)
+          echo "Checking $jar_file"
+          unzip -l "$jar_file" | grep -q 'advanced_memory_card\.refmap\.json'
+          unzip -l "$jar_file" | grep -q 'advanced_memory_card\.mixins\.json'
+
+      - name: Upload jar
+        uses: actions/upload-artifact@v7
+        with:
+          name: advanced_memory_card-1.20.1-jar
+          path: build/libs/*.jar
+          if-no-files-found: error
