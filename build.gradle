@@ -1,4 +1,10 @@
 // 构建脚本仓库与 ForgeGradle 3 类路径（1.12.2 固定使用 FG3，不能用 1.20.1 的 FG6）
+//
+// 版本必须钉死，不能写 3.+：动态版本会让 Gradle 每次配置都去各仓库拉
+// maven-metadata.xml 做版本列举。本机到 bmclapi2 的这条链路会 "Read timed out"，
+// 而构建脚本类路径解析失败是致命的（不像普通依赖那样能落到下一个仓库），
+// 表现是配置阶段直接 BUILD FAILED，且这次下载的东西跟后续构建毫无关系。
+// 3.0.197 是 FG3 的最后一个发布版本，钉死它之后构建脚本类路径可完全离线命中缓存。
 buildscript {
     repositories {
         maven { url = 'https://maven.aliyun.com/repository/public' }
@@ -7,7 +13,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'net.minecraftforge.gradle:ForgeGradle:3.+'
+        classpath 'net.minecraftforge.gradle:ForgeGradle:3.0.197'
     }
 }
 
@@ -68,6 +74,31 @@ repositories {
     maven {
         name = 'ParchmentMC'
         url = 'https://maven.parchmentmc.org'
+    }
+}
+
+// ForgeGradle 3 把「生成式仓库」（artifactural）放在 afterEvaluate 才追加，于是永远排在
+// 上面手写的仓库后面。这类仓库提供的是本地算出来的工件：net.minecraft:* 、de.oceanlabs.mcp:*
+// 以及 fg.deobf 产生的 *_mapped_* 。
+//
+// 排在后面会坏事：cursemaven.com 对它不认识的坐标照样返回 200。实测
+// .../ae2-extended-life-570458/6302098_mapped_snapshot_20171003-1.12/....jar 与
+// .../6302098/ae2-extended-life-570458-6302098.jar 的 Content-Length 都是 4451298，
+// 即它把未经去混淆的 SRG jar 当 mapped 工件发回来。结果 Gradle 认下这个仓库，
+// 去下载一个 4.4MB、内容还不该用的包，而本地生成的机会被完全跳过。
+//
+// 把生成式仓库提到 mavenLocal 之后：能本地算的工件不再上网问，剩下的正常落到各镜像。
+afterEvaluate {
+    def isGenerated = { it.getClass().name.startsWith('com.amadornes.artifactural') }
+    def all = new ArrayList(repositories)
+    def generated = all.findAll(isGenerated)
+    if (!generated.isEmpty()) {
+        def local = all.findAll { !isGenerated(it) && it.name == 'MavenLocal' }
+        def remote = all.findAll { !isGenerated(it) && it.name != 'MavenLocal' }
+        repositories.clear()
+        local.each { repositories.add(it) }
+        generated.each { repositories.add(it) }
+        remote.each { repositories.add(it) }
     }
 }
 
