@@ -174,6 +174,11 @@ public class CopyModeScreen extends GuiContainer {
             Gui.drawRect(x - 2, y - 1, x + ROW_WIDTH + 2, y + ROW_HEIGHT - 1, HOVER_COLOR);
         }
 
+        // 每次画贴图前必须把当前颜色复位：
+        // 1.12.2 的 Gui#drawRect 会把 GlStateManager 颜色改成矩形色且不还原（悬停高亮是 0x22000000），
+        // FontRenderer#drawString 也会把颜色设成文字色（0x404040）。POSITION_TEX 的四边形不带顶点色，
+        // 用的是这个"当前颜色"，不复位就会把贴图整体乘暗。
+        GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
         mc.getTextureManager().bindTexture(CHECKBOX_TEXTURE);
         Gui.drawModalRectWithCustomSizedTexture(x, y + 1,
                 hovered ? CHECKBOX_U_HOVER : CHECKBOX_U_NORMAL,
