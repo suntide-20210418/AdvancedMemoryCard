@@ -148,6 +148,9 @@
 ```
 
 - 构建基于 **ForgeGradle 3**，需要 **JDK 8**；Gradle 版本由 `gradle/wrapper` 固定为 4.9。
+  本机若默认不是 JDK 8，用 `JAVA_HOME` 或 `-Dorg.gradle.java.home=<JDK8 路径>` 指定，不要把路径写进 `gradle.properties`（CI 上会直接失败）。
+- **国内镜像默认关闭**：`build.gradle` 里的阿里云 / BMCLAPI 仓库只在加 `-DcnMirror=true` 时启用。
+  BMCLAPI 对部分工件的 302 指向一个已失效的域名，CI 上 DNS 解析失败且 FG3 不会回退下一个仓库。
 - 通过 `src/main/resources/META-INF/accesstransformer.cfg` 访问 AE2 的包级私有成员（例如 `PartP2PTunnel#setOutput`），反射入口集中在 `P2PManager`。
 - 本分支没有 Mixin 与 datagen：界面资源是手绘贴图（`assets/advanced_memory_card/textures/gui/`），模型与语言文件直接维护在 `src/main/resources` 下。
 

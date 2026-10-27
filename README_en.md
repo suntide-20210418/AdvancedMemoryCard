@@ -148,6 +148,9 @@ Cosmetic settings, grouped as:
 ```
 
 - **ForgeGradle 3**, **JDK 8**, Gradle 4.9 (pinned by the wrapper).
+  If your default JDK is newer, point `JAVA_HOME` (or `-Dorg.gradle.java.home=<jdk8>`) at JDK 8 — do not hardcode it in `gradle.properties`, or CI will fail immediately.
+- **China mirrors are opt-in**: the Aliyun / BMCLAPI repositories in `build.gradle` are only used with `-DcnMirror=true`.
+  BMCLAPI redirects some artifacts to a domain that no longer resolves, and ForgeGradle 3 does not fall back to the next repository.
 - AE2 package-private members (e.g. `PartP2PTunnel#setOutput`) are reached through `src/main/resources/META-INF/accesstransformer.cfg`; the reflective entry points are centralised in `P2PManager`.
 - This branch has no Mixin and no datagen: GUI art lives in `assets/advanced_memory_card/textures/gui/`, models and language files are maintained directly under `src/main/resources`.
 
