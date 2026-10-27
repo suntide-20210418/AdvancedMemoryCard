@@ -62,9 +62,7 @@ public class FlatButton {
 
     public boolean mouseClicked(int mouseX, int mouseY, int button) {
         if (active && visible && button == 0 && isMouseOver(mouseX, mouseY)) {
-            Minecraft.getMinecraft().getSoundHandler().playSound(
-                    net.minecraft.client.audio.PositionedSoundRecord.getMasterRecord(
-                            net.minecraft.init.SoundEvents.UI_BUTTON_CLICK, 1.0F));
+            com.suntide_20210418.advancedmemorycard.client.gui.ClickSound.play();
             pressed = true;
             return true;
         }

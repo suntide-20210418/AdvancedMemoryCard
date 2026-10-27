@@ -1,11 +1,16 @@
 // 迁移自 1.20.1 分支的 settings.gradle
 // 注意：Gradle 4.9 不支持 foojay-resolver-convention（Java 17 工具链解析器），已省略。
 pluginManagement {
+    // 国内镜像默认关闭：bmclapi2 对部分工件会 302 到 bmclapi.hurtmc.com，
+    // 该域名在 GitHub runner 上直接 DNS 失败，FG3 不做回退，构建会当场中断。
+    // 国内本地构建时加 -DcnMirror=true 再启用（见 README「开发构建」）。
     repositories {
-        maven { url = 'https://maven.aliyun.com/repository/public' }
-        maven {
-            name = 'BMCLAPI'
-            url = 'https://bmclapi2.bangbang93.com/maven'
+        if (System.getProperty('cnMirror') == 'true') {
+            maven { url = 'https://maven.aliyun.com/repository/public' }
+            maven {
+                name = 'BMCLAPI'
+                url = 'https://bmclapi2.bangbang93.com/maven'
+            }
         }
         maven {
             name = 'MinecraftForge'

@@ -1,0 +1,204 @@
+# 发布：构建并推送到 Modrinth / CurseForge / GitHub Release —— 1.12.2 分支
+#
+# 触发：推送版本标签。标签形态沿用本仓既有约定（1.0.1-1.12.2、1.1.0-1.21.1 这类），
+# **没有 v 前缀**，即「mod_version 原样」。glob 用 *.*.*-* 匹配该形态。
+#
+# 没有 workflow_dispatch：mc-publish 不提供 dry-run，手动触发无法"试发布"，
+# 纯构建校验已由 build.yml 覆盖。
+#
+# ─── 一次性配置（仓库 Settings → Secrets and variables → Actions）─────────────
+#
+#   Secrets（敏感，不可见）
+#     MODRINTH_TOKEN        Modrinth 个人访问令牌，权限需包含 "Create versions"
+#     CURSEFORGE_TOKEN      CurseForge API Key（curseforge.com/account/api-tokens）
+#
+#   Variables（非敏感，日志中明文可见）
+#     MODRINTH_PROJECT_ID     Modrinth 项目 ID
+#     CURSEFORGE_PROJECT_ID   CurseForge 数字项目 ID
+#
+#   只有「对应 token 非空」才会进入该平台的发布流程，否则该平台被跳过且不判失败，
+#   因此这四项可以分阶段补齐；GitHub Release 不受影响。
+#
+# ─── 与 1.21.1 分支的差异 ────────────────────────────────────────────────
+#   - JDK 8：ForgeGradle 3 的 MCP 反编译与 reobf 只在 Java 8 上工作；
+#   - 不使用 gradle/actions/setup-gradle（它接不上 Gradle 4.9），缓存用 actions/cache；
+#   - loaders 为 forge（不是 neoforge），java 为 8；
+#   - AE2 依赖指向 1.12.2 实际使用的分支：AE2 Extended Life（CurseForge 570458），
+#     而不是 1.21.1 分支用的官方 AE2 项目号。
+#
+# ─── 版本一致性约束（故意做成硬校验）───────────────────────────────────────
+#   标签（去掉可选的 v 前缀后）必须等于 gradle.properties 的 mod_version。
+#   不一致直接报错终止 —— mod_version 会被写进 jar 内的 mcmod.info，
+#   平台版本号与 jar 内声明对不上，玩家和整合包都会拿到错误信息。
+name: Release
+
+on:
+  push:
+    tags:
+      - '*.*.*-*'
+
+# 发布不可以被取消：中途打断可能留下半上传的版本记录。
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write # 创建 GitHub Release 需要
+
+jobs:
+  publish:
+    name: Build and publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # 生成变更日志需要遍历历史标签
+
+      - name: Set up JDK 8
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '8'
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties', 'build.gradle', 'gradle.properties') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      # 版本号、模组 id 与游戏版本全部从 gradle.properties 读取，
+      # 使标签、平台版本号、jar 内元数据、上传文件名四者不可能各自漂移。
+      - name: Resolve version metadata
+        id: meta
+        run: |
+          set -euo pipefail
+
+          prop() {
+            sed -n "s/^[[:space:]]*$1[[:space:]]*=[[:space:]]*//p" gradle.properties \
+              | head -n 1 | tr -d '\r'
+          }
+
+          mod_id="$(prop mod_id)"
+          mod_version="$(prop mod_version)"
+          mod_name="$(prop mod_name)"
+          mc_version="$(prop minecraft_version)"
+
+          if [ -z "$mod_id" ] || [ -z "$mod_version" ] || [ -z "$mod_name" ] || [ -z "$mc_version" ]; then
+            echo "::error::无法从 gradle.properties 解析 mod_id / mod_version / mod_name / minecraft_version"
+            exit 1
+          fi
+
+          tag_version="${GITHUB_REF_NAME#v}"
+          if [ "${tag_version}" != "${mod_version}" ]; then
+            echo "::error::标签 ${GITHUB_REF_NAME} 与 gradle.properties 的 mod_version ${mod_version} 不一致"
+            exit 1
+          fi
+
+          echo "标签 ${GITHUB_REF_NAME} 通过校验（mod_id=${mod_id}, minecraft=${mc_version}）"
+
+          {
+            echo "mod_id=${mod_id}"
+            echo "mod_version=${mod_version}"
+            echo "mod_name=${mod_name}"
+            echo "mc_version=${mc_version}"
+            echo "jar=build/libs/${mod_id}-${mod_version}.jar"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Build
+        run: ./gradlew build --stacktrace
+
+      # 变更日志自己用 git 生成、三个平台共用，比交给平台自动生成更可控。
+      # --match 限定在同一条 MC 线，避免跨线命中 1.20.1 / 1.21.1 的标签。
+      - name: Generate changelog
+        run: |
+          set -euo pipefail
+
+          tag="${GITHUB_REF_NAME}"
+          mc_version="${{ steps.meta.outputs.mc_version }}"
+
+          prev="$(git describe --tags --abbrev=0 --match "*.*.*-${mc_version}" "${tag}^" 2>/dev/null || true)"
+          if [ -n "${prev}" ]; then
+            echo "变更范围：${prev}..${tag}"
+            range="${prev}..${tag}"
+          else
+            echo "未找到 ${mc_version} 线上的历史标签，输出截至该标签的完整提交记录"
+            range="${tag}"
+          fi
+
+          git log --no-merges --pretty='- %s (%h)' "${range}" > CHANGELOG_LATEST.md
+          echo "变更日志 $(( $(wc -l < CHANGELOG_LATEST.md) )) 行"
+
+      # 在交给 mc-publish 之前先确认目标文件存在，否则失败信息会埋在 action 内部。
+      - name: Verify jar exists
+        run: |
+          set -euo pipefail
+          jar="${{ steps.meta.outputs.jar }}"
+          if [ ! -f "$jar" ]; then
+            echo "::error::期望的构建产物不存在：${jar}"
+            echo "build/libs 实际内容："
+            ls -la build/libs || true
+            exit 1
+          fi
+          echo "构建产物：$(ls -l "$jar")"
+
+      - name: Publish
+        id: publish
+        uses: Kira-NT/mc-publish@v3.3.1
+        with:
+          # 精确到由 gradle.properties 推导出的那一个文件，不用通配。
+          files: ${{ steps.meta.outputs.jar }}
+
+          name: ${{ steps.meta.outputs.mod_name }} ${{ steps.meta.outputs.mod_version }}
+          version: ${{ steps.meta.outputs.mod_version }}
+          version-type: release
+
+          # 提供 changelog-file 后，github-generate-changelog 默认为 false。
+          changelog-file: CHANGELOG_LATEST.md
+
+          game-versions: ${{ steps.meta.outputs.mc_version }}
+          loaders: forge
+          java: 8
+          # 模组提供物品与服务端/客户端联动的 P2P 管理 GUI，两端都必须安装。
+          environment: client | server
+
+          # AE2 是 required：模组本体直接引用 appeng.* 与 P2P 通道实现，缺失即无法加载。
+          # 1.12.2 线实际使用 AE2 Extended Life（CurseForge 570458），与 build.gradle 一致。
+          dependencies: |
+            ae2(required){curseforge:570458}
+
+          modrinth-id: ${{ vars.MODRINTH_PROJECT_ID }}
+          modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
+          curseforge-id: ${{ vars.CURSEFORGE_PROJECT_ID }}
+          curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+          retry-attempts: 3
+          fail-mode: fail
+
+      - name: Report
+        if: always()
+        env:
+          MOD_NAME: ${{ steps.meta.outputs.mod_name }}
+          MOD_VERSION: ${{ steps.meta.outputs.mod_version }}
+          PUBLISH_OUTCOME: ${{ steps.publish.outcome }}
+          MODRINTH_ENABLED: ${{ secrets.MODRINTH_TOKEN != '' }}
+          CURSEFORGE_ENABLED: ${{ secrets.CURSEFORGE_TOKEN != '' }}
+        run: |
+          {
+            echo "## ${MOD_NAME} ${MOD_VERSION}"
+            echo ""
+            echo "- 发布步骤结果：${PUBLISH_OUTCOME:-skipped}"
+            echo "- Modrinth：$([ "$MODRINTH_ENABLED" = "true" ] && echo 已配置 || echo 未配置（已跳过）)"
+            echo "- CurseForge：$([ "$CURSEFORGE_ENABLED" = "true" ] && echo 已配置 || echo 未配置（已跳过）)"
+            echo "- GitHub Release：由 GITHUB_TOKEN 创建"
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -5,10 +5,16 @@
 // 而构建脚本类路径解析失败是致命的（不像普通依赖那样能落到下一个仓库），
 // 表现是配置阶段直接 BUILD FAILED，且这次下载的东西跟后续构建毫无关系。
 // 3.0.197 是 FG3 的最后一个发布版本，钉死它之后构建脚本类路径可完全离线命中缓存。
+// 国内镜像默认关闭：bmclapi2 对部分工件会 302 到 bmclapi.hurtmc.com，
+// 该域名在 GitHub runner 上 DNS 失败，而 FG3 遇到传输层错误不会回退下一个仓库。
+// 国内本地构建加 -DcnMirror=true 启用。
 buildscript {
     repositories {
-        maven { url = 'https://maven.aliyun.com/repository/public' }
-        maven { url = 'https://bmclapi2.bangbang93.com/maven' }
+        // buildscript 块在独立脚本上下文里求值，看不到外面的局部变量，所以这里直接读系统属性
+        if (System.getProperty('cnMirror') == 'true') {
+            maven { url = 'https://maven.aliyun.com/repository/public' }
+            maven { url = 'https://bmclapi2.bangbang93.com/maven' }
+        }
         maven { url = 'https://maven.minecraftforge.net/' }
         mavenCentral()
     }
@@ -58,9 +64,11 @@ minecraft {
 // 注意：Gradle 4.9 不支持 repository content { includeGroup } 过滤，已省略该写法。
 repositories {
     mavenLocal()
-    maven { url 'https://maven.aliyun.com/repository/public' }
-    maven {
-        url = 'https://bmclapi2.bangbang93.com/maven'
+    if (System.getProperty('cnMirror') == 'true') {
+        maven { url 'https://maven.aliyun.com/repository/public' }
+        maven {
+            url = 'https://bmclapi2.bangbang93.com/maven'
+        }
     }
     maven {
         url = 'https://cursemaven.com'

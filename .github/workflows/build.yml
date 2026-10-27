@@ -1,0 +1,83 @@
+# 构建校验（持续集成）—— 1.12.2 / ForgeGradle 3 专用
+#
+# 触发面：任意分支的推送、任意分支发起的 PR、以及手动触发。只声明 branches 不声明 tags，
+# 因此标签推送不会触发本流程（标签走 release.yml）。
+#
+# 与 1.21.1 分支的差异，都是为了 FG3 这条老工具链：
+#   1. JDK 必须是 8：ForgeGradle 3 的 MCP 反编译与 reobf 只在 Java 8 上工作；
+#   2. 不使用 gradle/actions/setup-gradle：它依赖 Gradle 的 Tooling API 新特性，
+#      本分支 wrapper 固定的是 Gradle 4.9，接不上。缓存改用 actions/cache 直接抓 ~/.gradle；
+#   3. 没有 mixin refmap 校验：本分支不使用 Mixin，AE2 的包级私有成员走 access transformer。
+name: Build
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+  workflow_dispatch:
+
+# 同一分支的重复推送只保留最新一次，避免为旧提交排队。
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Gradle build (JDK 8)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up JDK 8
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '8'
+
+      # 缓存 key 里带上 wrapper 的配置哈希：Gradle 版本变了就重建缓存，
+      # 避免拿到不匹配的 ~/.gradle/caches 造成难以诊断的解析错误。
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties', 'build.gradle', 'gradle.properties') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      # 仓库里的 gradlew 是 100644，Linux runner 上直接 ./gradlew 会 permission denied。
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      - name: Build
+        run: ./gradlew build --stacktrace
+
+      # 产物名由 gradle.properties 精确推导，不用 build/libs/*.jar 通配：
+      # 本地 build/libs 常残留多个历史版本的 jar，通配会选错文件。
+      - name: Verify jar exists
+        run: |
+          set -euo pipefail
+          mod_id="$(sed -n 's/^[[:space:]]*mod_id[[:space:]]*=[[:space:]]*//p' gradle.properties | head -n1 | tr -d '\r')"
+          mod_version="$(sed -n 's/^[[:space:]]*mod_version[[:space:]]*=[[:space:]]*//p' gradle.properties | head -n1 | tr -d '\r')"
+          jar="build/libs/${mod_id}-${mod_version}.jar"
+          if [ ! -f "$jar" ]; then
+            echo "::error::期望的构建产物不存在：${jar}"
+            ls -la build/libs || true
+            exit 1
+          fi
+          echo "构建产物：$(ls -l "$jar")"
+
+      - name: Upload jar
+        uses: actions/upload-artifact@v7
+        with:
+          name: advanced_memory_card-1.12.2-jar
+          path: build/libs/*.jar
+          if-no-files-found: error
