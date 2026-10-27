@@ -42,13 +42,19 @@ public class CopyModeScreen extends GuiContainer {
             new ResourceLocation(AdvancedMemoryCardMod.MOD_ID, "textures/gui/checkbox.png");
 
     /**
-     * 复选框精灵：取 checkbox.png 左下角那一列——上格是未选中（灰），下格是选中（蓝底浅色竖条）。
-     * 两个状态都是 12×12，原图坐标 (0,28) 与 (0,40)。
+     * 复选框精灵：取 checkbox.png 左下角的两个状态格。
+     * 未选中 (0,28)：12×12，深色边框 + 灰色内凹面；
+     * 选中   (0,41)：12×11，深色边框 + 蓝色内面 + 浅色竖条（原图这一格比上一格矮一行）。
      */
-    private static final int CHECKBOX_SIZE = 12;
+    private static final int CHECKBOX_W = 12;
+    private static final int CHECKBOX_H_UNCHECKED = 12;
+    private static final int CHECKBOX_H_CHECKED = 11;
     private static final int CHECKBOX_U = 0;
     private static final int CHECKBOX_V_UNCHECKED = 28;
-    private static final int CHECKBOX_V_CHECKED = 40;
+    private static final int CHECKBOX_V_CHECKED = 41;
+    /** 原图像素尺寸。1.12.2 的 drawTexturedModalRect 固定按 256×256 算 UV，非 256 的图必须走 custom sized。 */
+    private static final int CHECKBOX_TEX_SIZE = 64;
+    private static final int MENU_TEX_SIZE = 256;
 
     /** 与 1.21.1 的 copy_mode_menu.json 保持一致。 */
     private static final int PANEL_WIDTH = 176;
@@ -142,7 +148,8 @@ public class CopyModeScreen extends GuiContainer {
     protected void drawGuiContainerBackgroundLayer(float partialTicks, int mouseX, int mouseY) {
         GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
         mc.getTextureManager().bindTexture(MENU_TEXTURE);
-        drawTexturedModalRect(guiLeft, guiTop, 0, 0, xSize, ySize);
+        Gui.drawModalRectWithCustomSizedTexture(guiLeft, guiTop, 0, 0, xSize, ySize,
+                MENU_TEX_SIZE, MENU_TEX_SIZE);
 
         fontRenderer.drawString(TranslateHelper.CopyMode.optionsTitle(),
                 guiLeft + ROW_LEFT, guiTop + 10, TEXT_COLOR);
@@ -166,14 +173,15 @@ public class CopyModeScreen extends GuiContainer {
         }
 
         mc.getTextureManager().bindTexture(CHECKBOX_TEXTURE);
-        drawTexturedModalRect(x, y + 1,
+        Gui.drawModalRectWithCustomSizedTexture(x, y + 1,
                 CHECKBOX_U, on ? CHECKBOX_V_CHECKED : CHECKBOX_V_UNCHECKED,
-                CHECKBOX_SIZE, CHECKBOX_SIZE);
+                CHECKBOX_W, on ? CHECKBOX_H_CHECKED : CHECKBOX_H_UNCHECKED,
+                CHECKBOX_TEX_SIZE, CHECKBOX_TEX_SIZE);
 
         String label = optionId == null
                 ? TranslateHelper.CopyMode.autoOpen()
                 : TranslateHelper.CopyMode.option(optionId);
-        fontRenderer.drawString(label, x + CHECKBOX_SIZE + 4, y + 3, TEXT_COLOR);
+        fontRenderer.drawString(label, x + CHECKBOX_W + 4, y + 3, TEXT_COLOR);
     }
 
     @Override

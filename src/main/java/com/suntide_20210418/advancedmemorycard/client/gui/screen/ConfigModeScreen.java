@@ -47,6 +47,8 @@ public class ConfigModeScreen extends GuiContainer {
     private static final int DETAIL_HEIGHT = 210;
     private static final int INFO_TOP = 269;
     private static final int TEXT_COLOR = 0x404040;
+    /** 贴图画布是 512×512：drawTexturedModalRect 固定按 256×256 算 UV，必须用 custom sized 版本。 */
+    private static final int MENU_TEX_SIZE = 512;
 
     private static final net.minecraft.util.ResourceLocation MENU_TEXTURE =
             new net.minecraft.util.ResourceLocation(
@@ -236,7 +238,8 @@ public class ConfigModeScreen extends GuiContainer {
         // 面板背景：直接画 1.21.1 的贴图（352×282，取自 512×512 画布的 (0,0)）
         net.minecraft.client.renderer.GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
         mc.getTextureManager().bindTexture(MENU_TEXTURE);
-        drawTexturedModalRect(guiLeft, guiTop, 0, 0, xSize, ySize);
+        Gui.drawModalRectWithCustomSizedTexture(guiLeft, guiTop, 0, 0, xSize, ySize,
+                MENU_TEX_SIZE, MENU_TEX_SIZE);
 
         // 标题与底部提示
         fontRenderer.drawString(TranslateHelper.translate(TranslateHelper.Keys.CONFIG_MODE_SCREEN_TITLE),
