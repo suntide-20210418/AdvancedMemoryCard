@@ -1,8 +1,8 @@
 # Advanced Memory Card
 
-![Minecraft Version](https://img.shields.io/badge/Minecraft-1.20.1-blue)
-![Forge Version](https://img.shields.io/badge/Forge-47.4.10-orange)
-![Mod Version](https://img.shields.io/badge/Version-1.1.1-green)
+![Minecraft Version](https://img.shields.io/badge/Minecraft-1.12.2-blue)
+![Forge Version](https://img.shields.io/badge/Forge-14.23.5.2860-orange)
+![Mod Version](https://img.shields.io/badge/Version-1.2.0--1.12.2-green)
 ![License](https://img.shields.io/badge/License-GPL--3.0-green)
 
 **English** | [简体中文](README.md)
