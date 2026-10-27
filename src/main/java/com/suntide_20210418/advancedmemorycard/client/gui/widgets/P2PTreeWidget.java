@@ -430,6 +430,7 @@ public class P2PTreeWidget {
             if (clicked.type == NodeType.SEARCH_HEADER) return false;
             toggleNode(clicked);
             selectNode(clicked);
+            com.suntide_20210418.advancedmemorycard.client.gui.ClickSound.play();
             return true;
         }
         return false;

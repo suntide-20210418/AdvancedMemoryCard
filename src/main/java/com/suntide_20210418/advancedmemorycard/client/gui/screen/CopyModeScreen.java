@@ -1,6 +1,7 @@
 package com.suntide_20210418.advancedmemorycard.client.gui.screen;
 
 import com.suntide_20210418.advancedmemorycard.AdvancedMemoryCardMod;
+import com.suntide_20210418.advancedmemorycard.client.gui.ClickSound;
 import com.suntide_20210418.advancedmemorycard.client.gui.menu.CopyModeMenu;
 import com.suntide_20210418.advancedmemorycard.item.custom.CopyOption;
 import com.suntide_20210418.advancedmemorycard.item.custom.CopyOptions;
@@ -118,12 +119,14 @@ public class CopyModeScreen extends GuiContainer {
             if (isRowHovered(mouseX, mouseY, rowTop(i))) {
                 CopyOption option = CopyOption.VALUES[i];
                 options = options.with(option, !options.has(option));
+                ClickSound.play();
                 pushOptions();
                 return true;
             }
         }
         if (isRowHovered(mouseX, mouseY, AUTO_OPEN_TOP)) {
             options = options.withAutoOpen(!options.isAutoOpen());
+            ClickSound.play();
             pushOptions();
             return true;
         }
