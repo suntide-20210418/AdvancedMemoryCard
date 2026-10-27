@@ -3,6 +3,7 @@ package com.suntide_20210418.advancedmemorycard.client.gui.menu;
 import com.suntide_20210418.advancedmemorycard.item.custom.AdvancedMemoryCardItem;
 import com.suntide_20210418.advancedmemorycard.item.custom.CardMode;
 import com.suntide_20210418.advancedmemorycard.item.custom.CopyMode;
+import com.suntide_20210418.advancedmemorycard.item.custom.CopyOptions;
 import com.suntide_20210418.advancedmemorycard.network.CopyModePacket;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.Container;
@@ -21,6 +22,7 @@ public class CopyModeMenu extends Container implements CopyModePacket.ICopyMenu 
     private static final String UPDATE_ITEM_INF = "update_item_inf";
     private static final String REVISE_START_POS = "revise_start_pos";
     private static final String REVISE_END_POS = "revise_end_pos";
+    private static final String SET_OPTIONS = "set_options:";
 
     private final InventoryPlayer playerInventory;
     private final net.minecraft.util.EnumHand hand;
@@ -36,6 +38,10 @@ public class CopyModeMenu extends Container implements CopyModePacket.ICopyMenu 
 
     @Override
     public void handleCopyAction(String action, BlockPos pos) {
+        if (action != null && action.startsWith(SET_OPTIONS)) {
+            applyOptions(action.substring(SET_OPTIONS.length()));
+            return;
+        }
         switch (action) {
             case CLEAR_POS:
                 sendClearPos();
@@ -49,6 +55,29 @@ public class CopyModeMenu extends Container implements CopyModePacket.ICopyMenu 
             case REVISE_END_POS:
                 sendReviseEndPos(pos);
                 break;
+        }
+    }
+
+    /**
+     * 载荷形如 {@code <mask>:<autoOpen>}，来自 {@code CopyModeScreen} 的点击。
+     * 选项写在卡片根标签上，所以这里直接改手持的物品，不经过菜单字段。
+     */
+    private void applyOptions(String payload) {
+        String[] parts = payload.split(":");
+        if (parts.length != 2) {
+            return;
+        }
+        int mask;
+        try {
+            mask = Integer.parseInt(parts[0]);
+        } catch (NumberFormatException e) {
+            return;
+        }
+        boolean autoOpen = "1".equals(parts[1]);
+
+        ItemStack stack = playerInventory.player.getHeldItem(hand);
+        if (stack.getItem() instanceof AdvancedMemoryCardItem) {
+            CopyOptions.of(stack).withMask(mask).withAutoOpen(autoOpen).save(stack);
         }
     }
 

@@ -2,8 +2,11 @@ package com.suntide_20210418.advancedmemorycard.client.key;
 
 import com.suntide_20210418.advancedmemorycard.AdvancedMemoryCardMod;
 import com.suntide_20210418.advancedmemorycard.item.ModItems;
+import com.suntide_20210418.advancedmemorycard.item.custom.CardMode;
+import com.suntide_20210418.advancedmemorycard.item.custom.CopyMode;
 import com.suntide_20210418.advancedmemorycard.network.ModeSwitchPacket;
 import com.suntide_20210418.advancedmemorycard.network.NetworkHandler;
+import com.suntide_20210418.advancedmemorycard.network.OpenCopyGuiPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.EnumHand;
@@ -32,14 +35,17 @@ public class KeyEvent {
             }
         }
 
-//        if (ModKey.COPY_GUI_KEY.isPressed()) {
-//            ItemStack main = mc.player.getHeldItemMainhand();
-//            ItemStack off = mc.player.getHeldItemOffhand();
-//            if (main.getItem() == ModItems.ADVANCED_MEMORY_CARD) {
-//                NetworkHandler.sendToServer(new OpenCopyGuiPacket(EnumHand.MAIN_HAND));
-//            } else if (off.getItem() == ModItems.ADVANCED_MEMORY_CARD) {
-//                NetworkHandler.sendToServer(new OpenCopyGuiPacket(EnumHand.OFF_HAND));
-//            }
-//        }
+        if (ModKey.COPY_GUI_KEY.isPressed()) {
+            ItemStack main = mc.player.getHeldItemMainhand();
+            ItemStack off = mc.player.getHeldItemOffhand();
+            // 面板只在复制模式下有意义，配置模式把 G 让给其它模组
+            if (main.getItem() == ModItems.ADVANCED_MEMORY_CARD
+                    && CardMode.of(main) instanceof CopyMode) {
+                NetworkHandler.sendToServer(new OpenCopyGuiPacket(EnumHand.MAIN_HAND));
+            } else if (off.getItem() == ModItems.ADVANCED_MEMORY_CARD
+                    && CardMode.of(off) instanceof CopyMode) {
+                NetworkHandler.sendToServer(new OpenCopyGuiPacket(EnumHand.OFF_HAND));
+            }
+        }
     }
 }

@@ -4,6 +4,7 @@ import appeng.api.implementations.items.IMemoryCard;
 import appeng.api.implementations.items.MemoryCardMessages;
 import appeng.items.tools.ToolMemoryCard;
 import com.suntide_20210418.advancedmemorycard.AdvancedMemoryCardMod;
+import com.suntide_20210418.advancedmemorycard.client.gui.ModGuiHandler;
 import com.suntide_20210418.advancedmemorycard.item.ModCreativeModeTabs;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
@@ -43,6 +44,39 @@ public class AdvancedMemoryCardItem extends ToolMemoryCard {
             return cardMode.onItemUseFirst(stack, player, world, pos, side, hitX, hitY, hitZ, hand);
         }
         return EnumActionResult.SUCCESS;
+    }
+
+    /**
+     * 复制走 AE2 自己的 {@code ToolMemoryCard#onItemUse}（我们只在潜行时放行），
+     * 因此要判断"这次是否真的复制成功"只能比对卡片 Data 标签的前后差异。
+     * 复制成功后按卡片上的开关决定是否弹出粘贴选项面板。
+     */
+    @Override
+    public EnumActionResult onItemUse(EntityPlayer player, World world, BlockPos pos, EnumHand hand,
+            EnumFacing side, float hitX, float hitY, float hitZ) {
+        ItemStack stack = player.getHeldItem(hand);
+        NBTTagCompound before = copyOfData(stack);
+
+        EnumActionResult result = super.onItemUse(player, world, pos, hand, side, hitX, hitY, hitZ);
+
+        if (!world.isRemote
+                && result == EnumActionResult.SUCCESS
+                && CardMode.of(stack) instanceof CopyMode
+                && CopyOptions.of(stack).isAutoOpen()
+                && !sameData(before, copyOfData(stack))) {
+            player.openGui(AdvancedMemoryCardMod.INSTANCE, ModGuiHandler.COPY_GUI_ID,
+                    world, hand.ordinal(), 0, 0);
+        }
+        return result;
+    }
+
+    private static NBTTagCompound copyOfData(ItemStack stack) {
+        NBTTagCompound data = ((ToolMemoryCard) stack.getItem()).getData(stack);
+        return data == null ? new NBTTagCompound() : data.copy();
+    }
+
+    private static boolean sameData(NBTTagCompound a, NBTTagCompound b) {
+        return a.equals(b);
     }
 
     @Override

@@ -14,12 +14,12 @@ public class ModKey {
     public static final KeyBinding MODE_SWITCH_KEY =
             new KeyBinding("key.advancedmemorycard.switch", Keyboard.KEY_V, KEY_CATEGORY);
 
-    // 打开复制模式 GUI（1.20.1 中 OpenGuiPacket 对应功能，这里绑定到 G 键）
-//    public static final KeyBinding COPY_GUI_KEY =
-//            new KeyBinding("key.advancedmemorycard.copy_gui", Keyboard.KEY_G, KEY_CATEGORY);
+    // 打开粘贴选项面板（对应 1.20.1 / 1.21.1 的 G 键）
+    public static final KeyBinding COPY_GUI_KEY =
+            new KeyBinding("key.advancedmemorycard.copy_options", Keyboard.KEY_G, KEY_CATEGORY);
 
     static {
         ClientRegistry.registerKeyBinding(MODE_SWITCH_KEY);
-//        ClientRegistry.registerKeyBinding(COPY_GUI_KEY);
+        ClientRegistry.registerKeyBinding(COPY_GUI_KEY);
     }
 }

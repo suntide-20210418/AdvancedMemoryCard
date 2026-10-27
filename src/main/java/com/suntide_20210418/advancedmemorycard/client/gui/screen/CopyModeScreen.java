@@ -1,200 +1,122 @@
 package com.suntide_20210418.advancedmemorycard.client.gui.screen;
 
 import com.suntide_20210418.advancedmemorycard.client.gui.menu.CopyModeMenu;
+import com.suntide_20210418.advancedmemorycard.item.custom.CopyOption;
+import com.suntide_20210418.advancedmemorycard.item.custom.CopyOptions;
 import com.suntide_20210418.advancedmemorycard.utils.TranslateHelper;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiButton;
-import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.item.ItemStack;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.Locale;
 
+/**
+ * 粘贴选项面板。
+ *
+ * <p>1.12.2 没有 AE2 的 ScreenStyle / 控件系统，所以这里手绘：8 个开关两列排列，
+ * 底部一行控制「复制后自动弹出」。开关状态存在卡片 NBT 上，客户端点击后先本地更新
+ * 再发包给服务端落盘，服务端回写物品 NBT 后客户端会收到同步。
+ */
 @SideOnly(Side.CLIENT)
 public class CopyModeScreen extends GuiContainer {
 
+    private static final String ACTION_SET_OPTIONS = "set_options:";
+    private static final int AUTO_OPEN_BUTTON_ID = 100;
+
     private final CopyModeMenu menu;
-    private final EntityPlayer player;
 
-    private GuiTextField sX, sY, sZ, eX, eY, eZ;
-    private final GuiTextField[] fields = new GuiTextField[6];
-    private final String[] lastFieldText = new String[6];
-
-    private GuiButton clearButton;
-
-    private BlockPos startPos;
-    private BlockPos endPos;
-
-    private static final Pattern BLOCKPOS_PATTERN =
-            Pattern.compile("BlockPos\\{x=\\s*(-?\\d+),\\s*y=\\s*(-?\\d+),\\s*z=\\s*(-?\\d+)}");
+    private CopyOptions options;
+    private GuiButton autoOpenButton;
+    private final GuiButton[] optionButtons = new GuiButton[CopyOption.VALUES.length];
 
     public CopyModeScreen(CopyModeMenu menu, EntityPlayer player) {
         super(menu);
         this.menu = menu;
-        this.player = player;
         this.xSize = 220;
-        this.ySize = 160;
+        this.ySize = 150;
     }
 
     @Override
     public void initGui() {
         this.xSize = 220;
-        this.ySize = 160;
+        this.ySize = 150;
         super.initGui();
 
-        int baseX = guiLeft + 60;
-        int y = guiTop + 30;
-        int w = 40, h = 14;
+        this.options = readOptions();
 
-        sX = new GuiTextField(0, fontRenderer, baseX, y, w, h);
-        sY = new GuiTextField(1, fontRenderer, baseX + 45, y, w, h);
-        sZ = new GuiTextField(2, fontRenderer, baseX + 90, y, w, h);
-        y += 25;
-        eX = new GuiTextField(3, fontRenderer, baseX, y, w, h);
-        eY = new GuiTextField(4, fontRenderer, baseX + 45, y, w, h);
-        eZ = new GuiTextField(5, fontRenderer, baseX + 90, y, w, h);
+        int colWidth = 100;
+        int rowHeight = 20;
+        int baseX = guiLeft + 8;
+        int baseY = guiTop + 26;
 
-        fields[0] = sX; fields[1] = sY; fields[2] = sZ;
-        fields[3] = eX; fields[4] = eY; fields[5] = eZ;
-        for (GuiTextField f : fields) {
-            f.setMaxStringLength(12);
-            f.setText("");
+        for (int i = 0; i < CopyOption.VALUES.length; i++) {
+            int col = i % 2;
+            int row = i / 2;
+            GuiButton button = new GuiButton(i, baseX + col * (colWidth + 4), baseY + row * rowHeight,
+                    colWidth, 18, "");
+            optionButtons[i] = button;
+            this.buttonList.add(button);
         }
 
-        clearButton = new GuiButton(0, guiLeft + 10, guiTop + ySize - 30, 80, 20,
-                TranslateHelper.translate(TranslateHelper.Keys.COPY_MODE_SCREEN_CLEAR_TOOLTIP));
-        this.buttonList.add(clearButton);
+        autoOpenButton = new GuiButton(AUTO_OPEN_BUTTON_ID, baseX, guiTop + ySize - 26,
+                xSize - 16, 18, "");
+        this.buttonList.add(autoOpenButton);
 
-        updateFieldsFromHeldItem();
+        refreshLabels();
+    }
+
+    private CopyOptions readOptions() {
+        if (mc.player == null) {
+            return CopyOptions.of(ItemStack.EMPTY);
+        }
+        return CopyOptions.of(mc.player.getHeldItem(menu.getHand()));
     }
 
     @Override
     protected void actionPerformed(GuiButton button) {
-        if (button == clearButton) {
-            menu.dispatchClientAction("clear_pos");
-            menu.dispatchClientAction("update_item_inf");
+        if (button.id == AUTO_OPEN_BUTTON_ID) {
+            options = options.withAutoOpen(!options.isAutoOpen());
+        } else if (button.id >= 0 && button.id < CopyOption.VALUES.length) {
+            CopyOption option = CopyOption.VALUES[button.id];
+            options = options.with(option, !options.has(option));
+        } else {
+            return;
         }
+        menu.dispatchClientAction(ACTION_SET_OPTIONS + options.mask() + ":" + (options.isAutoOpen() ? 1 : 0));
+        refreshLabels();
+    }
+
+    private void refreshLabels() {
+        for (int i = 0; i < CopyOption.VALUES.length; i++) {
+            CopyOption option = CopyOption.VALUES[i];
+            optionButtons[i].displayString = (options.has(option) ? "[x] " : "[  ] ")
+                    + TranslateHelper.CopyMode.option(option.name().toLowerCase(Locale.ROOT));
+        }
+        autoOpenButton.displayString = (options.isAutoOpen() ? "[x] " : "[  ] ")
+                + TranslateHelper.CopyMode.autoOpen();
     }
 
     @Override
     public void updateScreen() {
         super.updateScreen();
-        getPos();
-        updateFieldsFromHeldItem();
-    }
-
-    private void getPos() {
-        startPos = parseBlockPos(menu.getStartPos());
-        endPos = parseBlockPos(menu.getEndPos());
-    }
-
-    private void updateFieldsFromHeldItem() {
-        for (int i = 0; i < 6; i++) {
-            GuiTextField f = fields[i];
-            if (!f.isFocused()) {
-                String newVal = coordValue(i);
-                if (!f.getText().equals(newVal)) f.setText(newVal);
-                lastFieldText[i] = f.getText();
-            } else {
-                if (!f.getText().equals(lastFieldText[i])) {
-                    handleFieldChange(i);
-                    lastFieldText[i] = f.getText();
-                }
-            }
+        // 服务端落盘后物品 NBT 会同步回来，以它为准刷新一次显示
+        CopyOptions synced = readOptions();
+        if (synced.mask() != options.mask() || synced.isAutoOpen() != options.isAutoOpen()) {
+            options = synced;
+            refreshLabels();
         }
-    }
-
-    private String coordValue(int i) {
-        BlockPos p = (i < 3) ? startPos : endPos;
-        if (p == null) return "";
-        switch (i % 3) {
-            case 0: return String.valueOf(p.getX());
-            case 1: return String.valueOf(p.getY());
-            default: return String.valueOf(p.getZ());
-        }
-    }
-
-    private void handleFieldChange(int changedIndex) {
-        if (changedIndex < 3) {
-            if (!isEmpty(sX) && !isEmpty(sY) && !isEmpty(sZ)) {
-                try {
-                    BlockPos sp = new BlockPos(Integer.parseInt(sX.getText().trim()),
-                            Integer.parseInt(sY.getText().trim()), Integer.parseInt(sZ.getText().trim()));
-                    menu.dispatchClientAction("revise_start_pos", sp);
-                } catch (NumberFormatException ignored) { }
-            }
-        } else {
-            if (!isEmpty(eX) && !isEmpty(eY) && !isEmpty(eZ)) {
-                try {
-                    BlockPos ep = new BlockPos(Integer.parseInt(eX.getText().trim()),
-                            Integer.parseInt(eY.getText().trim()), Integer.parseInt(eZ.getText().trim()));
-                    menu.dispatchClientAction("revise_end_pos", ep);
-                } catch (NumberFormatException ignored) { }
-            }
-        }
-    }
-
-    private boolean isEmpty(GuiTextField f) {
-        return f.getText() == null || f.getText().trim().isEmpty();
-    }
-
-    public BlockPos parseBlockPos(String input) {
-        if (input == null || input.isEmpty()) return null;
-        Matcher matcher = BLOCKPOS_PATTERN.matcher(input);
-        if (matcher.matches()) {
-            return new BlockPos(Integer.parseInt(matcher.group(1)),
-                    Integer.parseInt(matcher.group(2)), Integer.parseInt(matcher.group(3)));
-        }
-        return null;
-    }
-
-    @Override
-    public void drawScreen(int mouseX, int mouseY, float partialTicks) {
-        // 先让 GuiContainer 绘制默认背景与按钮（clearButton 由 GuiScreen 负责绘制）
-        super.drawScreen(mouseX, mouseY, partialTicks);
-
-        // 再在之上绘制面板，覆盖默认背景遮罩
-        Gui.drawRect(guiLeft, guiTop, guiLeft + xSize, guiTop + ySize, 0xFF2B2B2B);
-        Gui.drawRect(guiLeft + 2, guiTop + 2, guiLeft + xSize - 2, guiTop + ySize - 2, 0xFF3B3B3B);
-
-        fontRenderer.drawString(TranslateHelper.translate(TranslateHelper.Keys.COPY_MODE_SCREEN_TITLE),
-                guiLeft + 4, guiTop + 5, 0xFFFFFFFF);
-        fontRenderer.drawString(TranslateHelper.translate(TranslateHelper.Keys.COPY_MODE_SCREEN_START_POS),
-                guiLeft + 4, guiTop + 32, 0xFFCCCCCC);
-        fontRenderer.drawString(TranslateHelper.translate(TranslateHelper.Keys.COPY_MODE_SCREEN_END_POS),
-                guiLeft + 4, guiTop + 57, 0xFFCCCCCC);
-
-        for (GuiTextField f : fields) f.drawTextBox();
-
-        // 重新绘制清除按钮，确保其显示在面板之上
-        if (clearButton != null) clearButton.drawButton(mc, mouseX, mouseY, partialTicks);
-    }
-
-    @Override
-    protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws java.io.IOException {
-        for (GuiTextField f : fields) {
-            f.mouseClicked(mouseX, mouseY, mouseButton);
-        }
-        super.mouseClicked(mouseX, mouseY, mouseButton);
-    }
-
-    @Override
-    protected void keyTyped(char typedChar, int keyCode) throws java.io.IOException {
-        for (GuiTextField f : fields) {
-            if (f.isFocused()) {
-                f.textboxKeyTyped(typedChar, keyCode);
-                return;
-            }
-        }
-        super.keyTyped(typedChar, keyCode);
     }
 
     @Override
     protected void drawGuiContainerBackgroundLayer(float partialTicks, int mouseX, int mouseY) {
+        // 面板底色：直接铺两块纯色，不依赖任何贴图
+        Gui.drawRect(guiLeft, guiTop, guiLeft + xSize, guiTop + ySize, 0xFF2B2B2B);
+        Gui.drawRect(guiLeft + 2, guiTop + 2, guiLeft + xSize - 2, guiTop + ySize - 2, 0xFF3B3B3B);
+        fontRenderer.drawString(TranslateHelper.CopyMode.optionsTitle(), guiLeft + 8, guiTop + 8, 0xFFFFFFFF);
     }
 
     @Override

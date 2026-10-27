@@ -4,9 +4,10 @@ import appeng.api.parts.IPart;
 import appeng.api.parts.IPartHost;
 import appeng.items.tools.ToolMemoryCard;
 import appeng.tile.AEBaseTile;
-import appeng.util.SettingsFrom;
 import com.suntide_20210418.advancedmemorycard.AdvancedMemoryCardMod;
 import com.suntide_20210418.advancedmemorycard.config.ModConfigs;
+import com.suntide_20210418.advancedmemorycard.utils.SettingsApplier;
+import com.suntide_20210418.advancedmemorycard.utils.TranslateHelper;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -16,7 +17,6 @@ import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.RayTraceResult;
-import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.world.World;
 
@@ -97,32 +97,60 @@ public class CopyMode extends CardMode {
         if (this.isCopying) {
             ToolMemoryCard ToolMemoryCard = (ToolMemoryCard) stack.getItem();
             NBTTagCompound data = ToolMemoryCard.getData(stack);
-            int count = 0;
+            CopyOptions opts = CopyOptions.of(stack);
+
+            if (opts.mask() == 0) {
+                // 全不选时粘贴等于什么都不做，直接提示比"Pasted 0 blocks"清楚，且不消耗选区
+                player.sendStatusMessage(new TextComponentString(TranslateHelper.CopyMode.optionsEmpty()), true);
+                return new ActionResult<>(EnumActionResult.FAIL, stack);
+            }
+
+            int applied = 0;
+            int skipped = 0;
 
             if (startPos != null && endPos != null) {
                 Iterable<BlockPos> positions = BlockPos.getAllInBox(startPos, endPos);
                 for (BlockPos pos : positions) {
                     net.minecraft.tileentity.TileEntity blockEntity = world.getTileEntity(pos);
                     if (blockEntity instanceof AEBaseTile) {
-                        AEBaseTile aeBlockEntity = (AEBaseTile) blockEntity;
-                        aeBlockEntity.uploadSettings(SettingsFrom.MEMORY_CARD, data, player);
-                        count++;
+                        switch (SettingsApplier.applyTile((AEBaseTile) blockEntity, data, opts)) {
+                            case APPLIED:
+                                applied++;
+                                break;
+                            case SKIPPED:
+                                skipped++;
+                                break;
+                            default:
+                                break;
+                        }
                     }
                     if (blockEntity instanceof IPartHost) {
                         IPartHost partHost = (IPartHost) blockEntity;
                         for (EnumFacing direction : EnumFacing.values()) {
                             IPart part = partHost.getPart(direction);
-                            if (part != null) {
-                                part.onActivate(player, EnumHand.MAIN_HAND,
-                                        new Vec3d(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5));
-                                count++;
+                            if (part == null) {
+                                continue;
+                            }
+                            switch (SettingsApplier.applyPart(part, data, opts)) {
+                                case APPLIED:
+                                    applied++;
+                                    break;
+                                case SKIPPED:
+                                    skipped++;
+                                    break;
+                                default:
+                                    break;
                             }
                         }
                     }
                 }
             }
 
-            player.sendStatusMessage(new TextComponentString(completed(count)), true);
+            String message = completed(applied);
+            if (skipped > 0) {
+                message += TranslateHelper.CopyMode.skipped(skipped);
+            }
+            player.sendStatusMessage(new TextComponentString(message), true);
             this.isCopying = false;
             this.startPos = null;
             this.endPos = null;
