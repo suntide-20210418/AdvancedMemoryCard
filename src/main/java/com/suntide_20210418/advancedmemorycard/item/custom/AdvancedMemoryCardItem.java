@@ -3,6 +3,15 @@ package com.suntide_20210418.advancedmemorycard.item.custom;
 import appeng.api.implementations.items.IMemoryCard;
 import appeng.api.implementations.items.MemoryCardMessages;
 import appeng.items.tools.ToolMemoryCard;
+import appeng.api.parts.IPart;
+import appeng.api.parts.IPartHost;
+import appeng.api.util.AEPartLocation;
+import appeng.block.networking.BlockCableBus;
+import appeng.parts.AEBasePart;
+import appeng.tile.AEBaseTile;
+import appeng.util.SettingsFrom;
+import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.math.Vec3d;
 import com.suntide_20210418.advancedmemorycard.AdvancedMemoryCardMod;
 import com.suntide_20210418.advancedmemorycard.client.gui.ModGuiHandler;
 import com.suntide_20210418.advancedmemorycard.item.ModCreativeModeTabs;
@@ -32,42 +41,97 @@ public class AdvancedMemoryCardItem extends ToolMemoryCard {
         setMaxStackSize(1);
     }
 
+    /**
+     * 潜行 + 右键 = 复制。1.12.2 里这条路径**不在** {@code Item#onItemUse} 上：
+     * 方块交互（{@code AEBaseTileBlock#onBlockActivated}）看到手里的内存卡就直接
+     * {@code downloadSettings} 并 return true，根本没有 {@code onItemUse} 的机会。
+     * 之前把「复制后自动弹出」挂在 {@code onItemUse} 里，所以永远不触发。
+     *
+     * <p>现在在这里自己做复制：成功则按卡片开关打开面板并 return SUCCESS（阻止方块交互
+     * 再复制一次）；目标不认识就 return PASS，交回原版/AE2 的原有行为。
+     */
     @Override
     public EnumActionResult onItemUseFirst(EntityPlayer player, World world, BlockPos pos, EnumFacing side,
             float hitX, float hitY, float hitZ, EnumHand hand) {
         ItemStack stack = player.getHeldItem(hand);
         CardMode cardMode = CardMode.of(stack);
-        if (!world.isRemote) {
-            if (cardMode instanceof CopyMode && player.isSneaking()) {
-                return EnumActionResult.PASS;
+
+        if (cardMode instanceof CopyMode && player.isSneaking()) {
+            if (world.isRemote) {
+                // 复制是服务端行为，客户端不预测方块交互
+                return EnumActionResult.SUCCESS;
             }
+            if (copyFromTarget(player, world, pos, side, hand, stack)) {
+                if (CopyOptions.of(stack).isAutoOpen()) {
+                    player.openGui(AdvancedMemoryCardMod.INSTANCE, ModGuiHandler.COPY_GUI_ID,
+                            world, hand.ordinal(), 0, 0);
+                }
+                return EnumActionResult.SUCCESS;
+            }
+            return EnumActionResult.PASS;
+        }
+
+        if (!world.isRemote) {
             return cardMode.onItemUseFirst(stack, player, world, pos, side, hitX, hitY, hitZ, hand);
         }
         return EnumActionResult.SUCCESS;
     }
 
     /**
-     * 复制走 AE2 自己的 {@code ToolMemoryCard#onItemUse}（我们只在潜行时放行），
-     * 因此要判断"这次是否真的复制成功"只能比对卡片 Data 标签的前后差异。
-     * 复制成功后按卡片上的开关决定是否弹出粘贴选项面板。
+     * 复刻 AE2 1.12.2 的复制分支：方块走 {@code downloadSettings}，部件走
+     * {@code AEBasePart#onActivate}（它对内存卡的潜行分支就是复制）。
+     *
+     * @return 是否真的复制到了东西；false 表示这不是我们能处理的目标
      */
-    @Override
-    public EnumActionResult onItemUse(EntityPlayer player, World world, BlockPos pos, EnumHand hand,
-            EnumFacing side, float hitX, float hitY, float hitZ) {
-        ItemStack stack = player.getHeldItem(hand);
-        NBTTagCompound before = copyOfData(stack);
-
-        EnumActionResult result = super.onItemUse(player, world, pos, hand, side, hitX, hitY, hitZ);
-
-        if (!world.isRemote
-                && result == EnumActionResult.SUCCESS
-                && CardMode.of(stack) instanceof CopyMode
-                && CopyOptions.of(stack).isAutoOpen()
-                && !sameData(before, copyOfData(stack))) {
-            player.openGui(AdvancedMemoryCardMod.INSTANCE, ModGuiHandler.COPY_GUI_ID,
-                    world, hand.ordinal(), 0, 0);
+    private boolean copyFromTarget(EntityPlayer player, World world, BlockPos pos, EnumFacing side,
+            EnumHand hand, ItemStack stack) {
+        TileEntity tileEntity = world.getTileEntity(pos);
+        if (tileEntity == null) {
+            return false;
         }
-        return result;
+        IMemoryCard card = (IMemoryCard) stack.getItem();
+
+        if (tileEntity instanceof AEBaseTile
+                && !(world.getBlockState(pos).getBlock() instanceof BlockCableBus)) {
+            NBTTagCompound data = ((AEBaseTile) tileEntity).downloadSettings(SettingsFrom.MEMORY_CARD);
+            if (data == null) {
+                // downloadSettings 返回 null = 没有可复制的内容，交回原版给玩家"无设置"的提示
+                return false;
+            }
+            card.setMemoryCardContents(stack,
+                    world.getBlockState(pos).getBlock().getUnlocalizedName(), data);
+            card.notifyUser(player, MemoryCardMessages.SETTINGS_SAVED);
+            return true;
+        }
+
+        if (tileEntity instanceof IPartHost) {
+            IPart part = findClickedPart((IPartHost) tileEntity, side);
+            if (!(part instanceof AEBasePart)) {
+                return false;
+            }
+            NBTTagCompound before = copyOfData(stack);
+            ((AEBasePart) part).onActivate(player, hand,
+                    new Vec3d(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5));
+            return !sameData(before, copyOfData(stack));
+        }
+
+        return false;
+    }
+
+    /**
+     * 从方块坐标 + 点击面反推玩家点到的部件。线缆总线上的部件在面上，覆盖板/中心部件在
+     * {@code null} 槽位，所以先试点击面，再试对面，最后退回中心。
+     */
+    private IPart findClickedPart(IPartHost host, EnumFacing side) {
+        AEPartLocation clicked = AEPartLocation.fromFacing(side);
+        IPart part = host.getPart(clicked);
+        if (part == null) {
+            part = host.getPart(clicked.getOpposite());
+        }
+        if (part == null) {
+            part = host.getPart(AEPartLocation.INTERNAL);
+        }
+        return part;
     }
 
     private static NBTTagCompound copyOfData(ItemStack stack) {

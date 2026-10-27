@@ -1,14 +1,16 @@
 package com.suntide_20210418.advancedmemorycard.client.gui.screen;
 
+import com.suntide_20210418.advancedmemorycard.AdvancedMemoryCardMod;
 import com.suntide_20210418.advancedmemorycard.client.gui.menu.CopyModeMenu;
 import com.suntide_20210418.advancedmemorycard.item.custom.CopyOption;
 import com.suntide_20210418.advancedmemorycard.item.custom.CopyOptions;
 import com.suntide_20210418.advancedmemorycard.utils.TranslateHelper;
 import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.inventory.GuiContainer;
+import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
@@ -17,56 +19,57 @@ import java.util.Locale;
 /**
  * 粘贴选项面板。
  *
- * <p>1.12.2 没有 AE2 的 ScreenStyle / 控件系统，所以这里手绘：8 个开关两列排列，
- * 底部一行控制「复制后自动弹出」。开关状态存在卡片 NBT 上，客户端点击后先本地更新
- * 再发包给服务端落盘，服务端回写物品 NBT 后客户端会收到同步。
+ * <p>布局直接沿用 1.21.1 的 {@code assets/ae2/screens/copy_mode_menu.json}：
+ * <ul>
+ *   <li>面板贴图 {@code copy_mode_menu.png}，176×181，从 256×256 画布的 (0,0) 取；</li>
+ *   <li>标题在 (10, 10)；</li>
+ *   <li>每个选项一行，left = 10、width = 150、height = 14，纵向步进 19，首行 top = 24。</li>
+ * </ul>
+ * 1.12.2 没有 AE2 的 {@code AECheckbox} 与 {@code IconButton}，所以复选框改用一张
+ * 22×11 的双状态精灵（未选中 / 选中），只做「画图 + 命中判定」，不再用文字模拟控件。
+ *
+ * <p>与 1.21.1 的唯一偏差：「复制后自动弹出」在 1.21.1 是挂在面板左侧外缘的图标按钮，
+ * 1.12.2 没有那套 Icon 精灵，改为面板底部（top = 160）同一视觉语言的一行开关。
  */
 @SideOnly(Side.CLIENT)
 public class CopyModeScreen extends GuiContainer {
 
     private static final String ACTION_SET_OPTIONS = "set_options:";
-    private static final int AUTO_OPEN_BUTTON_ID = 100;
+
+    private static final ResourceLocation MENU_TEXTURE =
+            new ResourceLocation(AdvancedMemoryCardMod.MOD_ID, "textures/gui/copy_mode_menu.png");
+    private static final ResourceLocation WIDGET_TEXTURE =
+            new ResourceLocation(AdvancedMemoryCardMod.MOD_ID, "textures/gui/copy_mode_widgets.png");
+
+    /** 与 1.21.1 的 copy_mode_menu.json 保持一致。 */
+    private static final int PANEL_WIDTH = 176;
+    private static final int PANEL_HEIGHT = 181;
+    private static final int ROW_LEFT = 10;
+    private static final int ROW_WIDTH = 150;
+    private static final int ROW_HEIGHT = 14;
+    private static final int ROW_TOP = 24;
+    private static final int ROW_STEP = 19;
+    private static final int AUTO_OPEN_TOP = 160;
+
+    private static final int TEXT_COLOR = 0x404040;
+    private static final int HOVER_COLOR = 0x22000000;
 
     private final CopyModeMenu menu;
-
     private CopyOptions options;
-    private GuiButton autoOpenButton;
-    private final GuiButton[] optionButtons = new GuiButton[CopyOption.VALUES.length];
 
     public CopyModeScreen(CopyModeMenu menu, EntityPlayer player) {
         super(menu);
         this.menu = menu;
-        this.xSize = 220;
-        this.ySize = 150;
+        this.xSize = PANEL_WIDTH;
+        this.ySize = PANEL_HEIGHT;
     }
 
     @Override
     public void initGui() {
-        this.xSize = 220;
-        this.ySize = 150;
+        this.xSize = PANEL_WIDTH;
+        this.ySize = PANEL_HEIGHT;
         super.initGui();
-
         this.options = readOptions();
-
-        int colWidth = 100;
-        int rowHeight = 20;
-        int baseX = guiLeft + 8;
-        int baseY = guiTop + 26;
-
-        for (int i = 0; i < CopyOption.VALUES.length; i++) {
-            int col = i % 2;
-            int row = i / 2;
-            GuiButton button = new GuiButton(i, baseX + col * (colWidth + 4), baseY + row * rowHeight,
-                    colWidth, 18, "");
-            optionButtons[i] = button;
-            this.buttonList.add(button);
-        }
-
-        autoOpenButton = new GuiButton(AUTO_OPEN_BUTTON_ID, baseX, guiTop + ySize - 26,
-                xSize - 16, 18, "");
-        this.buttonList.add(autoOpenButton);
-
-        refreshLabels();
     }
 
     private CopyOptions readOptions() {
@@ -77,46 +80,89 @@ public class CopyModeScreen extends GuiContainer {
     }
 
     @Override
-    protected void actionPerformed(GuiButton button) {
-        if (button.id == AUTO_OPEN_BUTTON_ID) {
-            options = options.withAutoOpen(!options.isAutoOpen());
-        } else if (button.id >= 0 && button.id < CopyOption.VALUES.length) {
-            CopyOption option = CopyOption.VALUES[button.id];
-            options = options.with(option, !options.has(option));
-        } else {
-            return;
-        }
-        menu.dispatchClientAction(ACTION_SET_OPTIONS + options.mask() + ":" + (options.isAutoOpen() ? 1 : 0));
-        refreshLabels();
-    }
-
-    private void refreshLabels() {
-        for (int i = 0; i < CopyOption.VALUES.length; i++) {
-            CopyOption option = CopyOption.VALUES[i];
-            optionButtons[i].displayString = (options.has(option) ? "[x] " : "[  ] ")
-                    + TranslateHelper.CopyMode.option(option.name().toLowerCase(Locale.ROOT));
-        }
-        autoOpenButton.displayString = (options.isAutoOpen() ? "[x] " : "[  ] ")
-                + TranslateHelper.CopyMode.autoOpen();
-    }
-
-    @Override
     public void updateScreen() {
         super.updateScreen();
-        // 服务端落盘后物品 NBT 会同步回来，以它为准刷新一次显示
+        // 服务端落盘后物品 NBT 会同步回来，以它为准刷新显示
         CopyOptions synced = readOptions();
         if (synced.mask() != options.mask() || synced.isAutoOpen() != options.isAutoOpen()) {
             options = synced;
-            refreshLabels();
         }
+    }
+
+    @Override
+    protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws java.io.IOException {
+        if (mouseButton == 0 && applyClick(mouseX, mouseY)) {
+            return;
+        }
+        super.mouseClicked(mouseX, mouseY, mouseButton);
+    }
+
+    private boolean applyClick(int mouseX, int mouseY) {
+        for (int i = 0; i < CopyOption.VALUES.length; i++) {
+            if (isRowHovered(mouseX, mouseY, rowTop(i))) {
+                CopyOption option = CopyOption.VALUES[i];
+                options = options.with(option, !options.has(option));
+                pushOptions();
+                return true;
+            }
+        }
+        if (isRowHovered(mouseX, mouseY, AUTO_OPEN_TOP)) {
+            options = options.withAutoOpen(!options.isAutoOpen());
+            pushOptions();
+            return true;
+        }
+        return false;
+    }
+
+    /** 提交整张掩码而不是增量：幂等，重复包/丢包都不会把状态写歪。 */
+    private void pushOptions() {
+        menu.dispatchClientAction(ACTION_SET_OPTIONS + options.mask() + ":" + (options.isAutoOpen() ? 1 : 0));
+    }
+
+    private int rowTop(int index) {
+        return ROW_TOP + index * ROW_STEP;
+    }
+
+    private boolean isRowHovered(int mouseX, int mouseY, int top) {
+        int x = guiLeft + ROW_LEFT;
+        int y = guiTop + top;
+        return mouseX >= x && mouseX < x + ROW_WIDTH && mouseY >= y && mouseY < y + ROW_HEIGHT;
     }
 
     @Override
     protected void drawGuiContainerBackgroundLayer(float partialTicks, int mouseX, int mouseY) {
-        // 面板底色：直接铺两块纯色，不依赖任何贴图
-        Gui.drawRect(guiLeft, guiTop, guiLeft + xSize, guiTop + ySize, 0xFF2B2B2B);
-        Gui.drawRect(guiLeft + 2, guiTop + 2, guiLeft + xSize - 2, guiTop + ySize - 2, 0xFF3B3B3B);
-        fontRenderer.drawString(TranslateHelper.CopyMode.optionsTitle(), guiLeft + 8, guiTop + 8, 0xFFFFFFFF);
+        GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
+        mc.getTextureManager().bindTexture(MENU_TEXTURE);
+        drawTexturedModalRect(guiLeft, guiTop, 0, 0, xSize, ySize);
+
+        fontRenderer.drawString(TranslateHelper.CopyMode.optionsTitle(),
+                guiLeft + ROW_LEFT, guiTop + 10, TEXT_COLOR);
+
+        for (int i = 0; i < CopyOption.VALUES.length; i++) {
+            CopyOption option = CopyOption.VALUES[i];
+            drawRow(rowTop(i), option.name().toLowerCase(Locale.ROOT), options.has(option), mouseX, mouseY);
+        }
+        drawRow(AUTO_OPEN_TOP, null, options.isAutoOpen(), mouseX, mouseY);
+    }
+
+    /**
+     * @param optionId 为 null 表示「复制后自动弹出」那一行，文案走单独的键
+     */
+    private void drawRow(int top, String optionId, boolean on, int mouseX, int mouseY) {
+        int x = guiLeft + ROW_LEFT;
+        int y = guiTop + top;
+
+        if (isRowHovered(mouseX, mouseY, top)) {
+            Gui.drawRect(x - 2, y - 1, x + ROW_WIDTH + 2, y + ROW_HEIGHT - 1, HOVER_COLOR);
+        }
+
+        mc.getTextureManager().bindTexture(WIDGET_TEXTURE);
+        drawTexturedModalRect(x, y + 2, on ? 11 : 0, 0, 10, 10);
+
+        String label = optionId == null
+                ? TranslateHelper.CopyMode.autoOpen()
+                : TranslateHelper.CopyMode.option(optionId);
+        fontRenderer.drawString(label, x + 14, y + 3, TEXT_COLOR);
     }
 
     @Override
