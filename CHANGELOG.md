@@ -59,7 +59,7 @@
 
 ---
 
-## 1.1.0 (English)
+## 1.1.0-1.12.2 (English)
 
 **Minecraft** 1.12.2 · **Forge** 14.23.5.2860+ · **AE2** AE2 Extended Life (`570458:6302098`)
 

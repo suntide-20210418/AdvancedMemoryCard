@@ -117,26 +117,55 @@ jobs:
       - name: Build
         run: ./gradlew build --stacktrace
 
-      # 变更日志自己用 git 生成、三个平台共用，比交给平台自动生成更可控。
-      # --match 限定在同一条 MC 线，避免跨线命中 1.20.1 / 1.21.1 的标签。
-      - name: Generate changelog
+      # 发布日志直接取 CHANGELOG.md 里本版本的章节，不再把提交标题堆上去：
+      # 提交信息是给维护者看的（重构、CI、措辞调整都会混进去），玩家要看的是"这个版本改了什么"。
+      # 找不到与 mod_version 对应的章节就硬失败 —— 静默退回提交日志正是要避免的行为。
+      - name: Extract release notes from CHANGELOG.md
+        env:
+          MOD_VERSION: ${{ steps.meta.outputs.mod_version }}
         run: |
           set -euo pipefail
+          python3 - <<'PY'
+          import os
+          import sys
 
-          tag="${GITHUB_REF_NAME}"
-          mc_version="${{ steps.meta.outputs.mc_version }}"
+          version = os.environ["MOD_VERSION"]
+          lines = open("CHANGELOG.md", encoding="utf-8").read().splitlines()
 
-          prev="$(git describe --tags --abbrev=0 --match "*.*.*-${mc_version}" "${tag}^" 2>/dev/null || true)"
-          if [ -n "${prev}" ]; then
-            echo "变更范围：${prev}..${tag}"
-            range="${prev}..${tag}"
-          else
-            echo "未找到 ${mc_version} 线上的历史标签，输出截至该标签的完整提交记录"
-            range="${tag}"
-          fi
+          def section(prefix):
+              """截取以 '## <prefix>' 开头的一节，直到下一个二级标题。"""
+              out = []
+              capturing = False
+              for line in lines:
+                  if line.startswith("## "):
+                      if capturing:
+                          break
+                      if line[3:].strip().startswith(prefix):
+                          capturing = True
+                          continue
+                  if capturing:
+                      if line.strip() == "---":
+                          continue
+                      out.append(line)
+              while out and not out[-1].strip():
+                  out.pop()
+              return "\n".join(out).strip()
 
-          git log --no-merges --pretty='- %s (%h)' "${range}" > CHANGELOG_LATEST.md
-          echo "变更日志 $(( $(wc -l < CHANGELOG_LATEST.md) )) 行"
+          zh = section(version)
+          en = section(version + " (English)")
+
+          if not zh:
+              sys.exit('CHANGELOG.md 中没有与 mod_version 匹配的 "## %s" 章节' % version)
+
+          parts = [zh]
+          if en:
+              parts.append("---\n\n" + en)
+
+          with open("CHANGELOG_LATEST.md", "w", encoding="utf-8") as f:
+              f.write("\n\n".join(parts) + "\n")
+
+          print("发布日志取自 CHANGELOG.md：中文 %d 字符，英文 %s" % (len(zh), "已包含" if en else "未包含"))
+          PY
 
       # 在交给 mc-publish 之前先确认目标文件存在，否则失败信息会埋在 action 内部。
       - name: Verify jar exists
