@@ -38,8 +38,17 @@ public class CopyModeScreen extends GuiContainer {
 
     private static final ResourceLocation MENU_TEXTURE =
             new ResourceLocation(AdvancedMemoryCardMod.MOD_ID, "textures/gui/copy_mode_menu.png");
-    private static final ResourceLocation WIDGET_TEXTURE =
-            new ResourceLocation(AdvancedMemoryCardMod.MOD_ID, "textures/gui/copy_mode_widgets.png");
+    private static final ResourceLocation CHECKBOX_TEXTURE =
+            new ResourceLocation(AdvancedMemoryCardMod.MOD_ID, "textures/gui/checkbox.png");
+
+    /**
+     * 复选框精灵：取 checkbox.png 左下角那一列——上格是未选中（灰），下格是选中（蓝底浅色竖条）。
+     * 两个状态都是 12×12，原图坐标 (0,28) 与 (0,40)。
+     */
+    private static final int CHECKBOX_SIZE = 12;
+    private static final int CHECKBOX_U = 0;
+    private static final int CHECKBOX_V_UNCHECKED = 28;
+    private static final int CHECKBOX_V_CHECKED = 40;
 
     /** 与 1.21.1 的 copy_mode_menu.json 保持一致。 */
     private static final int PANEL_WIDTH = 176;
@@ -156,13 +165,15 @@ public class CopyModeScreen extends GuiContainer {
             Gui.drawRect(x - 2, y - 1, x + ROW_WIDTH + 2, y + ROW_HEIGHT - 1, HOVER_COLOR);
         }
 
-        mc.getTextureManager().bindTexture(WIDGET_TEXTURE);
-        drawTexturedModalRect(x, y + 2, on ? 11 : 0, 0, 10, 10);
+        mc.getTextureManager().bindTexture(CHECKBOX_TEXTURE);
+        drawTexturedModalRect(x, y + 1,
+                CHECKBOX_U, on ? CHECKBOX_V_CHECKED : CHECKBOX_V_UNCHECKED,
+                CHECKBOX_SIZE, CHECKBOX_SIZE);
 
         String label = optionId == null
                 ? TranslateHelper.CopyMode.autoOpen()
                 : TranslateHelper.CopyMode.option(optionId);
-        fontRenderer.drawString(label, x + 14, y + 3, TEXT_COLOR);
+        fontRenderer.drawString(label, x + CHECKBOX_SIZE + 4, y + 3, TEXT_COLOR);
     }
 
     @Override

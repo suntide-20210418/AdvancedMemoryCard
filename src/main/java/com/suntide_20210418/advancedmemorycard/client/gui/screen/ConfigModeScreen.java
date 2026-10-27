@@ -30,6 +30,29 @@ public class ConfigModeScreen extends GuiContainer {
     private DetailPanelWidget detailPanel;
     private GuiTextField searchField;
 
+    /** 与 1.21.1 的 assets/ae2/screens/config_mode_menu.json 保持一致。 */
+    private static final int PANEL_WIDTH = 352;
+    private static final int PANEL_HEIGHT = 282;
+    private static final int SEARCH_LEFT = 7;
+    private static final int SEARCH_TOP = 25;
+    private static final int SEARCH_WIDTH = 120;
+    private static final int SEARCH_HEIGHT = 12;
+    private static final int TREE_LEFT = 15;
+    private static final int TREE_TOP = 53;
+    private static final int TREE_WIDTH = 152;
+    private static final int TREE_HEIGHT = 200;
+    private static final int SCROLLBAR_LEFT = 169;
+    private static final int DETAIL_LEFT = 184;
+    private static final int DETAIL_WIDTH = 152;
+    private static final int DETAIL_HEIGHT = 210;
+    private static final int INFO_TOP = 269;
+    private static final int TEXT_COLOR = 0x404040;
+
+    private static final net.minecraft.util.ResourceLocation MENU_TEXTURE =
+            new net.minecraft.util.ResourceLocation(
+                    com.suntide_20210418.advancedmemorycard.AdvancedMemoryCardMod.MOD_ID,
+                    "textures/gui/config_mode_menu.png");
+
     private static final int UPDATE_ITEM_INFO_INTERVAL = 10;
     private int updateItemInfoCooldown = 0;
     private P2PInfo lastNavigatedP2P = null;
@@ -43,8 +66,8 @@ public class ConfigModeScreen extends GuiContainer {
         super(menu);
         this.menu = menu;
         this.player = player;
-        this.xSize = 360;
-        this.ySize = 220;
+        this.xSize = PANEL_WIDTH;
+        this.ySize = PANEL_HEIGHT;
     }
 
     private static String encodeP2PPosition(P2PInfo p2pInfo) {
@@ -57,14 +80,14 @@ public class ConfigModeScreen extends GuiContainer {
 
     @Override
     public void initGui() {
-        this.xSize = 360;
-        this.ySize = 220;
+        this.xSize = PANEL_WIDTH;
+        this.ySize = PANEL_HEIGHT;
         super.initGui();
 
-        int treeX = guiLeft + 4;
-        int treeY = guiTop + 20;
-        int treeW = 170;
-        int treeH = ySize - 24;
+        int treeX = guiLeft + TREE_LEFT;
+        int treeY = guiTop + TREE_TOP;
+        int treeW = TREE_WIDTH;
+        int treeH = TREE_HEIGHT;
 
         p2pTree = new P2PTreeWidget(treeX, treeY, treeW, treeH);
         p2pTree.setNodeSelectionListener(node -> {
@@ -76,9 +99,7 @@ public class ConfigModeScreen extends GuiContainer {
             }
         });
 
-        int detailX = guiLeft + 178;
-        int detailW = xSize - 182;
-        detailPanel = new DetailPanelWidget(detailX, treeY, detailW, treeH);
+        detailPanel = new DetailPanelWidget(guiLeft + DETAIL_LEFT, treeY, DETAIL_WIDTH, DETAIL_HEIGHT);
         detailPanel.setActionCallback(new DetailPanelWidget.ActionCallback() {
             @Override public void onRename(P2PInfo p2pInfo, String newName) {
                 if (!newName.isEmpty()) { actionSetP2PAlias(p2pInfo, newName); resetUpdateCooldown(); }
@@ -95,7 +116,8 @@ public class ConfigModeScreen extends GuiContainer {
             @Override public void onRefresh() { actionRefreshP2P(); resetUpdateCooldown(); }
         });
 
-        searchField = new GuiTextField(0, fontRenderer, guiLeft + 4, guiTop + 5, 170, 12);
+        searchField = new GuiTextField(0, fontRenderer, guiLeft + SEARCH_LEFT, guiTop + SEARCH_TOP,
+                SEARCH_WIDTH, SEARCH_HEIGHT);
         searchField.setMaxStringLength(64);
         searchField.setFocused(false);
 
@@ -211,13 +233,16 @@ public class ConfigModeScreen extends GuiContainer {
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
         drawDefaultBackground();
 
-        // 面板背景
-        Gui.drawRect(guiLeft, guiTop, guiLeft + xSize, guiTop + ySize, 0xFF2B2B2B);
-        Gui.drawRect(guiLeft + 2, guiTop + 2, guiLeft + xSize - 2, guiTop + ySize - 2, 0xFF3B3B3B);
+        // 面板背景：直接画 1.21.1 的贴图（352×282，取自 512×512 画布的 (0,0)）
+        net.minecraft.client.renderer.GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
+        mc.getTextureManager().bindTexture(MENU_TEXTURE);
+        drawTexturedModalRect(guiLeft, guiTop, 0, 0, xSize, ySize);
 
-        // 标题
-        String title = TranslateHelper.translate(TranslateHelper.Keys.CONFIG_MODE_SCREEN_TITLE);
-        fontRenderer.drawString(title, guiLeft + 4, guiTop + 5, 0xFFFFFFFF);
+        // 标题与底部提示
+        fontRenderer.drawString(TranslateHelper.translate(TranslateHelper.Keys.CONFIG_MODE_SCREEN_TITLE),
+                guiLeft + 7, guiTop + 7, TEXT_COLOR);
+        fontRenderer.drawString(TranslateHelper.translate(TranslateHelper.Keys.CONFIG_MODE_SCREEN_INFO),
+                guiLeft + 7, guiTop + INFO_TOP, TEXT_COLOR);
 
         // 搜索框
         if (searchField != null) searchField.drawTextBox();
@@ -236,7 +261,7 @@ public class ConfigModeScreen extends GuiContainer {
     }
 
     private void drawScrollbar() {
-        int trackX = p2pTree.getX() + p2pTree.getWidth() - 6;
+        int trackX = guiLeft + SCROLLBAR_LEFT;
         int trackY = p2pTree.getY();
         int trackH = p2pTree.getHeight();
         int total = p2pTree.getTotalContentHeight();
@@ -316,7 +341,7 @@ public class ConfigModeScreen extends GuiContainer {
     }
 
     private boolean startScrollDrag(int mouseX, int mouseY) {
-        int trackX = p2pTree.getX() + p2pTree.getWidth() - 6;
+        int trackX = guiLeft + SCROLLBAR_LEFT;
         int trackY = p2pTree.getY();
         int trackH = p2pTree.getHeight();
         if (p2pTree.getTotalContentHeight() <= p2pTree.getHeight()) return false;
