@@ -70,7 +70,6 @@ gui.advanced_memory_card.advanced_memory_card.player.copy.options_title=Пара
 gui.advanced_memory_card.advanced_memory_card.player.copy.auto_open=Открывать после копирования
 gui.advanced_memory_card.advanced_memory_card.player.copy.options_empty=Ничего не выбрано -- нажмите G для настройки
 gui.advanced_memory_card.advanced_memory_card.player.copy.skipped= | пропущено P2P-частей: %s (смена типа не поддерживается)
-gui.advanced_memory_card.advanced_memory_card.player.copy.option.upgrades=Улучшения
 gui.advanced_memory_card.advanced_memory_card.player.copy.option.settings=Настройки
 gui.advanced_memory_card.advanced_memory_card.player.copy.option.priority=Приоритет
 gui.advanced_memory_card.advanced_memory_card.player.copy.option.config_inv=Слоты конфигурации

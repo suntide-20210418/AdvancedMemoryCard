@@ -70,7 +70,6 @@ gui.advanced_memory_card.advanced_memory_card.player.copy.options_title=Paste Op
 gui.advanced_memory_card.advanced_memory_card.player.copy.auto_open=Auto-open after copy
 gui.advanced_memory_card.advanced_memory_card.player.copy.options_empty=No paste options selected -- press G to configure
 gui.advanced_memory_card.advanced_memory_card.player.copy.skipped= | %s P2P parts skipped (type change unsupported)
-gui.advanced_memory_card.advanced_memory_card.player.copy.option.upgrades=Upgrades
 gui.advanced_memory_card.advanced_memory_card.player.copy.option.settings=Settings
 gui.advanced_memory_card.advanced_memory_card.player.copy.option.priority=Priority
 gui.advanced_memory_card.advanced_memory_card.player.copy.option.config_inv=Config slots

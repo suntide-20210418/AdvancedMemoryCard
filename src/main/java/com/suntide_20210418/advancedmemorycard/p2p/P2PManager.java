@@ -43,6 +43,11 @@ public class P2PManager {
         SET_OUTPUT_METHOD = m;
     }
 
+    /** 供其它包（粘贴路径）复用同一个反射入口，避免再复制一份私有方法查找。 */
+    public static void setP2POutput(PartP2PTunnel part, boolean output) {
+        setOutput(part, output);
+    }
+
     private static void setOutput(PartP2PTunnel part, boolean output) {
         if (SET_OUTPUT_METHOD == null || part == null) {
             return;
@@ -115,21 +120,27 @@ public class P2PManager {
 
         short freq = (short) Integer.parseInt(frequencyHex, 16);
 
-        // 非 ME P2P 设备：智能判断输入/输出端角色
-        if (!(p2pTunnelPartBinding instanceof PartP2PTunnelME)) {
-            PartP2PTunnel existingInput = getInput(freq);
-            if (existingInput != null) {
-                if (!p2pTunnelPartBinding.isOutput()) {
-                    setOutput(p2pTunnelPartBinding, true);
-                }
-            } else {
-                if (p2pTunnelPartBinding.isOutput()) {
-                    setOutput(p2pTunnelPartBinding, false);
-                }
-            }
+        // 频段 0 在 AE2 里是「未绑定」。1.12.2 的 P2PCache 用的是 Multimap，
+        // 把所有 freq=0 的设备登记进同一条通道，于是未绑定设备在界面里会互相「连通」。
+        // 绑定到 0000 等于静默解绑，而且这个状态会随 updateFreq 写进存档，直接拒绝。
+        if (freq == 0) {
+            return;
+        }
+
+        // 角色仲裁：目标频段已有【其他】设备的输入端时，当前设备作为输出端。
+        // 这里对所有类型统一处理（含 ME P2P）：让玩家把第二个设备绑到已有通道时
+        // 得到「输入 → 输出」的正常结构，而不是两个输入端挂在同一频段上互相不通。
+        PartP2PTunnel existingInput = getInput(freq);
+        boolean shouldBeOutput = existingInput != null && existingInput != p2pTunnelPartBinding;
+        if (shouldBeOutput != p2pTunnelPartBinding.isOutput()) {
+            setOutput(p2pTunnelPartBinding, shouldBeOutput);
         }
 
         currentP2PService.updateFreq(p2pTunnelPartBinding, freq);
+
+        // updateFreq 只在频段变化时才会走到 setFrequency；角色变化而频段不变时
+        // 上面那次 setOutput 是纯内存写，需要显式让宿主落盘，否则重进存档角色丢失。
+        p2pTunnelPartBinding.getHost().markForSave();
 
         this.grid = currentGrid;
         this.p2pService = currentP2PService;
@@ -330,7 +341,10 @@ public class P2PManager {
     }
 
     public void renameP2P(PartP2PTunnel p2pPart, String name) {
+        // rv6 的 setCustomName 只改部件持有的 ItemStack 显示名，不会自己落盘；
+        // 不显式 markForSave 的话，重进存档名字就没了（1.20.1 线上踩过同一个坑）。
         p2pPart.setCustomName(name);
+        p2pPart.getHost().markForSave();
     }
 
     public void assignNewFrequency() {
@@ -347,15 +361,15 @@ public class P2PManager {
             return;
         }
 
-        currentP2PService.updateFreq(p2pTunnelPartBinding, (short) 0);
-
+        // 不再先把频段写成 0 再分配：两次 updateFreq 之间如果被区块卸载/退出存档打断，
+        // 存档里会留下「已绑定设备变成未绑定」。直接一次性换到新频段。
         if (p2pTunnelPartBinding.isOutput()) {
             setOutput(p2pTunnelPartBinding, false);
-            currentP2PService.updateFreq(p2pTunnelPartBinding, (short) 0);
         }
 
         short newFreq = currentP2PService.newFrequency();
         currentP2PService.updateFreq(p2pTunnelPartBinding, newFreq);
+        p2pTunnelPartBinding.getHost().markForSave();
 
         analysisP2P();
     }

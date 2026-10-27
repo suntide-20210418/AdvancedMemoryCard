@@ -70,7 +70,6 @@ gui.advanced_memory_card.advanced_memory_card.player.copy.options_title=粘贴�
 gui.advanced_memory_card.advanced_memory_card.player.copy.auto_open=复制后自动弹出
 gui.advanced_memory_card.advanced_memory_card.player.copy.options_empty=没有勾选任何粘贴项 —— 按 G 配置
 gui.advanced_memory_card.advanced_memory_card.player.copy.skipped= | 跳过 %s 个 P2P 部件（不支持换型）
-gui.advanced_memory_card.advanced_memory_card.player.copy.option.upgrades=升级
 gui.advanced_memory_card.advanced_memory_card.player.copy.option.settings=设置
 gui.advanced_memory_card.advanced_memory_card.player.copy.option.priority=优先级
 gui.advanced_memory_card.advanced_memory_card.player.copy.option.config_inv=配置物品

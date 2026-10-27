@@ -6,10 +6,11 @@ import com.suntide_20210418.advancedmemorycard.utils.TranslateHelper;
  * 复制模式的可选项。对应 1.21.1 的 CopyOption，但 1.12.2 的 AE2 没有
  * MemoryCardMessages.ExportSettings 这套分段掩码，只能在粘贴侧自己按项落地。
  *
- * <p>顺序即界面顺序，位序即掩码位，改动会破坏已存档卡片上的掩码，不要调整。
+ * <p>顺序即界面顺序，位序即掩码位。当前含 7 项：AE2 1.12.2 的
+ * {@code downloadSettings} 从不导出 upgrades（全仓没有对应的 writeToNBT），
+ * 卡片里没有这段数据，因此「升级」不在其中——不做一个永远空转的开关。
  */
 public enum CopyOption {
-    UPGRADES("upgrades"),
     SETTINGS("settings"),
     PRIORITY("priority"),
     CONFIG_INV("config_inv"),

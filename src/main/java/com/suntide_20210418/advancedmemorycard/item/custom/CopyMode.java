@@ -131,7 +131,7 @@ public class CopyMode extends CardMode {
                             if (part == null) {
                                 continue;
                             }
-                            switch (SettingsApplier.applyPart(part, data, opts)) {
+                            switch (SettingsApplier.applyPart(part, data, opts, player, hand)) {
                                 case APPLIED:
                                     applied++;
                                     break;
