@@ -17,6 +17,9 @@ public class NetworkHandler {
     // 由客户端的 ConfigModeMenu 在每 tick 抽取并应用到本地缓存（避免在数据包处理线程中触碰客户端类）。
     public static final ConcurrentLinkedQueue<ConfigModeSyncPacket> syncQueue = new ConcurrentLinkedQueue<>();
 
+    /** 复制模式选项的同步队列：同样先入队，由 CopyModeScreen 在自己的线程里取用。 */
+    public static final ConcurrentLinkedQueue<CopyOptionsSyncPacket> copyOptionsQueue = new ConcurrentLinkedQueue<>();
+
     private static int packetId = 0;
 
     public static void register() {
@@ -28,6 +31,7 @@ public class NetworkHandler {
         // 客户端处理的消息（服务端 -> 客户端）。其 Handler 仅入队，不引用任何客户端类，故服务端也可安全加载。
         INSTANCE.registerMessage(ConfigModeSyncPacket.Handler.class, ConfigModeSyncPacket.class, packetId++, Side.CLIENT);
         INSTANCE.registerMessage(HighlightPacket.Handler.class, HighlightPacket.class, packetId++, Side.CLIENT);
+        INSTANCE.registerMessage(CopyOptionsSyncPacket.Handler.class, CopyOptionsSyncPacket.class, packetId++, Side.CLIENT);
     }
 
     public static void sendToServer(IMessage msg) {

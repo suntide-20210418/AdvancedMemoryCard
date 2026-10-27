@@ -4,6 +4,8 @@ import com.suntide_20210418.advancedmemorycard.AdvancedMemoryCardMod;
 import com.suntide_20210418.advancedmemorycard.client.gui.menu.CopyModeMenu;
 import com.suntide_20210418.advancedmemorycard.item.custom.CopyOption;
 import com.suntide_20210418.advancedmemorycard.item.custom.CopyOptions;
+import com.suntide_20210418.advancedmemorycard.network.CopyOptionsSyncPacket;
+import com.suntide_20210418.advancedmemorycard.network.NetworkHandler;
 import com.suntide_20210418.advancedmemorycard.utils.TranslateHelper;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.inventory.GuiContainer;
@@ -19,17 +21,19 @@ import java.util.Locale;
 /**
  * 粘贴选项面板。
  *
- * <p>布局直接沿用 1.21.1 的 {@code assets/ae2/screens/copy_mode_menu.json}：
- * <ul>
- *   <li>面板贴图 {@code copy_mode_menu.png}，176×181，从 256×256 画布的 (0,0) 取；</li>
- *   <li>标题在 (10, 10)；</li>
- *   <li>每个选项一行，left = 10、width = 150、height = 14，纵向步进 19，首行 top = 24。</li>
- * </ul>
- * 1.12.2 没有 AE2 的 {@code AECheckbox} 与 {@code IconButton}，所以复选框改用一张
- * 22×11 的双状态精灵（未选中 / 选中），只做「画图 + 命中判定」，不再用文字模拟控件。
+ * <p>布局沿用 1.21.1 的 {@code assets/ae2/screens/copy_mode_menu.json}：面板 176×181、
+ * 标题 (10,10)、每个选项一行（left 10、width 150、height 14、步进 19、首行 top 24）。
  *
- * <p>与 1.21.1 的唯一偏差：「复制后自动弹出」在 1.21.1 是挂在面板左侧外缘的图标按钮，
- * 1.12.2 没有那套 Icon 精灵，改为面板底部（top = 160）同一视觉语言的一行开关。
+ * <p>控件贴图用 {@code checkbox.png} 的四个 22×12 状态格：
+ * <pre>
+ *   未选中      (0, 28)    未选中+悬停  (22, 28)
+ *   选中        (0, 40)    选中+悬停    (22, 40)
+ * </pre>
+ *
+ * <p>状态以服务端为准：点击时先本地更新（立即出画面），同时把整张掩码发给服务端；
+ * 服务端落盘后回发 {@link CopyOptionsSyncPacket}，界面收到后以它覆盖本地值。
+ * 早前直接读物品 NBT 刷新是错的——{@code CopyModeMenu} 是空容器，服务端改 NBT 后
+ * 不会触发 {@code SPacketSetSlot}，客户端要重开界面才看得到。
  */
 @SideOnly(Side.CLIENT)
 public class CopyModeScreen extends GuiContainer {
@@ -41,22 +45,6 @@ public class CopyModeScreen extends GuiContainer {
     private static final ResourceLocation CHECKBOX_TEXTURE =
             new ResourceLocation(AdvancedMemoryCardMod.MOD_ID, "textures/gui/checkbox.png");
 
-    /**
-     * 复选框精灵：取 checkbox.png 左下角的两个状态格。
-     * 未选中 (0,28)：12×12，深色边框 + 灰色内凹面；
-     * 选中   (0,41)：12×11，深色边框 + 蓝色内面 + 浅色竖条（原图这一格比上一格矮一行）。
-     */
-    private static final int CHECKBOX_W = 12;
-    private static final int CHECKBOX_H_UNCHECKED = 12;
-    private static final int CHECKBOX_H_CHECKED = 11;
-    private static final int CHECKBOX_U = 0;
-    private static final int CHECKBOX_V_UNCHECKED = 28;
-    private static final int CHECKBOX_V_CHECKED = 41;
-    /** 原图像素尺寸。1.12.2 的 drawTexturedModalRect 固定按 256×256 算 UV，非 256 的图必须走 custom sized。 */
-    private static final int CHECKBOX_TEX_SIZE = 64;
-    private static final int MENU_TEX_SIZE = 256;
-
-    /** 与 1.21.1 的 copy_mode_menu.json 保持一致。 */
     private static final int PANEL_WIDTH = 176;
     private static final int PANEL_HEIGHT = 181;
     private static final int ROW_LEFT = 10;
@@ -68,6 +56,17 @@ public class CopyModeScreen extends GuiContainer {
 
     private static final int TEXT_COLOR = 0x404040;
     private static final int HOVER_COLOR = 0x22000000;
+
+    /** 原图像素尺寸：1.12.2 的 drawTexturedModalRect 固定按 256×256 算 UV，非 256 的图必须走 custom sized。 */
+    private static final int MENU_TEX_SIZE = 256;
+    private static final int CHECKBOX_TEX_SIZE = 64;
+
+    private static final int CHECKBOX_W = 22;
+    private static final int CHECKBOX_H = 12;
+    private static final int CHECKBOX_V_OFF = 28;
+    private static final int CHECKBOX_V_ON = 40;
+    private static final int CHECKBOX_U_NORMAL = 0;
+    private static final int CHECKBOX_U_HOVER = 22;
 
     private final CopyModeMenu menu;
     private CopyOptions options;
@@ -84,24 +83,26 @@ public class CopyModeScreen extends GuiContainer {
         this.xSize = PANEL_WIDTH;
         this.ySize = PANEL_HEIGHT;
         super.initGui();
-        this.options = readOptions();
+
+        // 初值取菜单（服务端会在创建容器时发一次同步包），先按当前已知值铺一遍
+        this.options = CopyOptions.of(ItemStack.EMPTY)
+                .withMask(menu.getApplyMask())
+                .withAutoOpen(menu.isAutoOpen());
+        drainSync();
     }
 
-    private CopyOptions readOptions() {
-        if (mc.player == null) {
-            return CopyOptions.of(ItemStack.EMPTY);
+    /** 采纳服务端的权威状态；没有新包就保持本地（点击后的即时反馈）。 */
+    private void drainSync() {
+        CopyOptionsSyncPacket packet;
+        while ((packet = NetworkHandler.copyOptionsQueue.poll()) != null) {
+            options = options.withMask(packet.getMask()).withAutoOpen(packet.isAutoOpen());
         }
-        return CopyOptions.of(mc.player.getHeldItem(menu.getHand()));
     }
 
     @Override
     public void updateScreen() {
         super.updateScreen();
-        // 服务端落盘后物品 NBT 会同步回来，以它为准刷新显示
-        CopyOptions synced = readOptions();
-        if (synced.mask() != options.mask() || synced.isAutoOpen() != options.isAutoOpen()) {
-            options = synced;
-        }
+        drainSync();
     }
 
     @Override
@@ -168,15 +169,16 @@ public class CopyModeScreen extends GuiContainer {
         int x = guiLeft + ROW_LEFT;
         int y = guiTop + top;
 
-        if (isRowHovered(mouseX, mouseY, top)) {
+        boolean hovered = isRowHovered(mouseX, mouseY, top);
+        if (hovered) {
             Gui.drawRect(x - 2, y - 1, x + ROW_WIDTH + 2, y + ROW_HEIGHT - 1, HOVER_COLOR);
         }
 
         mc.getTextureManager().bindTexture(CHECKBOX_TEXTURE);
         Gui.drawModalRectWithCustomSizedTexture(x, y + 1,
-                CHECKBOX_U, on ? CHECKBOX_V_CHECKED : CHECKBOX_V_UNCHECKED,
-                CHECKBOX_W, on ? CHECKBOX_H_CHECKED : CHECKBOX_H_UNCHECKED,
-                CHECKBOX_TEX_SIZE, CHECKBOX_TEX_SIZE);
+                hovered ? CHECKBOX_U_HOVER : CHECKBOX_U_NORMAL,
+                on ? CHECKBOX_V_ON : CHECKBOX_V_OFF,
+                CHECKBOX_W, CHECKBOX_H, CHECKBOX_TEX_SIZE, CHECKBOX_TEX_SIZE);
 
         String label = optionId == null
                 ? TranslateHelper.CopyMode.autoOpen()

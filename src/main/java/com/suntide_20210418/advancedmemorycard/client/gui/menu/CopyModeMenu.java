@@ -3,10 +3,12 @@ package com.suntide_20210418.advancedmemorycard.client.gui.menu;
 import com.suntide_20210418.advancedmemorycard.item.custom.AdvancedMemoryCardItem;
 import com.suntide_20210418.advancedmemorycard.item.custom.CardMode;
 import com.suntide_20210418.advancedmemorycard.item.custom.CopyMode;
+import com.suntide_20210418.advancedmemorycard.item.custom.CopyOption;
 import com.suntide_20210418.advancedmemorycard.item.custom.CopyOptions;
 import com.suntide_20210418.advancedmemorycard.network.CopyModePacket;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.Container;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
@@ -30,10 +32,42 @@ public class CopyModeMenu extends Container implements CopyModePacket.ICopyMenu 
     private String startPos = "";
     private String endPos = "";
 
+    /** 服务端持有的权威选项，客户端显示以同步包为准（物品 NBT 不会随空容器自动同步）。 */
+    private int applyMask;
+    private boolean autoOpen;
+
     public CopyModeMenu(InventoryPlayer playerInventory, net.minecraft.util.EnumHand hand) {
         this.playerInventory = playerInventory;
         this.hand = hand;
+        readOptionsFromCard();
         updateItemInf();
+        syncOptionsToClient();
+    }
+
+    private void readOptionsFromCard() {
+        ItemStack stack = playerInventory.player.getHeldItem(hand);
+        CopyOptions opts = CopyOptions.of(stack);
+        this.applyMask = opts.mask();
+        this.autoOpen = opts.isAutoOpen();
+    }
+
+    /**
+     * 只由服务端的菜单实例发包：客户端的同名对象只是容器镜像，它没有权威状态。
+     */
+    private void syncOptionsToClient() {
+        if (playerInventory.player instanceof EntityPlayerMP) {
+            com.suntide_20210418.advancedmemorycard.network.NetworkHandler.sendToPlayer(
+                    new com.suntide_20210418.advancedmemorycard.network.CopyOptionsSyncPacket(applyMask, autoOpen),
+                    (EntityPlayerMP) playerInventory.player);
+        }
+    }
+
+    public int getApplyMask() {
+        return applyMask;
+    }
+
+    public boolean isAutoOpen() {
+        return autoOpen;
     }
 
     @Override
@@ -77,7 +111,11 @@ public class CopyModeMenu extends Container implements CopyModePacket.ICopyMenu 
 
         ItemStack stack = playerInventory.player.getHeldItem(hand);
         if (stack.getItem() instanceof AdvancedMemoryCardItem) {
-            CopyOptions.of(stack).withMask(mask).withAutoOpen(autoOpen).save(stack);
+            this.applyMask = mask & CopyOption.allBits();
+            this.autoOpen = autoOpen;
+            CopyOptions.of(stack).withMask(this.applyMask).withAutoOpen(this.autoOpen).save(stack);
+            // 空容器不会替我们把 NBT 变化推给客户端，必须显式同步，否则界面要等重开才刷新
+            syncOptionsToClient();
         }
     }
 
