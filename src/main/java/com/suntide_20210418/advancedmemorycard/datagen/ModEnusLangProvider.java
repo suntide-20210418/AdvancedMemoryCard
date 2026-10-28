@@ -103,7 +103,7 @@ public class ModEnusLangProvider extends LanguageProvider {
         add(Keys.BUTTON_REFRESH, "Refresh");
         add(Keys.BUTTON_CANCEL, "Cancel");
         add(Keys.BUTTON_BIND, "Bind");
-        add(Keys.BUTTON_LOCATE, "Locate");
+        add(Keys.BUTTON_TELEPORT, "Teleport");
         add(Keys.BUTTON_INIT_P2P, "Init P2P");
         add(Keys.BUTTON_ASSIGN_FREQ, "Assign New Frequency");
 
@@ -117,14 +117,56 @@ public class ModEnusLangProvider extends LanguageProvider {
 
         // 聊天消息
         add(Keys.CHAT_LOCATION_INFO, "%s at %s - (%s) ");
-        add(Keys.CHAT_CLICK_TO_TELEPORT, "[Click to Teleport]");
-        add(Keys.CHAT_TELEPORT_HOVER, "Click to teleport to %s - (%s)\nRequires cheats or OP permissions");
         add(Keys.CHAT_FREQ_HIGHLIGHT_HEADER, "=== Frequency %s Highlight ===");
-        add(Keys.CHAT_TELEPORT_BUTTON, "[Teleport]");
 
         // 按键绑定
         add("key.categories.advanced_memory_card", "Advanced Memory Card");
         add("key.advancedmemorycard.switch", "Switch Mode");
         add("key.advancedmemorycard.copy_options", "Copy Options");
+
+        // ===== Pair bar =====
+        add(Keys.PAIR_SOURCE, "FROM");
+        add(Keys.PAIR_TARGET, "TO");
+        add(Keys.PAIR_TARGET_PLACEHOLDER, "Click to pick a channel");
+        add(Keys.PAIR_SOURCE_PLACEHOLDER, "Pick a device on the left");
+        add(Keys.PAIR_CLEAR, "Clear");
+        add(Keys.PAIR_NEW_FREQ, "New channel…");
+        add(Keys.PAIR_NO_CHANNEL, "No channels available");
+        add(Keys.PAIR_UNNAMED, "Unnamed");
+        add(Keys.PAIR_SOURCE_MULTI, "%s selected");
+
+        // ===== Status line =====
+        add(Keys.STATUS_LINE_IDLE, "Pick a device as source, then a channel as target");
+        add(Keys.STATUS_LINE_BIND_OK, "Bound to %s");
+        add(Keys.STATUS_LINE_BIND_NO_TARGET, "No source device — pick a P2P on the left");
+        add(Keys.STATUS_LINE_BIND_INVALID_FREQ, "%s is not a bindable channel");
+        add(Keys.STATUS_LINE_BIND_NO_GRID, "Network not ready, bind skipped");
+        add(Keys.STATUS_LINE_SOURCE_SELECTED, "Source: %s");
+        add(Keys.STATUS_LINE_ASSIGNED, "Assigned new channel %s");
+        add(Keys.STATUS_LINE_RENAMED, "Renamed to %s");
+        add(Keys.STATUS_LINE_REFRESHED, "Refreshed");
+        add(Keys.STATUS_LINE_RENAME_FAILED, "Rename failed: device is no longer on this network");
+        add(Keys.STATUS_LINE_BIND_BATCH_OK, "Bound %s devices to %s");
+        add(Keys.STATUS_LINE_BIND_BATCH_PARTIAL, "%s bound, %s failed (target %s)");
+
+        // ===== Tree columns =====
+        add(Keys.TREE_COL_NAME, "Name");
+        add(Keys.TREE_COL_FREQ, "Channel");
+        add(Keys.TREE_COL_SUMMARY, "Info");
+        add(Keys.TREE_SUMMARY_CHANNEL, "%s dev, %s left");
+        add(Keys.TREE_SUMMARY_CHANNEL_PLAIN, "%s dev");
+        add(Keys.TREE_SUMMARY_TYPE, "%s dev, %s ch");
+        add(Keys.TREE_ROLE_INPUT, "IN");
+        add(Keys.TREE_ROLE_OUTPUT, "OUT");
+        add(Keys.TREE_PREFIX_INPUT, "IN");
+        add(Keys.TREE_PREFIX_OUTPUT, "OUT");
+
+        // ===== Action bar =====
+        add(Keys.ACTION_BAR_HINT, "Pick device → pick channel → bind");
+        add(Keys.ACTION_BAR_HINT_READY, "Bind %s to %s, press Enter");
+        add(Keys.ACTION_BAR_HINT_READY_MULTI, "Bind %s devices to %s, press Enter");
+        add(Keys.ACTION_BAR_BIND, "Bind");
+        add(Keys.ACTION_BAR_BATCH, "Batch select");
+        add(Keys.ACTION_BAR_EXIT_BATCH, "Exit batch");
     }
 }

@@ -1,43 +1,62 @@
 {
   "$schema": "../schema.json",
-  "includes": ["common/common.json"],
+  "includes": [
+    "common/common.json"
+  ],
   "background": {
     "texture": "guis/config_mode_menu.png",
     "textureWidth": 512,
     "textureHeight": 512,
-    "srcRect": [0, 0, 352, 282]
+    "srcRect": [
+      0,
+      0,
+      440,
+      312
+    ]
   },
   "text": {
     "title": {
-      "position": { "left": 7, "top": 7 }
-    },
-    "info": {
-      "position": { "left": 7, "top": 269 }
+      "position": {
+        "left": 7,
+        "top": 7
+      }
     }
   },
   "widgets": {
+    "pair_bar": {
+      "left": 10,
+      "top": 20,
+      "width": 420,
+      "height": 52
+    },
     "search_field": {
-      "left": 7,
-      "top": 25,
+      "left": 18,
+      "top": 76,
       "width": 120,
-      "height": 12
+      "height": 13
     },
     "p2p_tree": {
-      "left": 15,
-      "top": 53,
-      "width": 152,
-      "height": 200
+      "left": 18,
+      "top": 102,
+      "width": 231,
+      "height": 175
     },
     "p2p_tree_scrollbar": {
-      "left": 169,
-      "top": 53,
-      "height": 200
+      "left": 236,
+      "top": 102,
+      "height": 175
     },
     "detail_panel": {
-      "left": 184,
-      "top": 53,
-      "width": 152,
-      "height": 210
+      "left": 250,
+      "top": 75,
+      "width": 179,
+      "height": 207
+    },
+    "action_bar": {
+      "left": 10,
+      "top": 288,
+      "width": 420,
+      "height": 17
     }
   }
 }

@@ -35,17 +35,40 @@ public class ConfigModeSyncPacket implements CustomPacketPayload {
     private final HashMap<String, ChannelInfo> channelInfoMap;
     private final HashMap<String, P2PTypeInfo> p2pTypeInfoMap;
 
+    /**
+     * 当前配对源设备的位置（可为 null）。单独下发而不是从 P2PInfo.isPendingBind 推，
+     * 是因为切换配对源只需要重发一次包，不需要重跑 analysisP2P 全网格扫描。
+     */
+    private final P2PPosition pendingBindPosition;
+    /** 最近一次操作的结果码，见 {@code ActionStatus} */
+    private final int statusCode;
+    private final String statusParam;
+
     public ConfigModeSyncPacket(
             HashMap<String, String> p2pFrequencyAndAlias,
             HashMap<P2PPosition, ResourceLocation> p2pDevicesMap,
             HashMap<P2PPosition, P2PInfo> p2pInfoMap,
             HashMap<String, ChannelInfo> channelInfoMap,
-            HashMap<String, P2PTypeInfo> p2pTypeInfoMap) {
-        this.p2pFrequencyAndAlias = p2pFrequencyAndAlias;
-        this.p2pDevicesMap = p2pDevicesMap;
-        this.p2pInfoMap = p2pInfoMap;
-        this.channelInfoMap = channelInfoMap;
-        this.p2pTypeInfoMap = p2pTypeInfoMap;
+            HashMap<String, P2PTypeInfo> p2pTypeInfoMap,
+            P2PPosition pendingBindPosition,
+            int statusCode,
+            String statusParam) {
+        // 快照，不要直接持有调用方的 Map。
+        // 服务端构造此包，但真正写字节是在 Netty 线程上；而 ConfigModeMenu 的
+        // p2pFrequencyAndAlias / channelInfoMap / p2pTypeInfoMap 是长期存活的字段，
+        // 每次刷新都 clear() 后重新填充，遍历中撞上 clear() 就是
+        // ConcurrentModificationException（HashMap 迭代器 fail-fast）。
+        // 构造发生在服务端线程，与刷新同线程，拷贝期间不会有并发写入。
+        // ChannelInfo / P2PTypeInfo 每次刷新都是新建对象、内部列表也是新建，
+        // 旧对象此后不再被修改，因此浅拷贝足以让编码看到一张冻结的图。
+        this.p2pFrequencyAndAlias = new HashMap<>(p2pFrequencyAndAlias);
+        this.p2pDevicesMap = new HashMap<>(p2pDevicesMap);
+        this.p2pInfoMap = new HashMap<>(p2pInfoMap);
+        this.channelInfoMap = new HashMap<>(channelInfoMap);
+        this.p2pTypeInfoMap = new HashMap<>(p2pTypeInfoMap);
+        this.pendingBindPosition = pendingBindPosition;
+        this.statusCode = statusCode;
+        this.statusParam = statusParam == null ? "" : statusParam;
     }
 
     private static void encode(FriendlyByteBuf buffer, ConfigModeSyncPacket msg) {
@@ -87,6 +110,16 @@ public class ConfigModeSyncPacket implements CustomPacketPayload {
             buffer.writeUtf(entry.getKey());
             writeP2PTypeInfo(buffer, entry.getValue());
         }
+
+        // Encode pendingBindPosition + status
+        buffer.writeBoolean(msg.pendingBindPosition != null);
+        if (msg.pendingBindPosition != null) {
+            buffer.writeBlockPos(msg.pendingBindPosition.position());
+            buffer.writeEnum(msg.pendingBindPosition.direction());
+            buffer.writeUtf(msg.pendingBindPosition.dimension());
+        }
+        buffer.writeInt(msg.statusCode);
+        buffer.writeUtf(msg.statusParam);
     }
 
     private static ConfigModeSyncPacket decode(FriendlyByteBuf buffer) {
@@ -141,11 +174,25 @@ public class ConfigModeSyncPacket implements CustomPacketPayload {
             p2pTypeInfoMap.put(type, info);
         }
 
+        // Decode pendingBindPosition + status
+        P2PPosition pendingBindPosition = null;
+        if (buffer.readBoolean()) {
+            BlockPos pbPos = buffer.readBlockPos();
+            Direction pbDir = buffer.readEnum(Direction.class);
+            String pbDim = buffer.readUtf();
+            pendingBindPosition = new P2PPosition(pbPos, pbDir, pbDim);
+        }
+        int statusCode = buffer.readInt();
+        String statusParam = buffer.readUtf();
+
         return new ConfigModeSyncPacket(p2pFrequencyAndAlias,
                 p2pDevicesMap,
                 p2pInfoMap,
                 channelInfoMap,
-                p2pTypeInfoMap);
+                p2pTypeInfoMap,
+                pendingBindPosition,
+                statusCode,
+                statusParam);
     }
 
     private static void writeP2PInfo(FriendlyByteBuf buffer, P2PInfo info) {
@@ -285,6 +332,18 @@ public class ConfigModeSyncPacket implements CustomPacketPayload {
 
     public HashMap<String, P2PTypeInfo> getP2PTypeInfoMap() {
         return p2pTypeInfoMap;
+    }
+
+    public P2PPosition getPendingBindPosition() {
+        return pendingBindPosition;
+    }
+
+    public int getStatusCode() {
+        return statusCode;
+    }
+
+    public String getStatusParam() {
+        return statusParam;
     }
 
     @Override

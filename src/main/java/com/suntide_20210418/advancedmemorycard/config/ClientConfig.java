@@ -10,53 +10,43 @@ import net.neoforged.neoforge.common.ModConfigSpec;
  *   <li>渲染颜色设置</li>
  *   <li>高亮行为设置</li>
  * </ul>
+ *
+ * <p>注意：Minecraft 的默认字体只有一种字号（8px 高），不存在 CSS 意义上的
+ * font-size 层级。因此本模组的 GUI 用<b>颜色与留白</b>表达层级，所有文本统一
+ * 8px，不要试图靠“小一号字体”压行高。
  */
 public class ClientConfig {
     // ========== 高亮行为 ==========
     public final ModConfigSpec.ConfigValue<Boolean> rotateHeadOnHighlight;
     public final ModConfigSpec.IntValue p2pHighlightDurationSec;
 
-    // ========== P2P 树控件颜色 ==========
-    public final ModConfigSpec.IntValue treeColorBg;
-    public final ModConfigSpec.IntValue treeColorSelected;
-    public final ModConfigSpec.IntValue treeColorHover;
-
     // ========== P2P 树控件布局 ==========
     public final ModConfigSpec.IntValue treeIndentWidth;
     public final ModConfigSpec.IntValue treeRowHeight;
-    public final ModConfigSpec.IntValue treeIconTextSpacing;
-    public final ModConfigSpec.IntValue treeExpandIconWidth;
     public final ModConfigSpec.IntValue treeChannelWarningThreshold;
     public final ModConfigSpec.IntValue treeP2PNameMaxLength;
 
-    // ========== 详情面板颜色 ==========
-    public final ModConfigSpec.IntValue panelColorBg;
-    public final ModConfigSpec.IntValue panelColorTitle;
-    public final ModConfigSpec.IntValue panelColorLabel;
-    public final ModConfigSpec.IntValue panelColorValue;
-    public final ModConfigSpec.IntValue panelColorPlaceholder;
-    public final ModConfigSpec.IntValue panelColorSeparator;
-    public final ModConfigSpec.IntValue panelColorButtonAreaBg;
-    public final ModConfigSpec.IntValue panelStatusNotActive;
-    public final ModConfigSpec.IntValue panelStatusNotConnected;
-    public final ModConfigSpec.IntValue panelStatusConnected;
-
-    // ========== 详情面板布局 ==========
-    public final ModConfigSpec.IntValue panelButtonWidth;
-    public final ModConfigSpec.IntValue panelButtonHeight;
-    public final ModConfigSpec.IntValue panelButtonSpacing;
-    public final ModConfigSpec.IntValue panelInfoAreaHeightRatio;
-    public final ModConfigSpec.IntValue panelTotalHeightRatio;
-    public final ModConfigSpec.IntValue panelLineHeight;
-    public final ModConfigSpec.IntValue panelPaddingLeft;
-    public final ModConfigSpec.IntValue panelPaddingTop;
-    public final ModConfigSpec.IntValue panelButtonCountMax;
-
-    // ========== FlatButton 颜色 ==========
-    public final ModConfigSpec.IntValue buttonColorBg;
-    public final ModConfigSpec.IntValue buttonColorHover;
-    public final ModConfigSpec.IntValue buttonColorClick;
-    public final ModConfigSpec.IntValue buttonColorText;
+    // ========== GUI 语义色 ==========
+    public final ModConfigSpec.IntValue paletteTextPrimary;
+    public final ModConfigSpec.IntValue paletteTextSecondary;
+    public final ModConfigSpec.IntValue paletteTextTertiary;
+    public final ModConfigSpec.IntValue paletteAccent;
+    public final ModConfigSpec.IntValue paletteAccentText;
+    public final ModConfigSpec.IntValue paletteRowSelected;
+    public final ModConfigSpec.IntValue paletteRowHover;
+    public final ModConfigSpec.IntValue paletteSurface;
+    public final ModConfigSpec.IntValue paletteSurfaceHover;
+    public final ModConfigSpec.IntValue paletteDivider;
+    public final ModConfigSpec.IntValue paletteStatusOk;
+    public final ModConfigSpec.IntValue paletteStatusWarn;
+    public final ModConfigSpec.IntValue paletteStatusDanger;
+    public final ModConfigSpec.IntValue paletteChipOkBg;
+    public final ModConfigSpec.IntValue paletteChipAccentBg;
+    public final ModConfigSpec.IntValue paletteChipWarnBg;
+    public final ModConfigSpec.IntValue paletteChipDangerBg;
+    public final ModConfigSpec.IntValue paletteOverlayBg;
+    public final ModConfigSpec.IntValue paletteOverlayBorder;
+    public final ModConfigSpec.IntValue paletteOverlayShadow;
 
     // ========== 复制模式选择框颜色 ==========
     public final ModConfigSpec.IntValue copyColorStartPos;
@@ -92,134 +82,90 @@ public class ClientConfig {
 
         builder.pop(); // highlight
 
-        // ---- P2P 树控件颜色 ----
-        builder.comment("P2P 树控件颜色设置 (ARGB)").push("treeColors");
-
-        treeColorBg = builder
-                .comment("树控件背景色")
-                .defineInRange("bg", 0xFFADB0C4, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        treeColorSelected = builder
-                .comment("选中行背景色")
-                .defineInRange("selected", 0xFF4A6EA9, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        treeColorHover = builder
-                .comment("悬停行背景色")
-                .defineInRange("hover", 0xFF3A5A8A, Integer.MIN_VALUE, Integer.MAX_VALUE);
-
-        builder.pop(); // treeColors
-
-        // ---- P2P 树控件布局 ----
+        // ---- 树布局 ----
         builder.comment("P2P 树控件布局设置").push("treeLayout");
 
-        treeIndentWidth = builder
-                .comment("每级缩进像素")
-                .defineInRange("indentWidth", 2, 0, 100);
         treeRowHeight = builder
-                .comment("每行高度（像素）")
-                .defineInRange("rowHeight", 12, 4, 64);
-        treeIconTextSpacing = builder
-                .comment("图标与文字间距（像素）")
-                .defineInRange("iconTextSpacing", 4, 0, 32);
-        treeExpandIconWidth = builder
-                .comment("展开/收起图标宽度（像素）")
-                .defineInRange("expandIconWidth", 2, 0, 16);
+                .comment("每行高度（像素）。8px 字体 + 上下各 3px 呼吸 = 14")
+                .defineInRange("rowHeight", 14, 10, 32);
+        treeIndentWidth = builder
+                .comment("每级缩进像素。10px/级 才能让三级层级肉眼可分")
+                .defineInRange("indentWidth", 10, 0, 40);
         treeChannelWarningThreshold = builder
-                .comment("频道剩余数低于此值显示黄色警告")
+                .comment("频道剩余数低于此值时汇总列转警告色")
                 .defineInRange("channelWarningThreshold", 8, 0, 128);
         treeP2PNameMaxLength = builder
                 .comment("P2P 设备名称最大显示长度（超出截断）")
-                .defineInRange("p2pNameMaxLength", 20, 5, 100);
+                .defineInRange("nameMaxLength", 14, 4, 64);
 
         builder.pop(); // treeLayout
 
-        // ---- 详情面板颜色 ----
-        builder.comment("详情面板颜色设置 (ARGB)").push("panelColors");
+        // ---- 语义色板 ----
+        builder.comment("GUI 语义色（ARGB）。默认值已在 SINK #ADB0C4 / CARD #CBCCD4 上验证对比度 >= 4.5:1")
+                .push("palette");
 
-        panelColorBg = builder
-                .comment("面板背景色")
-                .defineInRange("bg", 0xFF9A9FB4, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        panelColorTitle = builder
-                .comment("标题文字颜色")
-                .defineInRange("title", 0xFFFFFFFF, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        panelColorLabel = builder
-                .comment("标签文字颜色")
-                .defineInRange("label", 0xFF000000, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        panelColorValue = builder
-                .comment("值文字颜色")
-                .defineInRange("value", 0xFFFFFFFF, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        panelColorPlaceholder = builder
-                .comment("占位符文字颜色")
-                .defineInRange("placeholder", 0xFF888888, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        panelColorSeparator = builder
-                .comment("分隔线颜色")
-                .defineInRange("separator", 0xFF888888, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        panelColorButtonAreaBg = builder
-                .comment("按钮区域背景色")
-                .defineInRange("buttonAreaBg", 0xFF9A9FB4, Integer.MIN_VALUE, Integer.MAX_VALUE);
+        paletteTextPrimary = builder
+                .comment("主文本（名称、取值）")
+                .defineInRange("textPrimary", 0xFF16191F, Integer.MIN_VALUE, Integer.MAX_VALUE);
+        paletteTextSecondary = builder
+                .comment("次要文本（频段、计数、表头）")
+                .defineInRange("textSecondary", 0xFF3B4152, Integer.MIN_VALUE, Integer.MAX_VALUE);
+        paletteTextTertiary = builder
+                .comment("辅助文本（属性标签、占位提示）")
+                .defineInRange("textTertiary", 0xFF4A5265, Integer.MIN_VALUE, Integer.MAX_VALUE);
+        paletteAccent = builder
+                .comment("强调色（主按钮底、当前可编辑字段）")
+                .defineInRange("accent", 0xFF1B4483, Integer.MIN_VALUE, Integer.MAX_VALUE);
+        paletteAccentText = builder
+                .comment("强调色上的文字")
+                .defineInRange("accentText", 0xFFFFFFFF, Integer.MIN_VALUE, Integer.MAX_VALUE);
+        paletteRowSelected = builder
+                .comment("选中行底色")
+                .defineInRange("rowSelected", 0xFF2E4F86, Integer.MIN_VALUE, Integer.MAX_VALUE);
+        paletteRowHover = builder
+                .comment("悬停行底色")
+                .defineInRange("rowHover", 0xFFBEC3D4, Integer.MIN_VALUE, Integer.MAX_VALUE);
+        paletteSurface = builder
+                .comment("输入框 / 槽位底色")
+                .defineInRange("surface", 0xFFDDE1EA, Integer.MIN_VALUE, Integer.MAX_VALUE);
+        paletteSurfaceHover = builder
+                .comment("输入框 / 槽位悬停底色")
+                .defineInRange("surfaceHover", 0xFFE8EBF2, Integer.MIN_VALUE, Integer.MAX_VALUE);
+        paletteDivider = builder
+                .comment("分隔线 / 细描边")
+                .defineInRange("divider", 0xFF8C93A6, Integer.MIN_VALUE, Integer.MAX_VALUE);
+        paletteStatusOk = builder
+                .comment("状态：连通")
+                .defineInRange("statusOk", 0xFF084D1C, Integer.MIN_VALUE, Integer.MAX_VALUE);
+        paletteStatusWarn = builder
+                .comment("状态：降级 / 未连通")
+                .defineInRange("statusWarn", 0xFF5C3800, Integer.MIN_VALUE, Integer.MAX_VALUE);
+        paletteStatusDanger = builder
+                .comment("状态：异常 / 破坏性操作")
+                .defineInRange("statusDanger", 0xFF7A0F0F, Integer.MIN_VALUE, Integer.MAX_VALUE);
+        paletteChipOkBg = builder
+                .comment("chip 底色：正常")
+                .defineInRange("chipOkBg", 0xFFD6E8DA, Integer.MIN_VALUE, Integer.MAX_VALUE);
+        paletteChipAccentBg = builder
+                .comment("chip 底色：强调")
+                .defineInRange("chipAccentBg", 0xFFD5E0F2, Integer.MIN_VALUE, Integer.MAX_VALUE);
+        paletteChipWarnBg = builder
+                .comment("chip 底色：警告")
+                .defineInRange("chipWarnBg", 0xFFEDE2CC, Integer.MIN_VALUE, Integer.MAX_VALUE);
+        paletteChipDangerBg = builder
+                .comment("chip 底色：危险")
+                .defineInRange("chipDangerBg", 0xFFF2DCDC, Integer.MIN_VALUE, Integer.MAX_VALUE);
+        paletteOverlayBg = builder
+                .comment("浮层底色（频段下拉）")
+                .defineInRange("overlayBg", 0xFFE7EBF3, Integer.MIN_VALUE, Integer.MAX_VALUE);
+        paletteOverlayBorder = builder
+                .comment("浮层描边")
+                .defineInRange("overlayBorder", 0xFF5E6678, Integer.MIN_VALUE, Integer.MAX_VALUE);
+        paletteOverlayShadow = builder
+                .comment("浮层投影（含透明度）")
+                .defineInRange("overlayShadow", 0x40000000, Integer.MIN_VALUE, Integer.MAX_VALUE);
 
-        builder.comment("详情面板状态颜色").push("status");
-        panelStatusNotActive = builder
-                .comment("未激活状态颜色")
-                .defineInRange("notActive", 0xFF000000, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        panelStatusNotConnected = builder
-                .comment("未连接状态颜色")
-                .defineInRange("notConnected", 0xFFFC5454, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        panelStatusConnected = builder
-                .comment("已连接状态颜色")
-                .defineInRange("connected", 0xFF54FC54, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        builder.pop(); // status
-
-        builder.pop(); // panelColors
-
-        // ---- 详情面板布局 ----
-        builder.comment("详情面板布局设置").push("panelLayout");
-
-        panelButtonWidth = builder
-                .comment("按钮宽度")
-                .defineInRange("buttonWidth", 46, 10, 200);
-        panelButtonHeight = builder
-                .comment("按钮高度")
-                .defineInRange("buttonHeight", 14, 6, 64);
-        panelButtonSpacing = builder
-                .comment("按钮间距")
-                .defineInRange("buttonSpacing", 4, 0, 32);
-        panelInfoAreaHeightRatio = builder
-                .comment("信息区高度比例分子（3/4）")
-                .defineInRange("infoAreaHeightRatio", 3, 1, 10);
-        panelTotalHeightRatio = builder
-                .comment("总高度比例分母（3/4）")
-                .defineInRange("totalHeightRatio", 4, 1, 10);
-        panelLineHeight = builder
-                .comment("行高")
-                .defineInRange("lineHeight", 12, 6, 64);
-        panelPaddingLeft = builder
-                .comment("左侧内边距")
-                .defineInRange("paddingLeft", 4, 0, 64);
-        panelPaddingTop = builder
-                .comment("顶部内边距")
-                .defineInRange("paddingTop", 4, 0, 64);
-        panelButtonCountMax = builder
-                .comment("最大按钮数量")
-                .defineInRange("buttonCountMax", 6, 1, 12);
-
-        builder.pop(); // panelLayout
-
-        // ---- FlatButton 颜色 ----
-        builder.comment("通用按钮颜色设置 (ARGB)").push("buttonColors");
-
-        buttonColorBg = builder
-                .comment("按钮默认背景色")
-                .defineInRange("bg", 0xFF7E8299, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        buttonColorHover = builder
-                .comment("按钮悬停背景色")
-                .defineInRange("hover", 0xFF3A5A8A, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        buttonColorClick = builder
-                .comment("按钮点击按下背景色")
-                .defineInRange("click", 0xFF2A4A7A, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        buttonColorText = builder
-                .comment("按钮文字颜色")
-                .defineInRange("text", 0xFFFFFFFF, Integer.MIN_VALUE, Integer.MAX_VALUE);
-
-        builder.pop(); // buttonColors
+        builder.pop(); // palette
 
         // ---- 复制模式选择框颜色 ----
         builder.comment("复制模式选择框颜色 (RGB)").push("copyColors");

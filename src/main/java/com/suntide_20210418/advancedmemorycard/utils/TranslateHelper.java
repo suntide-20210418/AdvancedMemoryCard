@@ -101,7 +101,7 @@ public class TranslateHelper {
         public static final String BUTTON_REFRESH = BUTTON_PREFIX + "refresh";
         public static final String BUTTON_CANCEL = BUTTON_PREFIX + "cancel";
         public static final String BUTTON_BIND = BUTTON_PREFIX + "bind";
-        public static final String BUTTON_LOCATE = BUTTON_PREFIX + "locate";
+        public static final String BUTTON_TELEPORT = BUTTON_PREFIX + "teleport";
         public static final String BUTTON_INIT_P2P = BUTTON_PREFIX + "init_p2p";
         public static final String BUTTON_ASSIGN_FREQ = BUTTON_PREFIX + "assign_freq";
 
@@ -114,13 +114,10 @@ public class TranslateHelper {
         public static final String STATUS_INPUT = STATUS_PREFIX + "input";
         public static final String STATUS_CURRENT_SELECTED = STATUS_PREFIX + "current_selected";
 
-        // 聊天消息（高亮/传送相关）
+        // 聊天消息（高亮相关）
         public static final String CHAT_PREFIX = GUI_PREFIX + "advanced_memory_card.chat.";
         public static final String CHAT_LOCATION_INFO = CHAT_PREFIX + "location_info";
-        public static final String CHAT_CLICK_TO_TELEPORT = CHAT_PREFIX + "click_to_teleport";
-        public static final String CHAT_TELEPORT_HOVER = CHAT_PREFIX + "teleport_hover";
         public static final String CHAT_FREQ_HIGHLIGHT_HEADER = CHAT_PREFIX + "freq_highlight_header";
-        public static final String CHAT_TELEPORT_BUTTON = CHAT_PREFIX + "teleport_button";
 
         // 配置模式相关
         public static final String CONFIG_MODE_PREFIX = GUI_PREFIX + "advanced_memory_card.player.config.";
@@ -136,6 +133,53 @@ public class TranslateHelper {
 
         // 频段 0（未连接）不是可绑定目标，绑定它等于静默解绑
         public static final String TOOLTIP_UNCONNECTED_NOT_BINDABLE = TOOLTIP_PREFIX + "unconnected.not_bindable";
+
+        // ===== 配对条 / 状态行 / 树列头（新 UI）=====
+        public static final String PAIR_PREFIX = GUI_PREFIX + "advanced_memory_card.pair.";
+        public static final String PAIR_SOURCE = PAIR_PREFIX + "source";
+        public static final String PAIR_TARGET = PAIR_PREFIX + "target";
+        public static final String PAIR_TARGET_PLACEHOLDER = PAIR_PREFIX + "target_placeholder";
+        public static final String PAIR_SOURCE_PLACEHOLDER = PAIR_PREFIX + "source_placeholder";
+        public static final String PAIR_CLEAR = PAIR_PREFIX + "clear";
+        public static final String PAIR_NEW_FREQ = PAIR_PREFIX + "new_freq";
+        public static final String PAIR_NO_CHANNEL = PAIR_PREFIX + "no_channel";
+        public static final String PAIR_UNNAMED = PAIR_PREFIX + "unnamed";
+        public static final String PAIR_SOURCE_MULTI = PAIR_PREFIX + "source_multi";
+
+        public static final String STATUS_LINE_PREFIX = GUI_PREFIX + "advanced_memory_card.status_line.";
+        public static final String STATUS_LINE_IDLE = STATUS_LINE_PREFIX + "idle";
+        public static final String STATUS_LINE_BIND_OK = STATUS_LINE_PREFIX + "bind_ok";
+        public static final String STATUS_LINE_BIND_NO_TARGET = STATUS_LINE_PREFIX + "bind_no_target";
+        public static final String STATUS_LINE_BIND_INVALID_FREQ = STATUS_LINE_PREFIX + "bind_invalid_freq";
+        public static final String STATUS_LINE_BIND_NO_GRID = STATUS_LINE_PREFIX + "bind_no_grid";
+        public static final String STATUS_LINE_SOURCE_SELECTED = STATUS_LINE_PREFIX + "source_selected";
+        public static final String STATUS_LINE_ASSIGNED = STATUS_LINE_PREFIX + "assigned";
+        public static final String STATUS_LINE_RENAMED = STATUS_LINE_PREFIX + "renamed";
+        public static final String STATUS_LINE_REFRESHED = STATUS_LINE_PREFIX + "refreshed";
+        public static final String STATUS_LINE_RENAME_FAILED = STATUS_LINE_PREFIX + "rename_failed";
+        public static final String STATUS_LINE_BIND_BATCH_OK = STATUS_LINE_PREFIX + "bind_batch_ok";
+        public static final String STATUS_LINE_BIND_BATCH_PARTIAL = STATUS_LINE_PREFIX + "bind_batch_partial";
+
+        public static final String TREE_COL_PREFIX = GUI_PREFIX + "advanced_memory_card.tree_col.";
+        public static final String TREE_COL_NAME = TREE_COL_PREFIX + "name";
+        public static final String TREE_COL_FREQ = TREE_COL_PREFIX + "frequency";
+        public static final String TREE_COL_SUMMARY = TREE_COL_PREFIX + "summary";
+
+        public static final String ACTION_BAR_PREFIX = GUI_PREFIX + "advanced_memory_card.action_bar.";
+        public static final String ACTION_BAR_BATCH = ACTION_BAR_PREFIX + "batch";
+        public static final String ACTION_BAR_EXIT_BATCH = ACTION_BAR_PREFIX + "exit_batch";
+        public static final String ACTION_BAR_HINT = ACTION_BAR_PREFIX + "hint";
+        public static final String ACTION_BAR_HINT_READY = ACTION_BAR_PREFIX + "hint_ready";
+        public static final String ACTION_BAR_BIND = ACTION_BAR_PREFIX + "bind";
+        public static final String ACTION_BAR_HINT_READY_MULTI = ACTION_BAR_PREFIX + "hint_ready_multi";
+
+        public static final String TREE_SUMMARY_CHANNEL = GUI_PREFIX + "advanced_memory_card.tree.summary_channel";
+        public static final String TREE_SUMMARY_CHANNEL_PLAIN = GUI_PREFIX + "advanced_memory_card.tree.summary_channel_plain";
+        public static final String TREE_SUMMARY_TYPE = GUI_PREFIX + "advanced_memory_card.tree.summary_type";
+        public static final String TREE_ROLE_INPUT = GUI_PREFIX + "advanced_memory_card.tree.role_input";
+        public static final String TREE_ROLE_OUTPUT = GUI_PREFIX + "advanced_memory_card.tree.role_output";
+        public static final String TREE_PREFIX_INPUT = GUI_PREFIX + "advanced_memory_card.tree.prefix_input";
+        public static final String TREE_PREFIX_OUTPUT = GUI_PREFIX + "advanced_memory_card.tree.prefix_output";
     }
 
     /**
@@ -537,8 +581,9 @@ public class TranslateHelper {
             return translate(Keys.BUTTON_BIND);
         }
 
-        public static MutableComponent locate() {
-            return translate(Keys.BUTTON_LOCATE);
+        /** 「传送」按钮：仅在 {@code server.allowTeleport} 开启时显示。 */
+        public static MutableComponent teleport() {
+            return translate(Keys.BUTTON_TELEPORT);
         }
 
         public static MutableComponent initP2P() {
@@ -577,26 +622,97 @@ public class TranslateHelper {
         }
     }
 
+    /** 配对条相关翻译 */
+    public static class Pair {
+        public static MutableComponent source() {
+            return translate(Keys.PAIR_SOURCE);
+        }
+
+        public static MutableComponent target() {
+            return translate(Keys.PAIR_TARGET);
+        }
+
+        public static MutableComponent targetPlaceholder() {
+            return translate(Keys.PAIR_TARGET_PLACEHOLDER);
+        }
+
+        public static MutableComponent sourcePlaceholder() {
+            return translate(Keys.PAIR_SOURCE_PLACEHOLDER);
+        }
+
+        public static MutableComponent clearTooltip() {
+            return translate(Keys.PAIR_CLEAR);
+        }
+
+        public static MutableComponent newFrequency() {
+            return translate(Keys.PAIR_NEW_FREQ);
+        }
+
+        public static MutableComponent noChannel() {
+            return translate(Keys.PAIR_NO_CHANNEL);
+        }
+
+        public static MutableComponent unnamed() {
+            return translate(Keys.PAIR_UNNAMED);
+        }
+
+        public static MutableComponent sourceMulti(String count) {
+            return translate(Keys.PAIR_SOURCE_MULTI, count);
+        }
+    }
+
+    /** 底部操作条相关翻译 */
+    public static class ActionBar {
+        public static MutableComponent hint() {
+            return translate(Keys.ACTION_BAR_HINT);
+        }
+
+        public static MutableComponent hintReady(String source, String freq) {
+            return translate(Keys.ACTION_BAR_HINT_READY, source, freq);
+        }
+
+        public static MutableComponent hintReadyMulti(String count, String freq) {
+            return translate(Keys.ACTION_BAR_HINT_READY_MULTI, count, freq);
+        }
+
+        public static MutableComponent bind() {
+            return translate(Keys.ACTION_BAR_BIND);
+        }
+
+        /** 「批量操作」按钮：点一下进批量模式。 */
+        public static MutableComponent batch() {
+            return translate(Keys.ACTION_BAR_BATCH);
+        }
+
+        /** 已经在批量模式里时按钮改叫「退出批量操作」。 */
+        public static MutableComponent exitBatch() {
+            return translate(Keys.ACTION_BAR_EXIT_BATCH);
+        }
+    }
+
+    /** 树列头相关翻译 */
+    public static class TreeColumn {
+        public static MutableComponent name() {
+            return translate(Keys.TREE_COL_NAME);
+        }
+
+        public static MutableComponent frequency() {
+            return translate(Keys.TREE_COL_FREQ);
+        }
+
+        public static MutableComponent summary() {
+            return translate(Keys.TREE_COL_SUMMARY);
+        }
+    }
+
     /** 聊天消息相关翻译 */
     public static class Chat {
         public static MutableComponent locationInfo(Object... args) {
             return translate(Keys.CHAT_LOCATION_INFO, args);
         }
 
-        public static MutableComponent clickToTeleport() {
-            return translate(Keys.CHAT_CLICK_TO_TELEPORT);
-        }
-
-        public static MutableComponent teleportHover(Object... args) {
-            return translate(Keys.CHAT_TELEPORT_HOVER, args);
-        }
-
         public static MutableComponent freqHighlightHeader(Object... args) {
             return translate(Keys.CHAT_FREQ_HIGHLIGHT_HEADER, args);
-        }
-
-        public static MutableComponent teleportButton() {
-            return translate(Keys.CHAT_TELEPORT_BUTTON);
         }
     }
 }

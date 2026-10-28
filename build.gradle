@@ -12,10 +12,22 @@ tasks.named('wrapper', Wrapper).configure {
 version = mod_version
 group = mod_group_id
 
+repositories.clear()
 repositories {
     maven {
         name = 'cursemaven'
         url = uri("https://www.cursemaven.com")
+    }
+    maven {
+        url = "https://libraries.minecraft.net/"
+    }
+
+    maven {
+        url = "https://neoforged.forgecdn.net/releases"
+    }
+
+    maven {
+        url = "https://neoforged.forgecdn.net/mojang-meta"
     }
 }
 
