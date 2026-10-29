@@ -372,7 +372,11 @@ public class ConfigModeMenu extends Container implements ConfigModeActionPacket.
     // ==================== 操作实现 ====================
 
     private void setChannelAlias(String data) {
-        String[] parts = data.split("\\|");
+        // 限制为 2 段：别名本身可能包含分隔符
+        String[] parts = data.split("\\|", 2);
+        if (parts.length < 2) {
+            return;
+        }
         String frequency = parts[0];
         String alias = parts[1];
         log("[amc] set_channel_alias data='{}' manager={}", data, p2pManager != null);
@@ -384,7 +388,10 @@ public class ConfigModeMenu extends Container implements ConfigModeActionPacket.
     }
 
     private void setP2PAlias(String data) {
-        String[] parts = data.split("::");
+        String[] parts = data.split("::", 2);
+        if (parts.length < 2) {
+            return;
+        }
         String positionData = parts[0];
         String alias = parts[1];
         PartP2PTunnel p2p = parsingP2P(positionData);
