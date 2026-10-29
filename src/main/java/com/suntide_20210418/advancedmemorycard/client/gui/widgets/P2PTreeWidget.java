@@ -358,7 +358,10 @@ public class P2PTreeWidget {
             flatNodes.add(typeNode);
 
             List<String> sortedFreqs = new ArrayList<>(freqMap.keySet());
-            sortedFreqs.sort(Comparator.comparingInt(f -> Integer.parseInt(f, 16)));
+            // 频段是 %016X 的 long（rv3 的 getFrequency 就是 long）。这里必须用 parseLong：
+            // Integer.parseInt 对 "80000000" 这类超出 int 范围的值会抛 NumberFormatException，
+            // 而真实频段（如 currentTimeMillis 级）100% 超出，会在建树时直接崩掉界面。
+            sortedFreqs.sort(Comparator.comparingLong(f -> Long.parseLong(f, 16)));
             for (String freq : sortedFreqs) {
                 List<P2PInfo> p2ps = freqMap.get(freq);
                 ChannelInfo channelInfo = channelInfoMap.get(freq + "|" + typeName);
@@ -525,6 +528,7 @@ public class P2PTreeWidget {
         TreeNode clicked = getNodeAt(mouseX, mouseY);
         if (clicked != null) {
             if (clicked.type == NodeType.SEARCH_HEADER) return false;
+            com.suntide_20210418.advancedmemorycard.client.gui.ClickSound.play();
             toggleNode(clicked);
             selectNode(clicked);
             return true;
