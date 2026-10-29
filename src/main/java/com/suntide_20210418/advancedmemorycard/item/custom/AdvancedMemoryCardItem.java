@@ -57,6 +57,10 @@ public class AdvancedMemoryCardItem extends ToolMemoryCard {
     @Override
     public boolean onItemUseFirst(ItemStack stack, EntityPlayer player, World world, int x, int y, int z, int side,
         float hitX, float hitY, float hitZ) {
+        // 探针放在 isRemote 判断之前：这一行在客户端和服务端各打一次，
+        // 用来区分「C08 没发出去」和「发出去但服务端没分派到物品」。
+        logClick(player, world, x, y, z, null);
+
         if (world.isRemote) {
             // 客户端必须返回 false：若在这里返回 true，PlayerControllerMP.onPlayerRightClick 会在
             // 发送方块交互包(C08) 之前直接 return，服务端根本收不到点击。
@@ -64,7 +68,6 @@ public class AdvancedMemoryCardItem extends ToolMemoryCard {
         }
 
         CardMode cardMode = CardMode.of(stack);
-        logClick(player, world, x, y, z, cardMode);
 
         if (cardMode instanceof CopyMode && player.isSneaking()) {
             boolean copied = copyFromTarget(player, world, x, y, z, ForgeDirection.getOrientation(side), stack);
@@ -108,8 +111,8 @@ public class AdvancedMemoryCardItem extends ToolMemoryCard {
     }
 
     /**
-     * 服务端每次方块右键打一行，用于区分「我们的 onItemUseFirst 没被调用」和
-     * 「调用了但没命中目标」。定位完成后可以删掉。
+     * 服务端/客户端各打一行，用于区分「C08 没发出去」和「发出去但服务端没分派到物品」。
+     * 定位完成后可以删掉。
      */
     private static void logClick(EntityPlayer player, World world, int x, int y, int z, CardMode mode) {
         org.apache.logging.log4j.Logger logger = AdvancedMemoryCardMod.getLogger();
@@ -118,11 +121,11 @@ public class AdvancedMemoryCardItem extends ToolMemoryCard {
         }
         TileEntity tileEntity = world.getTileEntity(x, y, z);
         logger.info(
-            "[amc] click at {},{},{} mode={} sneaking={} tile={}",
+            "[amc] click side={} at {},{},{} sneaking={} tile={}",
+            world.isRemote ? "client" : "server",
             x,
             y,
             z,
-            mode.getType(),
             player.isSneaking(),
             tileEntity == null ? "null"
                 : tileEntity.getClass()
@@ -224,6 +227,13 @@ public class AdvancedMemoryCardItem extends ToolMemoryCard {
 
     @Override
     public ItemStack onItemRightClick(ItemStack stack, World world, EntityPlayer player) {
+        org.apache.logging.log4j.Logger logger = AdvancedMemoryCardMod.getLogger();
+        if (logger != null) {
+            logger.info(
+                "[amc] right-click {} sneaking={}",
+                world.isRemote ? "client" : "server",
+                player.isSneaking());
+        }
         if (!world.isRemote) {
             if (player.isSneaking() && CardMode.of(stack) instanceof CopyMode) {
                 return stack;

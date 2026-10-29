@@ -25,7 +25,11 @@ public class CommonProxy {
     // 待打开 GUI 时由服务端暂存的 P2PManager（按玩家 UUID 索引），供 GuiHandler 在服务端构造容器时取出。
     private static final Map<UUID, P2PManager> pendingManagers = new HashMap<>();
 
-    public void preInit(FMLPreInitializationEvent event) {}
+    public void preInit(FMLPreInitializationEvent event) {
+        // 临时探针：观察服务端是否收到右键交互（定位完删除）
+        net.minecraftforge.common.MinecraftForge.EVENT_BUS
+            .register(new com.suntide_20210418.advancedmemorycard.debug.InteractionProbe());
+    }
 
     public void init(FMLInitializationEvent event) {}
 
