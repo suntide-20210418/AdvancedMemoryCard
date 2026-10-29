@@ -96,6 +96,10 @@ public class ConfigMode extends CardMode {
 
     @Override
     public ItemStack onItemUse(World world, EntityPlayer player) {
+        // 配置模式是对着 P2P 部件右键开面板，右键空气给个提示，否则玩家只会觉得「没反应」
+        if (!world.isRemote && player != null) {
+            player.addChatMessage(new ChatComponentText(TranslateHelper.Chat.noP2PFound()));
+        }
         return player.getHeldItem();
     }
 

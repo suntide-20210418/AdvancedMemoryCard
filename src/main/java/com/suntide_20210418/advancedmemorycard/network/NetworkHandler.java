@@ -49,6 +49,8 @@ public class NetworkHandler {
             CopyOptionsSyncPacket.class,
             discriminator++,
             Side.CLIENT);
+        // id 7：客户端发起的方块右键交互（不依赖原版 C08）
+        INSTANCE.registerMessage(CardInteractPacket.Handler.class, CardInteractPacket.class, discriminator++, Side.SERVER);
     }
 
     public static void sendToServer(IMessage msg) {

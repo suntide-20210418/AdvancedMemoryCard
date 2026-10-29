@@ -14,6 +14,8 @@ import net.minecraftforge.common.util.ForgeDirection;
 
 import com.suntide_20210418.advancedmemorycard.AdvancedMemoryCardMod;
 import com.suntide_20210418.advancedmemorycard.item.ModCreativeModeTabs;
+import com.suntide_20210418.advancedmemorycard.network.CardInteractPacket;
+import com.suntide_20210418.advancedmemorycard.network.NetworkHandler;
 
 import appeng.api.implementations.items.IMemoryCard;
 import appeng.api.implementations.items.MemoryCardMessages;
@@ -57,19 +59,38 @@ public class AdvancedMemoryCardItem extends ToolMemoryCard {
     @Override
     public boolean onItemUseFirst(ItemStack stack, EntityPlayer player, World world, int x, int y, int z, int side,
         float hitX, float hitY, float hitZ) {
-        // 探针放在 isRemote 判断之前：这一行在客户端和服务端各打一次，
-        // 用来区分「C08 没发出去」和「发出去但服务端没分派到物品」。
         logClick(player, world, x, y, z, null);
 
         if (world.isRemote) {
-            // 客户端必须返回 false：若在这里返回 true，PlayerControllerMP.onPlayerRightClick 会在
-            // 发送方块交互包(C08) 之前直接 return，服务端根本收不到点击。
+            // 客户端不再走原版分派：直接发我们自己的包，并返回 true 阻止
+            // PlayerControllerMP 继续执行 block.onBlockActivated（AE2 的线缆/部件逻辑就在那里）
+            // 以及随后必然发出的 C08。服务端收到我们的包后统一执行。
+            NetworkHandler.sendToServer(
+                new CardInteractPacket(x, y, z, side, hitX, hitY, hitZ, player.isSneaking()));
+            return true;
+        }
+
+        return handleBlockInteract(player, world, x, y, z, side, hitX, hitY, hitZ, player.isSneaking());
+    }
+
+    /**
+     * 方块右键的统一入口（服务端）。由 {@link CardInteractPacket} 调用，
+     * 也作为服务端直接分派时的兜底。
+     *
+     * @param sneaking 用包里带的状态而不是 {@code player.isSneaking()}：服务端的潜行状态有网络延迟，
+     *                 而「潜行 = 复制来源」这个分支必须和玩家按下的那一刻一致。
+     */
+    public boolean handleBlockInteract(EntityPlayer player, World world, int x, int y, int z, int side, float hitX,
+        float hitY, float hitZ, boolean sneaking) {
+        ItemStack stack = player.getHeldItem();
+        if (stack == null || !(stack.getItem() instanceof AdvancedMemoryCardItem)) {
             return false;
         }
+        logClick(player, world, x, y, z, null);
 
         CardMode cardMode = CardMode.of(stack);
 
-        if (cardMode instanceof CopyMode && player.isSneaking()) {
+        if (cardMode instanceof CopyMode && sneaking) {
             boolean copied = copyFromTarget(player, world, x, y, z, ForgeDirection.getOrientation(side), stack);
             if (copied && CopyOptions.of(stack)
                 .isAutoOpen()) {
