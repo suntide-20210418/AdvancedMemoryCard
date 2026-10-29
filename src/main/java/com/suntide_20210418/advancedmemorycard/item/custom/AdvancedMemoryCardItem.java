@@ -64,6 +64,7 @@ public class AdvancedMemoryCardItem extends ToolMemoryCard {
         }
 
         CardMode cardMode = CardMode.of(stack);
+        logClick(player, world, x, y, z, cardMode);
 
         if (cardMode instanceof CopyMode && player.isSneaking()) {
             boolean copied = copyFromTarget(player, world, x, y, z, ForgeDirection.getOrientation(side), stack);
@@ -104,6 +105,28 @@ public class AdvancedMemoryCardItem extends ToolMemoryCard {
     private static boolean isAeTarget(World world, int x, int y, int z) {
         TileEntity tileEntity = world.getTileEntity(x, y, z);
         return tileEntity instanceof AEBaseTile || tileEntity instanceof IPartHost;
+    }
+
+    /**
+     * 服务端每次方块右键打一行，用于区分「我们的 onItemUseFirst 没被调用」和
+     * 「调用了但没命中目标」。定位完成后可以删掉。
+     */
+    private static void logClick(EntityPlayer player, World world, int x, int y, int z, CardMode mode) {
+        org.apache.logging.log4j.Logger logger = AdvancedMemoryCardMod.getLogger();
+        if (logger == null) {
+            return;
+        }
+        TileEntity tileEntity = world.getTileEntity(x, y, z);
+        logger.info(
+            "[amc] click at {},{},{} mode={} sneaking={} tile={}",
+            x,
+            y,
+            z,
+            mode.getType(),
+            player.isSneaking(),
+            tileEntity == null ? "null"
+                : tileEntity.getClass()
+                    .getSimpleName());
     }
 
     private static void openCopyGui(EntityPlayer player, World world) {
