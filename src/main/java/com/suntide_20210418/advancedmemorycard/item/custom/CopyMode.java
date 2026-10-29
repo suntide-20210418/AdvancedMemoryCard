@@ -11,19 +11,19 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.MovingObjectPosition;
-import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
 import com.suntide_20210418.advancedmemorycard.AdvancedMemoryCardMod;
 import com.suntide_20210418.advancedmemorycard.config.ModConfigs;
 import com.suntide_20210418.advancedmemorycard.utils.BlockPos;
+import com.suntide_20210418.advancedmemorycard.utils.SettingsApplier;
+import com.suntide_20210418.advancedmemorycard.utils.TranslateHelper;
 
 import appeng.api.parts.IPart;
 import appeng.api.parts.IPartHost;
 import appeng.items.tools.ToolMemoryCard;
 import appeng.tile.AEBaseTile;
-import appeng.util.SettingsFrom;
 
 public class CopyMode extends CardMode {
 
@@ -105,7 +105,16 @@ public class CopyMode extends CardMode {
         if (this.isCopying) {
             ToolMemoryCard toolMemoryCard = (ToolMemoryCard) stack.getItem();
             NBTTagCompound data = toolMemoryCard.getData(stack);
-            int count = 0;
+            CopyOptions opts = CopyOptions.of(stack);
+
+            if (opts.mask() == 0) {
+                // 全不选时粘贴等于什么都不做，直接提示比"Pasted 0 blocks"清楚，且不消耗选区
+                player.addChatMessage(new ChatComponentText(TranslateHelper.CopyMode.optionsEmpty()));
+                return stack;
+            }
+
+            int applied = 0;
+            int skipped = 0;
 
             if (startPos != null && endPos != null) {
                 int minX = Math.min(startPos.getX(), endPos.getX());
@@ -119,17 +128,34 @@ public class CopyMode extends CardMode {
                         for (int zi = minZ; zi <= maxZ; zi++) {
                             TileEntity blockEntity = world.getTileEntity(xi, yi, zi);
                             if (blockEntity instanceof AEBaseTile) {
-                                AEBaseTile aeBlockEntity = (AEBaseTile) blockEntity;
-                                aeBlockEntity.uploadSettings(SettingsFrom.MEMORY_CARD, data);
-                                count++;
+                                // 1.7.10 的 for-each 不能直接遍历枚举值做 switch，用 if 分支记结果
+                                switch (SettingsApplier.applyTile((AEBaseTile) blockEntity, data, opts)) {
+                                    case APPLIED:
+                                        applied++;
+                                        break;
+                                    case SKIPPED:
+                                        skipped++;
+                                        break;
+                                    default:
+                                        break;
+                                }
                             }
                             if (blockEntity instanceof IPartHost) {
                                 IPartHost partHost = (IPartHost) blockEntity;
                                 for (ForgeDirection direction : ForgeDirection.values()) {
                                     IPart part = partHost.getPart(direction);
-                                    if (part != null) {
-                                        part.onActivate(player, Vec3.createVectorHelper(xi + 0.5, yi + 0.5, zi + 0.5));
-                                        count++;
+                                    if (part == null) {
+                                        continue;
+                                    }
+                                    switch (SettingsApplier.applyPart(part, data, opts, player)) {
+                                        case APPLIED:
+                                            applied++;
+                                            break;
+                                        case SKIPPED:
+                                            skipped++;
+                                            break;
+                                        default:
+                                            break;
                                     }
                                 }
                             }
@@ -138,7 +164,11 @@ public class CopyMode extends CardMode {
                 }
             }
 
-            player.addChatMessage(new ChatComponentText(completed(count)));
+            String message = completed(applied);
+            if (skipped > 0) {
+                message += TranslateHelper.CopyMode.skipped(skipped);
+            }
+            player.addChatMessage(new ChatComponentText(message));
             this.isCopying = false;
             this.startPos = null;
             this.endPos = null;

@@ -290,7 +290,11 @@ public class P2PManager {
     private static java.lang.reflect.Method setOutputMethod;
     private static java.lang.reflect.Method setCustomNameInternalMethod;
 
-    private static void setP2POutput(PartP2PTunnel part, boolean output) {
+    /**
+     * 供 {@code utils.SettingsApplier} 复用：换型后需要恢复原来的输入/输出角色，
+     * 而 {@code setOutput} 在 rv3 是包私有的，只能反射。
+     */
+    public static void setP2POutput(PartP2PTunnel part, boolean output) {
         if (part == null) {
             return;
         }

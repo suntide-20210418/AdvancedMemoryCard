@@ -28,6 +28,11 @@ public class TranslateHelper {
         public static final String COPY_MODE_COMPLETED = COPY_MODE_PREFIX + "completed";
         public static final String COPY_MODE_ALREADY_MARKED = COPY_MODE_PREFIX + "already_marked";
         public static final String COPY_MODE_FAILED = COPY_MODE_PREFIX + "failed";
+        public static final String COPY_OPTION_PREFIX = COPY_MODE_PREFIX + "option.";
+        public static final String COPY_OPTIONS_TITLE = COPY_MODE_PREFIX + "options_title";
+        public static final String COPY_OPTIONS_AUTO_OPEN = COPY_MODE_PREFIX + "auto_open";
+        public static final String COPY_OPTIONS_SKIPPED = COPY_MODE_PREFIX + "skipped";
+        public static final String COPY_OPTIONS_EMPTY = COPY_MODE_PREFIX + "options_empty";
 
         public static final String COPY_MODE_SCREEN_PREFIX = SCREEN_PREFIX + "advanced_memory_card.player.copy.";
         public static final String COPY_MODE_SCREEN_START_POS = COPY_MODE_SCREEN_PREFIX + "start_pos";
@@ -146,6 +151,26 @@ public class TranslateHelper {
 
         public static String failed() {
             return translate(Keys.COPY_MODE_FAILED);
+        }
+
+        public static String optionsTitle() {
+            return translate(Keys.COPY_OPTIONS_TITLE);
+        }
+
+        public static String autoOpen() {
+            return translate(Keys.COPY_OPTIONS_AUTO_OPEN);
+        }
+
+        public static String option(String id) {
+            return translate(Keys.COPY_OPTION_PREFIX + id);
+        }
+
+        public static String optionsEmpty() {
+            return translate(Keys.COPY_OPTIONS_EMPTY);
+        }
+
+        public static String skipped(int count) {
+            return translate(Keys.COPY_OPTIONS_SKIPPED, count);
         }
 
         public static String screenStartPos() {
