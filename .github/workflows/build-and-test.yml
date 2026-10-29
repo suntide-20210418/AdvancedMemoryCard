@@ -1,13 +1,30 @@
-
+# 构建校验（持续集成）
+#
+# 触发面：任意分支的推送、任意分支发起的 PR、以及手动触发。
+# 刻意不声明 tags：标签走 release-tags.yml，避免同一次打标签既跑 CI 又跑发布。
+#
+# 原配置只监听 master/main，而本项目的开发分支是 suntide/1.7.10-GTNH，
+# 等于 CI 从未覆盖过实际在写的代码；这里放开到所有分支。
 name: Build and test
 
 on:
-  pull_request:
-    branches: [ master, main ]
   push:
-    branches: [ master, main ]
+    branches:
+      - '**'
+  pull_request:
+  workflow_dispatch:
+
+# 同一分支的重复推送只保留最新一次，避免为旧提交排队。
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-and-test:
+    # GTNH 的共享工作流已经处理了 RetroFuturaGradle 这套工具链：
+    # JDK 8/17/21 + toolchain、setupCIWorkspace、xvfb 下跑完整 build（含 spotless/checkstyle）。
+    # cache-rfg 缓存 RFG 的反编译产物，冷启动能省几分钟。
     uses: GTNewHorizons/GTNH-Actions-Workflows/.github/workflows/build-and-test.yml@master
     secrets: inherit
+    with:
+      cache-rfg: true

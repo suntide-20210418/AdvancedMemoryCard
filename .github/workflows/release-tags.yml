@@ -1,14 +1,162 @@
-
+# 发布：构建并把 jar 挂到 GitHub Release —— 1.7.10 / RetroFuturaGradle 线
+#
+# 触发：只认本线形态的标签（1.2.0-1.7.10、v1.2.0-1.7.10、1.2.0-1.7.10-pre1）。
+# 原来写的是 tags: ['*']，仓库里还有 alpha、baseline-1.21.1、v1.1.0-1.20.1 这类
+# 跨线标签，任何一个被推送都会触发一次错误的发布。
+#
+# 为什么不再调用 GTNewHorizons/GTNH-Actions-Workflows 的 release-tags：
+# 它的产物是写死的 `./build/libs/*.jar` 通配。本项目一次构建会产出三个 jar
+# （<name>.jar、<name>-dev.jar、<name>-sources.jar），通配会把 dev 包和源码包
+# 一起传上 Release。这里自己构建并精确挑出唯一一个 reobf 产物。
+#
+# 版本号：GTNHGradle 用 git 描述生成版本，gradle.properties 里没有 mod_version，
+# 所以标签就是唯一权威；jar 文件名里的版本由构建自行决定，不参与校验。
 name: Release tagged build
 
 on:
   push:
-    tags: [ '*' ]
+    tags:
+      - '*.*.*-1.7.10*'
+
+# 发布中途被打断可能留下半上传的版本记录。
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 permissions:
-  contents: write
+  contents: write # 创建 GitHub Release 需要
 
 jobs:
-  release-tags:
-    uses: GTNewHorizons/GTNH-Actions-Workflows/.github/workflows/release-tags.yml@master
-    secrets: inherit
+  release:
+    name: Build and release
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # 生成变更日志需要遍历历史标签
+
+      # RFG 的 Gradle daemon 跑在 17/21 上，字节码目标是 8（jabel），
+      # 与 GTNH 共享工作流的策略一致：三个版本都装上，交给 toolchain 选。
+      - name: Set up JDKs
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: |
+            8
+            17
+            21
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          validate-wrappers: true
+
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      # 与 GTNH 共享工作流保持一致：先把 MC 反编译/工作区准备好，再构建。
+      - name: Prepare workspace
+        run: ./gradlew --stacktrace setupCIWorkspace
+
+      - name: Build
+        run: ./gradlew --stacktrace build
+
+      # 精确挑出唯一一个 reobf 产物：排除 -dev 与 -sources。
+      # 数量不等于 1 就直接失败，不猜、不通配。
+      - name: Resolve release jar
+        id: jar
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t jars < <(find build/libs -maxdepth 1 -type f -name '*.jar' \
+            ! -name '*-dev.jar' ! -name '*-sources.jar' | sort)
+          if [ "${#jars[@]}" -ne 1 ]; then
+            echo "::error::期望恰好 1 个发布 jar，实际找到 ${#jars[@]} 个"
+            ls -la build/libs || true
+            exit 1
+          fi
+          echo "jar=${jars[0]}" >> "$GITHUB_OUTPUT"
+          echo "发布产物：${jars[0]}"
+
+      # 变更日志自己生成，范围限定在同一条 MC 线，避免把 1.20.1 / 1.21.1 的提交混进来。
+      - name: Generate changelog
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME}"
+          prev="$(git describe --tags --abbrev=0 --match '*.*.*-1.7.10*' "${tag}^" 2>/dev/null || true)"
+          if [ -n "${prev}" ]; then
+            echo "变更范围：${prev}..${tag}"
+            range="${prev}..${tag}"
+          else
+            echo "未找到本线上的历史标签，输出截至该标签的完整提交记录"
+            range="${tag}"
+          fi
+          git log --no-merges --pretty='- %s (%h)' "${range}" > CHANGELOG_LATEST.md
+          echo "变更日志 $(wc -l < CHANGELOG_LATEST.md) 行"
+
+      - name: Create GitHub release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME}"
+          prerelease_flag=""
+          case "${tag}" in
+            *-pre*|*-alpha*|*-beta*) prerelease_flag="--prerelease" ;;
+          esac
+          gh release create "${tag}" \
+            --title "${tag}" \
+            --notes-file CHANGELOG_LATEST.md \
+            ${prerelease_flag} \
+            "${{ steps.jar.outputs.jar }}"
+
+      # 用 outputs 而不是在 if 里直接读 secrets：secrets 上下文在 job/step 的 if 中
+      # 是否可用随 GitHub 版本变动过，写进 run 再判断最稳。
+      - name: Detect publishing tokens
+        id: tokens
+        shell: bash
+        env:
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+          CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
+        run: |
+          set -euo pipefail
+          [ -n "${MODRINTH_TOKEN}" ] && echo "modrinth=true" >> "$GITHUB_OUTPUT" || echo "modrinth=false" >> "$GITHUB_OUTPUT"
+          [ -n "${CURSEFORGE_TOKEN}" ] && echo "curseforge=true" >> "$GITHUB_OUTPUT" || echo "curseforge=false" >> "$GITHUB_OUTPUT"
+
+      # 可选：配置了对应 token 才发布到 Modrinth / CurseForge。
+      # 未配置时整步跳过，不影响上面的 GitHub Release。
+      - name: Publish to platforms
+        if: ${{ steps.tokens.outputs.modrinth == 'true' || steps.tokens.outputs.curseforge == 'true' }}
+        uses: Kira-NT/mc-publish@v3.3.1
+        with:
+          files: ${{ steps.jar.outputs.jar }}
+
+          name: Advanced Memory Card ${{ github.ref_name }}
+          version: ${{ github.ref_name }}
+          version-type: release
+          changelog-file: CHANGELOG_LATEST.md
+
+          game-versions: 1.7.10
+          loaders: forge
+          java: 8
+          environment: client | server
+
+          # AE2 是 required：本体直接引用 appeng.* 与 P2P 通道实现，缺失即无法加载。
+          # 1.7.10 线用的是 GTNH 维护的 AE2 Unofficial（rv3），它不在 CurseForge 上，
+          # 因此这里只标 slug，不写 curseforge 数字 ID。
+          dependencies: |
+            ae2(required)
+
+          modrinth-id: ${{ vars.MODRINTH_PROJECT_ID }}
+          modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
+          curseforge-id: ${{ vars.CURSEFORGE_PROJECT_ID }}
+          curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+          retry-attempts: 3
+          fail-mode: fail
