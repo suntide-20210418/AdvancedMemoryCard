@@ -43,36 +43,83 @@ public class AdvancedMemoryCardItem extends ToolMemoryCard {
         this.itemIcon = iconRegister.registerIcon(AdvancedMemoryCardMod.MOD_ID + ":advanced_memory_card");
     }
 
+    /**
+     * 关掉 AE2 内存卡的「潜行绕过方块交互」。
+     *
+     * <p>父类返回 true，含义是「玩家潜行时仍然把点击交给方块」。AE2 方块看到手里的 IMemoryCard
+     * 就会自己执行原生内存卡的复制/粘贴，结果就是我们的卡片表现成普通 AE 内存卡。
+     */
+    @Override
+    public boolean doesSneakBypassUse(World world, int x, int y, int z, EntityPlayer player) {
+        return false;
+    }
+
     @Override
     public boolean onItemUseFirst(ItemStack stack, EntityPlayer player, World world, int x, int y, int z, int side,
         float hitX, float hitY, float hitZ) {
-        CardMode cardMode = CardMode.of(stack);
-        if (!world.isRemote) {
-            if (cardMode instanceof CopyMode && player.isSneaking()) {
-                if (copyFromTarget(player, world, x, y, z, ForgeDirection.getOrientation(side), stack)) {
-                    if (CopyOptions.of(stack)
-                        .isAutoOpen()) {
-                        player.openGui(
-                            AdvancedMemoryCardMod.INSTANCE,
-                            AdvancedMemoryCardMod.COPY_GUI_ID,
-                            world,
-                            0,
-                            0,
-                            0);
-                    }
-                    // 已经复制过，阻止方块交互再复制一次
-                    return true;
-                }
-                // 目标不认识就交回 1.7.10 原有的处理（AE2 方块自己也会做潜行复制）
-                return false;
-            }
-            return cardMode.onItemUseFirst(stack, player, world, x, y, z, side, hitX, hitY, hitZ);
+        if (world.isRemote) {
+            // 客户端必须返回 false：若在这里返回 true，PlayerControllerMP.onPlayerRightClick 会在
+            // 发送方块交互包(C08) 之前直接 return，服务端根本收不到点击。
+            return false;
         }
-        // 客户端必须返回 false：在 1.7.10 中，若客户端 onItemUseFirst 返回 true，
-        // PlayerControllerMP.onPlayerRightClick 会在发送方块交互包(C08)之前直接 return，
-        // 导致服务端根本收不到点击，服务端逻辑(上面的分支)永远不会执行 -> 不按 shift 右键无反应。
-        // 返回 false 让客户端继续把交互包发往服务端，由服务端真正处理各模式逻辑。
-        return false;
+
+        CardMode cardMode = CardMode.of(stack);
+
+        if (cardMode instanceof CopyMode && player.isSneaking()) {
+            boolean copied = copyFromTarget(player, world, x, y, z, ForgeDirection.getOrientation(side), stack);
+            if (copied && CopyOptions.of(stack)
+                .isAutoOpen()) {
+                openCopyGui(player, world);
+            }
+            // 无论复制成功与否都吃掉这次点击。
+            // 交回 AE2 会发生两件事：AEBaseTileBlock 的潜行分支把卡当普通内存卡再复制一次；
+            // 以及方块交互失败后落到 ToolMemoryCard.onItemUse，那里在潜行时会
+            // setTagCompound(null) 把 mode_data / copy_options 一起清掉。
+            return true;
+        }
+
+        if (cardMode.onItemUseFirst(stack, player, world, x, y, z, side, hitX, hitY, hitZ)) {
+            return true;
+        }
+
+        // 我们的卡不兼职 AE2 原生内存卡：点到 AE 方块/部件宿主时直接吃掉点击，
+        // 否则 AE2 会拿它当普通内存卡去粘贴设置。
+        return isAeTarget(world, x, y, z);
+    }
+
+    /**
+     * 服务端方块右键的兜底分支。
+     *
+     * <p>这里刻意<b>不</b>调用 {@code super.onItemUse}：AE2 的 {@code ToolMemoryCard#onItemUse}
+     * 在潜行时会 {@code stack.setTagCompound(null)}，把整张卡的数据（含模式与粘贴选项）清空。
+     * 粘贴走的是右键空气（{@code onItemRightClick}），方块交互不需要它。
+     */
+    @Override
+    public boolean onItemUse(ItemStack stack, EntityPlayer player, World world, int x, int y, int z, int side,
+        float hitX, float hitY, float hitZ) {
+        // 客户端同样返回 true 消费这次点击，避免再发一次 (-1,-1,-1) 空气包
+        return true;
+    }
+
+    private static boolean isAeTarget(World world, int x, int y, int z) {
+        TileEntity tileEntity = world.getTileEntity(x, y, z);
+        return tileEntity instanceof AEBaseTile || tileEntity instanceof IPartHost;
+    }
+
+    private static void openCopyGui(EntityPlayer player, World world) {
+        logGuiOpen("copy", player);
+        player.openGui(AdvancedMemoryCardMod.INSTANCE, AdvancedMemoryCardMod.COPY_GUI_ID, world, 0, 0, 0);
+    }
+
+    /**
+     * 打开 GUI 只在服务端发生，日志用于排查「点了没反应」：如果这行出现但界面没出，
+     * 问题在 GuiHandler / 客户端构造；这行不出现，问题在点击链路上游。
+     */
+    static void logGuiOpen(String mode, EntityPlayer player) {
+        org.apache.logging.log4j.Logger logger = AdvancedMemoryCardMod.getLogger();
+        if (logger != null) {
+            logger.info("[amc] opening {} GUI for {}", mode, player.getCommandSenderName());
+        }
     }
 
     /**
@@ -150,18 +197,6 @@ public class AdvancedMemoryCardItem extends ToolMemoryCard {
 
     private static boolean sameData(NBTTagCompound a, NBTTagCompound b) {
         return a.equals(b);
-    }
-
-    @Override
-    public boolean onItemUse(ItemStack stack, EntityPlayer player, World world, int x, int y, int z, int side,
-        float hitX, float hitY, float hitZ) {
-        if (world.isRemote) {
-            // 在客户端消费这次点击：让 PlayerControllerMP.onPlayerRightClick 返回 true，
-            // 从而 rightClickMouse 不再调用 sendUseItem 发送 (-1,-1,-1) 空气包，
-            // 避免服务端重复触发 onItemRightClick -> onItemUse（点击空气逻辑）。
-            return true;
-        }
-        return super.onItemUse(stack, player, world, x, y, z, side, hitX, hitY, hitZ);
     }
 
     @Override

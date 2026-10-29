@@ -69,6 +69,7 @@ gui.advanced_memory_card.advanced_memory_card.chat.teleport_usage=/amc_tp <dimen
 gui.advanced_memory_card.advanced_memory_card.chat.teleport_only_player=Only players can use this command.
 gui.advanced_memory_card.advanced_memory_card.chat.teleport_dim_failed=Failed to change dimension.
 gui.advanced_memory_card.advanced_memory_card.chat.teleport_success=Teleported to dimension %s (%s)
+gui.advanced_memory_card.advanced_memory_card.chat.no_p2p=No P2P tunnel here, right-click the P2P part itself
 gui.advanced_memory_card.advanced_memory_card.player.config.show=P2P Tunnel Config Mode
 gui.advanced_memory_card.advanced_memory_card.tooltip.copy.info=Copy Mode\n
 gui.advanced_memory_card.advanced_memory_card.tooltip.copy.first_pos=First position:%s\n

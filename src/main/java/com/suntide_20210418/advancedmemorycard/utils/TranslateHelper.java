@@ -84,6 +84,7 @@ public class TranslateHelper {
         public static final String STATUS_CURRENT_SELECTED = STATUS_PREFIX + "current_selected";
 
         public static final String CHAT_PREFIX = GUI_PREFIX + "advanced_memory_card.chat.";
+        public static final String CHAT_NO_P2P = CHAT_PREFIX + "no_p2p";
         public static final String CHAT_LOCATION_INFO = CHAT_PREFIX + "location_info";
         public static final String CHAT_CLICK_TO_TELEPORT = CHAT_PREFIX + "click_to_teleport";
         public static final String CHAT_TELEPORT_HOVER = CHAT_PREFIX + "teleport_hover";
@@ -365,6 +366,10 @@ public class TranslateHelper {
     }
 
     public static class Chat {
+
+        public static String noP2PFound() {
+            return translate(Keys.CHAT_NO_P2P);
+        }
 
         public static String locationInfo(Object... args) {
             return translate(Keys.CHAT_LOCATION_INFO, args);

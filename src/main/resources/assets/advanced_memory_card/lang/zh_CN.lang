@@ -69,6 +69,7 @@ gui.advanced_memory_card.advanced_memory_card.chat.teleport_usage=/amc_tp <维�
 gui.advanced_memory_card.advanced_memory_card.chat.teleport_only_player=只有玩家可以使用此指令。
 gui.advanced_memory_card.advanced_memory_card.chat.teleport_dim_failed=切换维度失败。
 gui.advanced_memory_card.advanced_memory_card.chat.teleport_success=已传送至维度 %s (%s)
+gui.advanced_memory_card.advanced_memory_card.chat.no_p2p=这里没有 P2P 隧道，请对准 P2P 部件本身右键
 gui.advanced_memory_card.advanced_memory_card.player.config.show=P2P通道 配置模式
 gui.advanced_memory_card.advanced_memory_card.tooltip.copy.info=复制模式\n
 gui.advanced_memory_card.advanced_memory_card.tooltip.copy.first_pos=第一个位置：%s\n
