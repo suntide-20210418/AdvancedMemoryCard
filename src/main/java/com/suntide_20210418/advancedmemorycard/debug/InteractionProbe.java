@@ -24,7 +24,7 @@ public final class InteractionProbe {
 
     @SubscribeEvent
     public void onInteract(PlayerInteractEvent event) {
-        if (event.world == null || event.world.isRemote) {
+        if (event.world == null) {
             return;
         }
         EntityPlayer player = event.entityPlayer;
@@ -39,7 +39,8 @@ public final class InteractionProbe {
         org.apache.logging.log4j.Logger logger = AdvancedMemoryCardMod.getLogger();
         if (logger != null) {
             logger.info(
-                "[amc] interact {} held={} pos={},{},{} canceled={}",
+                "[amc] interact {} {} held={} pos={},{},{} canceled={}",
+                event.world.isRemote ? "client" : "server",
                 event.action,
                 item,
                 event.x,

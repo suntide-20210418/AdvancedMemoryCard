@@ -42,6 +42,10 @@ public class ClientProxy extends CommonProxy {
         FMLCommonHandler.instance()
             .bus()
             .register(new KeyEvent());
+        // 临时探针：跟踪手持物变化（定位完删除）
+        FMLCommonHandler.instance()
+            .bus()
+            .register(new com.suntide_20210418.advancedmemorycard.debug.HeldItemTracker());
         MinecraftForge.EVENT_BUS.register(P2PRenderer.getInstance());
         MinecraftForge.EVENT_BUS.register(new CopyModeRenderer());
     }

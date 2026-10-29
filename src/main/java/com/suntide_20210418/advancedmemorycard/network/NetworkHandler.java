@@ -51,6 +51,8 @@ public class NetworkHandler {
             Side.CLIENT);
         // id 7：客户端发起的方块右键交互（不依赖原版 C08）
         INSTANCE.registerMessage(CardInteractPacket.Handler.class, CardInteractPacket.class, discriminator++, Side.SERVER);
+        // id 8：客户端发起的右键空气使用（粘贴）
+        INSTANCE.registerMessage(CardUsePacket.Handler.class, CardUsePacket.class, discriminator++, Side.SERVER);
     }
 
     public static void sendToServer(IMessage msg) {
