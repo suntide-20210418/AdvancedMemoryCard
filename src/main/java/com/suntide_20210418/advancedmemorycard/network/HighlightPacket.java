@@ -3,11 +3,8 @@ package com.suntide_20210418.advancedmemorycard.network;
 import java.util.ArrayList;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.world.World;
-import net.minecraftforge.common.DimensionManager;
-import net.minecraftforge.common.util.ForgeDirection;
 
-import com.suntide_20210418.advancedmemorycard.client.renderer.P2PRenderer;
+import com.suntide_20210418.advancedmemorycard.client.network.ClientHighlightHandler;
 import com.suntide_20210418.advancedmemorycard.p2p.P2PPosition;
 import com.suntide_20210418.advancedmemorycard.utils.BlockPos;
 
@@ -20,18 +17,25 @@ import cpw.mods.fml.relauncher.SideOnly;
 import io.netty.buffer.ByteBuf;
 
 /**
- * 服务端 -> 客户端：请求高亮渲染一组 P2P 设备（由服务端分析后下发位置与颜色）。
+ * 服务端 -> 客户端：请求高亮渲染一组 P2P 设备。
+ *
+ * <p>只下发「语义类型」，不下发颜色：颜色属于客户端配置，服务端读自己的 {@code client.cfg}
+ * 在专用服务端上必然与玩家本地的设置不一致（以前那版就是这样，导致颜色不对）。
  */
 public class HighlightPacket implements IMessage {
 
+    public static final int TYPE_SELF = 0;
+    public static final int TYPE_INPUT = 1;
+    public static final int TYPE_OUTPUT = 2;
+
     private ArrayList<P2PPosition> positions;
-    private ArrayList<Integer> colors;
+    private ArrayList<Integer> types;
 
     public HighlightPacket() {}
 
-    public HighlightPacket(ArrayList<P2PPosition> positions, ArrayList<Integer> colors) {
+    public HighlightPacket(ArrayList<P2PPosition> positions, ArrayList<Integer> types) {
         this.positions = positions;
-        this.colors = colors;
+        this.types = types;
     }
 
     @Override
@@ -44,7 +48,8 @@ public class HighlightPacket implements IMessage {
             buf.writeInt(p.position.z);
             buf.writeByte(p.direction.ordinal());
             ByteBufUtils.writeUTF8String(buf, p.dimension);
-            buf.writeInt(colors.get(i));
+            // 1 字节语义类型。顺序必须与 fromBytes 完全一致，否则后面的项会整体错位。
+            buf.writeByte(types.get(i));
         }
     }
 
@@ -52,13 +57,14 @@ public class HighlightPacket implements IMessage {
     public void fromBytes(ByteBuf buf) {
         int n = buf.readInt();
         positions = new ArrayList<>();
-        colors = new ArrayList<>();
+        types = new ArrayList<>();
         for (int i = 0; i < n; i++) {
             BlockPos pos = new BlockPos(buf.readInt(), buf.readInt(), buf.readInt());
-            ForgeDirection direction = ForgeDirection.values()[buf.readByte()];
+            net.minecraftforge.common.util.ForgeDirection direction = net.minecraftforge.common.util.ForgeDirection.values()[buf
+                .readByte()];
             String dimension = ByteBufUtils.readUTF8String(buf);
             positions.add(new P2PPosition(pos, direction, dimension));
-            colors.add(buf.readInt());
+            types.add((int) buf.readByte());
         }
     }
 
@@ -66,8 +72,8 @@ public class HighlightPacket implements IMessage {
         return positions;
     }
 
-    public ArrayList<Integer> getColors() {
-        return colors;
+    public ArrayList<Integer> getTypes() {
+        return types;
     }
 
     public static class Handler implements IMessageHandler<HighlightPacket, IMessage> {
@@ -75,38 +81,9 @@ public class HighlightPacket implements IMessage {
         @Override
         @SideOnly(Side.CLIENT)
         public IMessage onMessage(HighlightPacket msg, MessageContext ctx) {
+            // 只做「切回客户端主线程 + 委托」，不在这里碰渲染状态
             Minecraft.getMinecraft()
-                .func_152344_a(() -> {
-                    P2PRenderer renderer = P2PRenderer.getInstance();
-                    renderer.clearAllRenders();
-                    for (int i = 0; i < msg.positions.size(); i++) {
-                        P2PPosition p = msg.positions.get(i);
-                        appeng.parts.p2p.PartP2PTunnel part = findPart(p);
-                        if (part != null) {
-                            renderer.triggerRender(part, msg.colors.get(i));
-                        }
-                    }
-                });
-            return null;
-        }
-
-        @SideOnly(Side.CLIENT)
-        private static appeng.parts.p2p.PartP2PTunnel findPart(P2PPosition p) {
-            try {
-                int dimId = Integer.parseInt(p.dimension);
-                World world = DimensionManager.getWorld(dimId);
-                if (world == null) {
-                    return null;
-                }
-                net.minecraft.tileentity.TileEntity te = world.getTileEntity(p.position.x, p.position.y, p.position.z);
-                if (te instanceof appeng.api.parts.IPartHost) {
-                    appeng.api.parts.IPartHost host = (appeng.api.parts.IPartHost) te;
-                    appeng.api.parts.IPart part = host.getPart(p.direction);
-                    if (part instanceof appeng.parts.p2p.PartP2PTunnel) {
-                        return (appeng.parts.p2p.PartP2PTunnel) part;
-                    }
-                }
-            } catch (NumberFormatException ignored) {}
+                .func_152344_a(() -> ClientHighlightHandler.handle(msg));
             return null;
         }
     }

@@ -9,7 +9,6 @@ import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
 
-import com.suntide_20210418.advancedmemorycard.config.ModConfigs;
 import com.suntide_20210418.advancedmemorycard.network.HighlightPacket;
 import com.suntide_20210418.advancedmemorycard.network.NetworkHandler;
 import com.suntide_20210418.advancedmemorycard.utils.BlockPos;
@@ -440,50 +439,50 @@ public class P2PManager {
         }
         analysisP2P();
         ArrayList<P2PPosition> positions = new ArrayList<>();
-        ArrayList<Integer> colors = new ArrayList<>();
+        ArrayList<Integer> types = new ArrayList<>();
         positions.add(toPosition(p2pPart));
-        colors.add(ModConfigs.getClientConfig().highlightColorSelf);
+        types.add(HighlightPacket.TYPE_SELF);
 
         PartP2PTunnel input = getInputOf(p2pPart);
         if (input != null) {
             positions.add(toPosition(input));
-            colors.add(ModConfigs.getClientConfig().highlightColorInput);
+            types.add(HighlightPacket.TYPE_INPUT);
         }
         for (PartP2PTunnel output : getOutputsOf(p2pPart)) {
             if (output == p2pPart || output == null) {
                 continue;
             }
             positions.add(toPosition(output));
-            colors.add(ModConfigs.getClientConfig().highlightColorOutput);
+            types.add(HighlightPacket.TYPE_OUTPUT);
         }
-        sendHighlight(positions, colors);
+        sendHighlight(positions, types);
     }
 
     public void renderP2P(String frequencyHex) {
         analysisP2P();
 
         ArrayList<P2PPosition> positions = new ArrayList<>();
-        ArrayList<Integer> colors = new ArrayList<>();
+        ArrayList<Integer> types = new ArrayList<>();
         long freq = Long.parseLong(frequencyHex, 16);
         PartP2PTunnel input = getInput(freq);
         if (input == null) {
             return;
         }
         positions.add(toPosition(input));
-        colors.add(ModConfigs.getClientConfig().highlightColorInput);
+        types.add(HighlightPacket.TYPE_INPUT);
         for (PartP2PTunnel output : getOutputs(freq)) {
             if (output == null) {
                 continue;
             }
             positions.add(toPosition(output));
-            colors.add(ModConfigs.getClientConfig().highlightColorOutput);
+            types.add(HighlightPacket.TYPE_OUTPUT);
         }
-        sendHighlight(positions, colors);
+        sendHighlight(positions, types);
     }
 
-    private void sendHighlight(ArrayList<P2PPosition> positions, ArrayList<Integer> colors) {
+    private void sendHighlight(ArrayList<P2PPosition> positions, ArrayList<Integer> types) {
         if (player instanceof EntityPlayerMP) {
-            NetworkHandler.sendToPlayer(new HighlightPacket(positions, colors), (EntityPlayerMP) player);
+            NetworkHandler.sendToPlayer(new HighlightPacket(positions, types), (EntityPlayerMP) player);
         }
     }
 
