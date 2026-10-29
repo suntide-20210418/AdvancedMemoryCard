@@ -63,9 +63,12 @@ public final class CardInteractHandler {
                         0.5F,
                         player.isSneaking()));
             } else {
-                // 取消方块事件后原版会补发一次 RIGHT_CLICK_AIR（flag 仍为 true），
-                // 那时 objectMouseOver 依然指向方块；只有真的对着空气才算“使用”。
-                if (net.minecraft.client.Minecraft.getMinecraft().objectMouseOver != null) {
+                // 取消方块事件后原版仍会补发一次 RIGHT_CLICK_AIR（flag 仍为 true），
+                // 那时射线依然指向方块。注意 1.7.10 里 objectMouseOver 永远不会是 null：
+                // 看向空气时它是 typeOfHit == MISS 的 MovingObjectPosition，
+                // 所以只能用 typeOfHit 判断，不能判 null（否则真正的空气右键会被吞掉）。
+                net.minecraft.util.MovingObjectPosition hit = net.minecraft.client.Minecraft.getMinecraft().objectMouseOver;
+                if (hit != null && hit.typeOfHit == net.minecraft.util.MovingObjectPosition.MovingObjectType.BLOCK) {
                     event.setCanceled(true);
                     return;
                 }

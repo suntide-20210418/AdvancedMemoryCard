@@ -4,6 +4,7 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.inventory.Container;
+import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
 
 import com.suntide_20210418.advancedmemorycard.item.custom.AdvancedMemoryCardItem;
@@ -24,6 +25,9 @@ public class CopyModeMenu extends Container implements CopyModePacket.ICopyMenu 
 
     private static final String SET_OPTIONS = "set_options:";
 
+    /** 背包槽位的屏幕外坐标：既让 getSlotFromInventory 能命中，又不会被 GuiContainer 绘制。 */
+    private static final int OFFSCREEN_SLOT = -10000;
+
     private final InventoryPlayer playerInventory;
 
     /** 服务端持有的权威选项，客户端显示以同步包为准（物品 NBT 不会随空容器自动同步）。 */
@@ -32,8 +36,28 @@ public class CopyModeMenu extends Container implements CopyModePacket.ICopyMenu 
 
     public CopyModeMenu(InventoryPlayer playerInventory) {
         this.playerInventory = playerInventory;
+        bindOffscreenPlayerSlots(playerInventory);
         readOptionsFromCard();
         syncOptionsToClient();
+    }
+
+    /**
+     * 把玩家背包槽位挂到容器上，但坐标放在屏幕外（不会被绘制）。
+     *
+     * <p>1.7.10 的 {@code NetHandlerPlayServer#processPlayerBlockPlacement} 末尾会执行
+     * {@code openContainer.getSlotFromInventory(player.inventory, currentItem).slotNumber}；
+     * 零槽位容器在那里返回 null，随后直接 NPE 崩服——GUI 打开期间或容器未正确关闭时的
+     * 任何方块右键都会踩到。
+     */
+    private void bindOffscreenPlayerSlots(InventoryPlayer inventory) {
+        for (int row = 0; row < 3; row++) {
+            for (int col = 0; col < 9; col++) {
+                addSlotToContainer(new Slot(inventory, col + row * 9 + 9, OFFSCREEN_SLOT, OFFSCREEN_SLOT));
+            }
+        }
+        for (int col = 0; col < 9; col++) {
+            addSlotToContainer(new Slot(inventory, col, OFFSCREEN_SLOT, OFFSCREEN_SLOT));
+        }
     }
 
     private void readOptionsFromCard() {

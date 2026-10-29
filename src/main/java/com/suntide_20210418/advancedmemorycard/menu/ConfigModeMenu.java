@@ -11,6 +11,7 @@ import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.event.ClickEvent;
 import net.minecraft.event.HoverEvent;
 import net.minecraft.inventory.Container;
+import net.minecraft.inventory.Slot;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.ChatStyle;
@@ -66,6 +67,9 @@ public class ConfigModeMenu extends Container implements ConfigModeActionPacket.
     private static final String HIGHLIGHT_P2P_TUNNEL = "highlight_p2p_tunnel";
     private static final String UPDATE_ITEM_INFO = "update_item_info";
 
+    /** 背包槽位的屏幕外坐标：既让 getSlotFromInventory 能命中，又不会被 GuiContainer 绘制。 */
+    private static final int OFFSCREEN_SLOT = -10000;
+
     private final InventoryPlayer playerInventory;
     private P2PManager p2pManager;
 
@@ -89,12 +93,33 @@ public class ConfigModeMenu extends Container implements ConfigModeActionPacket.
     public ConfigModeMenu(InventoryPlayer playerInventory, P2PManager manager) {
         this.playerInventory = playerInventory;
         this.p2pManager = manager;
+        bindOffscreenPlayerSlots(playerInventory);
         updateItemInfo();
     }
 
     // 客户端构造（无 P2PManager，仅持有本地缓存）
     public ConfigModeMenu(InventoryPlayer playerInventory) {
         this.playerInventory = playerInventory;
+        bindOffscreenPlayerSlots(playerInventory);
+    }
+
+    /**
+     * 把玩家背包槽位挂到容器上，但坐标放在屏幕外（不会被绘制）。
+     *
+     * <p>这不是装饰：1.7.10 的 {@code NetHandlerPlayServer#processPlayerBlockPlacement} 末尾会执行
+     * {@code openContainer.getSlotFromInventory(player.inventory, currentItem).slotNumber}，
+     * 而对零槽位容器该方法返回 null，随后直接 NPE 崩服。任何在本模组 GUI 打开期间
+     * （或容器未被正确关闭时）发生的方块右键都会踩到它。
+     */
+    private void bindOffscreenPlayerSlots(InventoryPlayer inventory) {
+        for (int row = 0; row < 3; row++) {
+            for (int col = 0; col < 9; col++) {
+                addSlotToContainer(new Slot(inventory, col + row * 9 + 9, OFFSCREEN_SLOT, OFFSCREEN_SLOT));
+            }
+        }
+        for (int col = 0; col < 9; col++) {
+            addSlotToContainer(new Slot(inventory, col, OFFSCREEN_SLOT, OFFSCREEN_SLOT));
+        }
     }
 
     // ==================== IActionMenu 回调（服务端执行） ====================
