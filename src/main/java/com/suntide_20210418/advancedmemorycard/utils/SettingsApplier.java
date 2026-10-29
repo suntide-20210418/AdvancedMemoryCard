@@ -160,7 +160,9 @@ public final class SettingsApplier {
             return Result.UNTOUCHED;
         }
 
-        ItemStack current = tunnel.getItemStack(PartItemStack.Network);
+        // 卡上存的类型名来自 getMemoryCardData() -> getItemStack(Wrench)，这里用同一个口径比较，
+        // 避免 Network/World 分支返回不同物品时把「同型」误判成「换型」。
+        ItemStack current = tunnel.getItemStack(PartItemStack.Wrench);
         boolean sameType = current != null && current.getItem() == stored.getItem();
         if (!sameType) {
             if (!opts.has(CopyOption.P2P_TYPE)) {
