@@ -38,20 +38,6 @@ public class GuiHandler implements IGuiHandler {
     @Override
     public Object getClientGuiElement(int ID, EntityPlayer player, World world, int x, int y, int z) {
         // 仅在客户端执行：委托给 ClientProxy 构造真正的屏幕，避免本通用类引用客户端类。
-        Object gui = AdvancedMemoryCardMod.proxy.openClientGui(ID, player, world, x, y, z);
-        org.apache.logging.log4j.Logger logger = AdvancedMemoryCardMod.getLogger();
-        if (logger != null) {
-            // 这行能直接区分「服务端没开窗」和「开了窗但客户端构造不出屏幕」：
-            // proxy 若不是 ClientProxy，这里会是 null。
-            logger.info(
-                "[amc] client GUI id={} proxy={} -> {}",
-                ID,
-                AdvancedMemoryCardMod.proxy == null ? "null"
-                    : AdvancedMemoryCardMod.proxy.getClass()
-                        .getSimpleName(),
-                gui == null ? "null" : gui.getClass()
-                    .getSimpleName());
-        }
-        return gui;
+        return AdvancedMemoryCardMod.proxy.openClientGui(ID, player, world, x, y, z);
     }
 }

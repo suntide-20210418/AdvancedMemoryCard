@@ -379,11 +379,9 @@ public class ConfigModeMenu extends Container implements ConfigModeActionPacket.
         }
         String frequency = parts[0];
         String alias = parts[1];
-        log("[amc] set_channel_alias data='{}' manager={}", data, p2pManager != null);
         if (p2pManager != null) {
             p2pManager.setFrequencyAlias(alias, frequency);
             updateItemInfo();
-            log("[amc] alias after rename: '{}'", p2pManager.getFrequencyAlias(frequency));
         }
     }
 
@@ -400,18 +398,9 @@ public class ConfigModeMenu extends Container implements ConfigModeActionPacket.
             // 否则改名会静默失败。
             p2p = p2pManager.findP2PByPositionString(positionData);
         }
-        log("[amc] set_p2p_alias pos='{}' alias='{}' part={}", positionData, alias, p2p == null ? "null" : "found");
         if (p2p != null && p2pManager != null) {
             p2pManager.renameP2P(p2p, alias);
             updateItemInfo();
-        }
-    }
-
-    private static void log(String pattern, Object... args) {
-        org.apache.logging.log4j.Logger logger = com.suntide_20210418.advancedmemorycard.AdvancedMemoryCardMod
-            .getLogger();
-        if (logger != null) {
-            logger.info(pattern, args);
         }
     }
 

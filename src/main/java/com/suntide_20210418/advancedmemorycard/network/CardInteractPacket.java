@@ -3,7 +3,6 @@ package com.suntide_20210418.advancedmemorycard.network;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
 
-import com.suntide_20210418.advancedmemorycard.AdvancedMemoryCardMod;
 import com.suntide_20210418.advancedmemorycard.item.custom.AdvancedMemoryCardItem;
 
 import cpw.mods.fml.common.network.simpleimpl.IMessage;
@@ -99,14 +98,6 @@ public class CardInteractPacket implements IMessage {
                 msg.hitY,
                 msg.hitZ,
                 msg.sneaking);
-            if (AdvancedMemoryCardMod.getLogger() != null) {
-                AdvancedMemoryCardMod.getLogger()
-                    .info(
-                        "[amc] interact packet done, openContainer={}",
-                        player.openContainer == null ? "null"
-                            : player.openContainer.getClass()
-                                .getSimpleName());
-            }
             return null;
         }
     }

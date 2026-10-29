@@ -33,19 +33,11 @@ public class ClientProxy extends CommonProxy {
     @Override
     public void init(FMLInitializationEvent event) {
         ClientModelRegistry.registerModels();
-        if (AdvancedMemoryCardMod.getLogger() != null) {
-            AdvancedMemoryCardMod.getLogger()
-                .info("[amc] client proxy active");
-        }
         // 注意：KeyInputEvent 由 FML 派发到 FMLCommonHandler 自己的事件总线（与 MinecraftForge.EVENT_BUS 是不同实例），
         // 因此按键处理必须注册到 FMLCommonHandler.instance().bus()，否则 V 键切换模式不会生效。
         FMLCommonHandler.instance()
             .bus()
             .register(new KeyEvent());
-        // 临时探针：跟踪手持物变化（定位完删除）
-        FMLCommonHandler.instance()
-            .bus()
-            .register(new com.suntide_20210418.advancedmemorycard.debug.HeldItemTracker());
         MinecraftForge.EVENT_BUS.register(P2PRenderer.getInstance());
         MinecraftForge.EVENT_BUS.register(new CopyModeRenderer());
     }

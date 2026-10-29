@@ -50,7 +50,6 @@ public class ConfigMode extends CardMode {
 
         currentP2PManager = new P2PManager(hitP2P, player);
         CommonProxy.putPendingManager(player, currentP2PManager);
-        AdvancedMemoryCardItem.logGuiOpen("config", player);
         player.openGui(AdvancedMemoryCardMod.INSTANCE, AdvancedMemoryCardMod.CONFIG_GUI_ID, world, 0, 0, 0);
         return true;
     }

@@ -369,29 +369,11 @@ public class P2PManager {
         // 注意：AE2 rv3 的 PartP2PTunnel.setCustomName 会把名字同步到同频段的所有
         // 输入/输出端（getInput + getOutputs），因此这里必须调用只作用于单个部件的
         // setCustomNameInternal，否则改一个 P2P 名字会波及整个频段。
-        org.apache.logging.log4j.Logger logger = com.suntide_20210418.advancedmemorycard.AdvancedMemoryCardMod
-            .getLogger();
-        if (logger != null) {
-            logger.info(
-                "[amc] renameP2P part={} before=({},{}) target='{}'",
-                p2pPart == null ? "null"
-                    : p2pPart.getClass()
-                        .getSimpleName(),
-                p2pPart != null && p2pPart.hasCustomName(),
-                p2pPart == null ? "" : p2pPart.getCustomName(),
-                name);
-        }
         setP2PCustomNameInternal(p2pPart, name);
         // 名字写在部件自己的 ItemStack 上，不标脏的话下次保存会丢
         if (p2pPart != null && p2pPart.getHost() != null) {
             p2pPart.getHost()
                 .markForSave();
-        }
-        if (logger != null) {
-            logger.info(
-                "[amc] renameP2P after=({},{})",
-                p2pPart != null && p2pPart.hasCustomName(),
-                p2pPart == null ? "" : p2pPart.getCustomName());
         }
     }
 

@@ -52,10 +52,6 @@ public class AdvancedMemoryCardMod {
         // 是 1.7.10 上唯一稳定的拦截点。
         net.minecraftforge.common.MinecraftForge.EVENT_BUS
             .register(new com.suntide_20210418.advancedmemorycard.event.CardInteractHandler());
-        // 临时探针：必须在 Mod 入口注册而不是 proxy.preInit —— ClientProxy 覆写了 preInit
-        // 且没有调用 super，放在 proxy 里客户端根本收不到。
-        net.minecraftforge.common.MinecraftForge.EVENT_BUS
-            .register(new com.suntide_20210418.advancedmemorycard.debug.InteractionProbe());
         proxy.preInit(event);
     }
 

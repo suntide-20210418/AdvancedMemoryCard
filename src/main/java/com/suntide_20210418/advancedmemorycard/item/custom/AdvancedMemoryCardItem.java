@@ -59,8 +59,6 @@ public class AdvancedMemoryCardItem extends ToolMemoryCard {
     @Override
     public boolean onItemUseFirst(ItemStack stack, EntityPlayer player, World world, int x, int y, int z, int side,
         float hitX, float hitY, float hitZ) {
-        logClick(player, world, x, y, z, null);
-
         if (world.isRemote) {
             // 客户端不再走原版分派：直接发我们自己的包，并返回 true 阻止
             // PlayerControllerMP 继续执行 block.onBlockActivated（AE2 的线缆/部件逻辑就在那里）
@@ -86,7 +84,6 @@ public class AdvancedMemoryCardItem extends ToolMemoryCard {
         if (stack == null || !(stack.getItem() instanceof AdvancedMemoryCardItem)) {
             return false;
         }
-        logClick(player, world, x, y, z, null);
 
         CardMode cardMode = CardMode.of(stack);
 
@@ -131,42 +128,8 @@ public class AdvancedMemoryCardItem extends ToolMemoryCard {
         return tileEntity instanceof AEBaseTile || tileEntity instanceof IPartHost;
     }
 
-    /**
-     * 服务端/客户端各打一行，用于区分「C08 没发出去」和「发出去但服务端没分派到物品」。
-     * 定位完成后可以删掉。
-     */
-    private static void logClick(EntityPlayer player, World world, int x, int y, int z, CardMode mode) {
-        org.apache.logging.log4j.Logger logger = AdvancedMemoryCardMod.getLogger();
-        if (logger == null) {
-            return;
-        }
-        TileEntity tileEntity = world.getTileEntity(x, y, z);
-        logger.info(
-            "[amc] click side={} at {},{},{} sneaking={} tile={}",
-            world.isRemote ? "client" : "server",
-            x,
-            y,
-            z,
-            player.isSneaking(),
-            tileEntity == null ? "null"
-                : tileEntity.getClass()
-                    .getSimpleName());
-    }
-
     private static void openCopyGui(EntityPlayer player, World world) {
-        logGuiOpen("copy", player);
         player.openGui(AdvancedMemoryCardMod.INSTANCE, AdvancedMemoryCardMod.COPY_GUI_ID, world, 0, 0, 0);
-    }
-
-    /**
-     * 打开 GUI 只在服务端发生，日志用于排查「点了没反应」：如果这行出现但界面没出，
-     * 问题在 GuiHandler / 客户端构造；这行不出现，问题在点击链路上游。
-     */
-    static void logGuiOpen(String mode, EntityPlayer player) {
-        org.apache.logging.log4j.Logger logger = AdvancedMemoryCardMod.getLogger();
-        if (logger != null) {
-            logger.info("[amc] opening {} GUI for {}", mode, player.getCommandSenderName());
-        }
     }
 
     /**
@@ -248,13 +211,6 @@ public class AdvancedMemoryCardItem extends ToolMemoryCard {
 
     @Override
     public ItemStack onItemRightClick(ItemStack stack, World world, EntityPlayer player) {
-        org.apache.logging.log4j.Logger logger = AdvancedMemoryCardMod.getLogger();
-        if (logger != null) {
-            logger.info(
-                "[amc] right-click {} sneaking={}",
-                world.isRemote ? "client" : "server",
-                player.isSneaking());
-        }
         if (!world.isRemote) {
             if (player.isSneaking() && CardMode.of(stack) instanceof CopyMode) {
                 return stack;

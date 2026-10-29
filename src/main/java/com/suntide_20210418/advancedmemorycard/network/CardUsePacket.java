@@ -3,7 +3,6 @@ package com.suntide_20210418.advancedmemorycard.network;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
 
-import com.suntide_20210418.advancedmemorycard.AdvancedMemoryCardMod;
 import com.suntide_20210418.advancedmemorycard.item.custom.AdvancedMemoryCardItem;
 import com.suntide_20210418.advancedmemorycard.item.custom.CardMode;
 
@@ -38,17 +37,8 @@ public class CardUsePacket implements IMessage {
             if (held == null || !(held.getItem() instanceof AdvancedMemoryCardItem)) {
                 return null;
             }
-            CardMode mode = CardMode.of(held);
-            if (AdvancedMemoryCardMod.getLogger() != null) {
-                AdvancedMemoryCardMod.getLogger()
-                    .info(
-                        "[amc] use packet mode={} openContainer={}",
-                        mode.getType(),
-                        player.openContainer == null ? "null"
-                            : player.openContainer.getClass()
-                                .getSimpleName());
-            }
-            mode.onItemUse(player.worldObj, player);
+            CardMode.of(held)
+                .onItemUse(player.worldObj, player);
             return null;
         }
     }
