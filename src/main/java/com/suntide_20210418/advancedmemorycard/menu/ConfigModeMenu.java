@@ -375,9 +375,11 @@ public class ConfigModeMenu extends Container implements ConfigModeActionPacket.
         String[] parts = data.split("\\|");
         String frequency = parts[0];
         String alias = parts[1];
+        log("[amc] set_channel_alias data='{}' manager={}", data, p2pManager != null);
         if (p2pManager != null) {
             p2pManager.setFrequencyAlias(alias, frequency);
             updateItemInfo();
+            log("[amc] alias after rename: '{}'", p2pManager.getFrequencyAlias(frequency));
         }
     }
 
@@ -386,9 +388,23 @@ public class ConfigModeMenu extends Container implements ConfigModeActionPacket.
         String positionData = parts[0];
         String alias = parts[1];
         PartP2PTunnel p2p = parsingP2P(positionData);
+        if (p2p == null && p2pManager != null) {
+            // 世界侧查找失败时（维度未加载/朝向索引对不上）退化为按坐标在已分析的部件里找，
+            // 否则改名会静默失败。
+            p2p = p2pManager.findP2PByPositionString(positionData);
+        }
+        log("[amc] set_p2p_alias pos='{}' alias='{}' part={}", positionData, alias, p2p == null ? "null" : "found");
         if (p2p != null && p2pManager != null) {
             p2pManager.renameP2P(p2p, alias);
             updateItemInfo();
+        }
+    }
+
+    private static void log(String pattern, Object... args) {
+        org.apache.logging.log4j.Logger logger = com.suntide_20210418.advancedmemorycard.AdvancedMemoryCardMod
+            .getLogger();
+        if (logger != null) {
+            logger.info(pattern, args);
         }
     }
 

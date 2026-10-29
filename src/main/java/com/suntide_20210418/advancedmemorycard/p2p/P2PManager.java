@@ -369,7 +369,30 @@ public class P2PManager {
         // 注意：AE2 rv3 的 PartP2PTunnel.setCustomName 会把名字同步到同频段的所有
         // 输入/输出端（getInput + getOutputs），因此这里必须调用只作用于单个部件的
         // setCustomNameInternal，否则改一个 P2P 名字会波及整个频段。
+        org.apache.logging.log4j.Logger logger = com.suntide_20210418.advancedmemorycard.AdvancedMemoryCardMod
+            .getLogger();
+        if (logger != null) {
+            logger.info(
+                "[amc] renameP2P part={} before=({},{}) target='{}'",
+                p2pPart == null ? "null"
+                    : p2pPart.getClass()
+                        .getSimpleName(),
+                p2pPart != null && p2pPart.hasCustomName(),
+                p2pPart == null ? "" : p2pPart.getCustomName(),
+                name);
+        }
         setP2PCustomNameInternal(p2pPart, name);
+        // 名字写在部件自己的 ItemStack 上，不标脏的话下次保存会丢
+        if (p2pPart != null && p2pPart.getHost() != null) {
+            p2pPart.getHost()
+                .markForSave();
+        }
+        if (logger != null) {
+            logger.info(
+                "[amc] renameP2P after=({},{})",
+                p2pPart != null && p2pPart.hasCustomName(),
+                p2pPart == null ? "" : p2pPart.getCustomName());
+        }
     }
 
     public void assignNewFrequency() {
@@ -494,8 +517,52 @@ public class P2PManager {
         return new P2PPosition(pos, part.getSide(), String.valueOf(dimId));
     }
 
-    private PartP2PTunnel getInput(long freq) {
-        for (PartP2PTunnel p : p2pDevicesMap.keySet()) {
+    /**
+     * 按 GUI 里编码的 {@code x|y|z|sideOrdinal|dimId} 在已分析的部件里查找。
+     *
+     * <p>用于改名：{@code parsingP2P} 走的是世界侧 {@code getTileEntity}，当目标区块未加载或
+     * 朝向索引对不上时会返回 null，改名就会静默失败。这里直接比对内存里已收集的部件。
+     */
+    public PartP2PTunnel findP2PByPositionString(String data) {
+        try {
+            String[] parts = data.split("\\|");
+            if (parts.length < 4) {
+                return null;
+            }
+            int x = Integer.parseInt(parts[0]);
+            int y = Integer.parseInt(parts[1]);
+            int z = Integer.parseInt(parts[2]);
+            int sideOrdinal = Integer.parseInt(parts[3]);
+            int dimId = parts.length >= 5 ? Integer.parseInt(parts[4])
+                : player.worldObj.provider.dimensionId;
+
+            for (PartP2PTunnel p : p2pDevicesMap.keySet()) {
+                if (p == null) {
+                    continue;
+                }
+                net.minecraft.tileentity.TileEntity te = p.getTile();
+                if (te == null || te.getWorldObj() == null) {
+                    continue;
+                }
+                if (te.xCoord != x || te.yCoord != y || te.zCoord != z) {
+                    continue;
+                }
+                if (te.getWorldObj().provider.dimensionId != dimId) {
+                    continue;
+                }
+                if (p.getSide()
+                    .ordinal() != sideOrdinal) {
+                    continue;
+                }
+                return p;
+            }
+        } catch (Exception ignored) {
+            // 编码异常按找不到处理
+        }
+        return null;
+    }
+
+    private PartP2PTunnel getInput(long freq) {        for (PartP2PTunnel p : p2pDevicesMap.keySet()) {
             if (p == null) {
                 continue;
             }
@@ -589,6 +656,15 @@ public class P2PManager {
         PartP2PTunnel input = getInput(freq);
         if (input != null) {
             renameP2P(input, newName);
+            return;
+        }
+        // 没有输入端时（例如输入端所在区块未加载、或该频段当前只有输出端）退化为
+        // 重命名该频段的任意一个部件。否则玩家看到的就是「改名完全没反应」。
+        for (PartP2PTunnel p : p2pDevicesMap.keySet()) {
+            if (p != null && p.getFrequency() == freq) {
+                renameP2P(p, newName);
+                return;
+            }
         }
     }
 
