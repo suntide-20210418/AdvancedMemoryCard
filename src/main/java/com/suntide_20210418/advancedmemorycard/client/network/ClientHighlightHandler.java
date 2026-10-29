@@ -19,7 +19,8 @@ import cpw.mods.fml.relauncher.SideOnly;
 /**
  * 客户端侧高亮处理：把服务端下发的「语义类型」解析成本地配置里的颜色，再交给渲染器。
  *
- * <p>颜色必须在这里解析而不是在服务端：专用服务端读的是它自己的 {@code client.cfg}，
+ * <p>
+ * 颜色必须在这里解析而不是在服务端：专用服务端读的是它自己的 {@code client.cfg}，
  * 与玩家本地设置无关，以前那版就是拿服务端的颜色值直接渲染。
  */
 @SideOnly(Side.CLIENT)
@@ -37,8 +38,11 @@ public final class ClientHighlightHandler {
                 .get(i);
             PartP2PTunnel part = findPart(position);
             if (part != null) {
-                renderer.triggerRender(part, resolveColor(msg.getTypes()
-                    .get(i)));
+                renderer.triggerRender(
+                    part,
+                    resolveColor(
+                        msg.getTypes()
+                            .get(i)));
             }
         }
     }

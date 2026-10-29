@@ -502,7 +502,8 @@ public class P2PManager {
     /**
      * 按 GUI 里编码的 {@code x|y|z|sideOrdinal|dimId} 在已分析的部件里查找。
      *
-     * <p>用于改名：{@code parsingP2P} 走的是世界侧 {@code getTileEntity}，当目标区块未加载或
+     * <p>
+     * 用于改名：{@code parsingP2P} 走的是世界侧 {@code getTileEntity}，当目标区块未加载或
      * 朝向索引对不上时会返回 null，改名就会静默失败。这里直接比对内存里已收集的部件。
      */
     public PartP2PTunnel findP2PByPositionString(String data) {
@@ -515,8 +516,7 @@ public class P2PManager {
             int y = Integer.parseInt(parts[1]);
             int z = Integer.parseInt(parts[2]);
             int sideOrdinal = Integer.parseInt(parts[3]);
-            int dimId = parts.length >= 5 ? Integer.parseInt(parts[4])
-                : player.worldObj.provider.dimensionId;
+            int dimId = parts.length >= 5 ? Integer.parseInt(parts[4]) : player.worldObj.provider.dimensionId;
 
             for (PartP2PTunnel p : p2pDevicesMap.keySet()) {
                 if (p == null) {
@@ -544,7 +544,8 @@ public class P2PManager {
         return null;
     }
 
-    private PartP2PTunnel getInput(long freq) {        for (PartP2PTunnel p : p2pDevicesMap.keySet()) {
+    private PartP2PTunnel getInput(long freq) {
+        for (PartP2PTunnel p : p2pDevicesMap.keySet()) {
             if (p == null) {
                 continue;
             }

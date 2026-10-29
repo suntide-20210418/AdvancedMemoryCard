@@ -18,7 +18,8 @@ import com.suntide_20210418.advancedmemorycard.utils.BlockPos;
 /**
  * 复制模式菜单（服务端容器）。
  *
- * <p>零槽位纯逻辑容器：客户端面板只做「勾选 → 提交整张掩码」，真正的落盘在这里。
+ * <p>
+ * 零槽位纯逻辑容器：客户端面板只做「勾选 → 提交整张掩码」，真正的落盘在这里。
  * 1.7.10 适配：移除 EnumHand，统一使用 player.getHeldItem() 获取主手物品。
  */
 public class CopyModeMenu extends Container implements CopyModePacket.ICopyMenu {
@@ -44,7 +45,8 @@ public class CopyModeMenu extends Container implements CopyModePacket.ICopyMenu 
     /**
      * 把玩家背包槽位挂到容器上，但坐标放在屏幕外（不会被绘制）。
      *
-     * <p>1.7.10 的 {@code NetHandlerPlayServer#processPlayerBlockPlacement} 末尾会执行
+     * <p>
+     * 1.7.10 的 {@code NetHandlerPlayServer#processPlayerBlockPlacement} 末尾会执行
      * {@code openContainer.getSlotFromInventory(player.inventory, currentItem).slotNumber}；
      * 零槽位容器在那里返回 null，随后直接 NPE 崩服——GUI 打开期间或容器未正确关闭时的
      * 任何方块右键都会踩到。

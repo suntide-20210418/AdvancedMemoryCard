@@ -14,7 +14,8 @@ import io.netty.buffer.ByteBuf;
 /**
  * 客户端 -> 服务端：右键空气使用高级内存卡（粘贴等）。
  *
- * <p>为什么需要它：{@code CardInteractHandler} 在客户端取消了右键事件，原版就不会发
+ * <p>
+ * 为什么需要它：{@code CardInteractHandler} 在客户端取消了右键事件，原版就不会发
  * C08(255)；如果只取消方块那一半，原版会因为 {@code flag} 仍为 true 而补发一次空气包，
  * 变成「点方块却触发粘贴」。所以空气侧也走自己的包，两边行为一致且只有一次执行。
  */

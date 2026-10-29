@@ -19,7 +19,8 @@ import io.netty.buffer.ByteBuf;
 /**
  * 服务端 -> 客户端：请求高亮渲染一组 P2P 设备。
  *
- * <p>只下发「语义类型」，不下发颜色：颜色属于客户端配置，服务端读自己的 {@code client.cfg}
+ * <p>
+ * 只下发「语义类型」，不下发颜色：颜色属于客户端配置，服务端读自己的 {@code client.cfg}
  * 在专用服务端上必然与玩家本地的设置不一致（以前那版就是这样，导致颜色不对）。
  */
 public class HighlightPacket implements IMessage {
@@ -60,8 +61,8 @@ public class HighlightPacket implements IMessage {
         types = new ArrayList<>();
         for (int i = 0; i < n; i++) {
             BlockPos pos = new BlockPos(buf.readInt(), buf.readInt(), buf.readInt());
-            net.minecraftforge.common.util.ForgeDirection direction = net.minecraftforge.common.util.ForgeDirection.values()[buf
-                .readByte()];
+            net.minecraftforge.common.util.ForgeDirection direction = net.minecraftforge.common.util.ForgeDirection
+                .values()[buf.readByte()];
             String dimension = ByteBufUtils.readUTF8String(buf);
             positions.add(new P2PPosition(pos, direction, dimension));
             types.add((int) buf.readByte());

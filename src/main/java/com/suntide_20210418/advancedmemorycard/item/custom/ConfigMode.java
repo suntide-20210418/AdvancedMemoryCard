@@ -57,7 +57,8 @@ public class ConfigMode extends CardMode {
     /**
      * 找玩家点到的 P2P 部件。
      *
-     * <p>先按点击位置做精确命中（rv3 的 {@code selectPart} 用局部 0..1 坐标）；
+     * <p>
+     * 先按点击位置做精确命中（rv3 的 {@code selectPart} 用局部 0..1 坐标）；
      * 命不中时退化为「点击面 → 反向面 → 中心 → 其余各面」，因为 P2P 的碰撞箱比线缆小，
      * 玩家实际点到的经常是同一根总线上的线缆而不是部件本身。
      */

@@ -10,7 +10,8 @@ import cpw.mods.fml.relauncher.SideOnly;
 /**
  * 按钮点击音效。
  *
- * <p>1.7.10 没有 {@code SoundEvents} 常量类，音效只能按资源名找；{@code gui.button.press}
+ * <p>
+ * 1.7.10 没有 {@code SoundEvents} 常量类，音效只能按资源名找；{@code gui.button.press}
  * 是原版自己按钮用的那条，和 1.12.2 的 {@code SoundEvents.UI_BUTTON_CLICK} 是同一个音效。
  */
 @SideOnly(Side.CLIENT)

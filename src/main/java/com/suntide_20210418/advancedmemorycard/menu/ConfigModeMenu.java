@@ -106,7 +106,8 @@ public class ConfigModeMenu extends Container implements ConfigModeActionPacket.
     /**
      * 把玩家背包槽位挂到容器上，但坐标放在屏幕外（不会被绘制）。
      *
-     * <p>这不是装饰：1.7.10 的 {@code NetHandlerPlayServer#processPlayerBlockPlacement} 末尾会执行
+     * <p>
+     * 这不是装饰：1.7.10 的 {@code NetHandlerPlayServer#processPlayerBlockPlacement} 末尾会执行
      * {@code openContainer.getSlotFromInventory(player.inventory, currentItem).slotNumber}，
      * 而对零槽位容器该方法返回 null，随后直接 NPE 崩服。任何在本模组 GUI 打开期间
      * （或容器未被正确关闭时）发生的方块右键都会踩到它。

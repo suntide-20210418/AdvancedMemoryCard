@@ -26,11 +26,13 @@ import appeng.util.item.AEItemStack;
 /**
  * 按 {@link CopyOptions} 把卡片上的配置写进目标方块/部件（AE2 rv3 / 1.7.10 版）。
  *
- * <p>这里刻意不走 {@code AEBaseTile#uploadSettings}：该方法把「缺少键」当成「清空目标」
+ * <p>
+ * 这里刻意不走 {@code AEBaseTile#uploadSettings}：该方法把「缺少键」当成「清空目标」
  * （{@code compound.getInteger("priority")} 缺键即清零、{@code readFromNBT(compound,"config")}
  * 缺键即清空配置槽），而选择性粘贴需要「没勾选的项保持目标原值」。
  *
- * <p>与 1.12.2 版的四处硬差异（都由 rv3 的实现决定，不是风格选择）：
+ * <p>
+ * 与 1.12.2 版的四处硬差异（都由 rv3 的实现决定，不是风格选择）：
  * <ul>
  * <li>库存是 {@link IInventory} 而不是 {@code IItemHandlerModifiable}；</li>
  * <li>库存 NBT 是 compound（槽键 {@code "#0".."#n"}），不是 NBTTagList；</li>
@@ -135,7 +137,8 @@ public final class SettingsApplier {
             applied = true;
         }
 
-        if (opts.has(CopyOption.CONFIG_INV) && applyInventory(base.getInventoryByName(NBT_CONFIG), source, NBT_CONFIG)) {
+        if (opts.has(CopyOption.CONFIG_INV)
+            && applyInventory(base.getInventoryByName(NBT_CONFIG), source, NBT_CONFIG)) {
             applied = true;
         }
         if (opts.has(CopyOption.PATTERNS)
@@ -150,11 +153,11 @@ public final class SettingsApplier {
      * P2P 部件单独处理：频段不在 {@code IConfigManager} 里，换频段必须经过
      * {@code P2PCache#updateFreq} 重新登记；{@code setFrequency} 只改字段，通道会挂在旧频段上。
      *
-     * <p>换型在 rv3 里同样没有「就地改类型」的入口，AE2 自己的内存卡也是拆掉部件再 addPart 重建
+     * <p>
+     * 换型在 rv3 里同样没有「就地改类型」的入口，AE2 自己的内存卡也是拆掉部件再 addPart 重建
      * （{@code PartP2PTunnel#replacePartInWorld}），这里复刻同一流程并保留输入/输出角色。
      */
-    private static Result applyP2P(PartP2PTunnel tunnel, NBTTagCompound source, CopyOptions opts,
-        EntityPlayer player) {
+    private static Result applyP2P(PartP2PTunnel tunnel, NBTTagCompound source, CopyOptions opts, EntityPlayer player) {
         ItemStack stored = readCardStack(source);
         if (stored == null) {
             return Result.UNTOUCHED;
@@ -243,7 +246,8 @@ public final class SettingsApplier {
     /**
      * 从卡片数据里取出 P2P 部件物品。
      *
-     * <p>rv3 的 {@code PartP2PTunnel#getMemoryCardData} 把 {@code getItemStack(Wrench)} 直接写在
+     * <p>
+     * rv3 的 {@code PartP2PTunnel#getMemoryCardData} 把 {@code getItemStack(Wrench)} 直接写在
      * 根标签上，而 {@code AEItemStack.writeToNBT} 写的是 {@code Count=0} + {@code Cnt=<真实数量>}，
      * 所以 {@code new ItemStack(tag)} 会得到 stackSize 为 0 的非法堆栈，必须走 AE 的反序列化。
      */
@@ -263,7 +267,8 @@ public final class SettingsApplier {
      * 把一个库存整段覆盖成存档里的内容。源里没有这一段就说明源设备本来就没有该库存，
      * 此时不动目标（而不是清空）——「没这个功能」和「有这个功能但是空的」要区分开。
      *
-     * <p>rv3 的库存 NBT 是 {@code { "#0": {...}, "#1": {...} }} 形式的 compound，不是列表；
+     * <p>
+     * rv3 的库存 NBT 是 {@code { "#0": {...}, "#1": {...} }} 形式的 compound，不是列表；
      * 每个槽值是 {@code AEItemStack.writeToNBT} 的产物（{@code Count=0}、数量在 {@code Cnt}）。
      */
     private static boolean applyInventory(IInventory inv, NBTTagCompound source, String key) {

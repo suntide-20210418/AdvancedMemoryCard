@@ -14,14 +14,16 @@ import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 /**
  * 高级内存卡的右键接管点。
  *
- * <p>为什么不放在 {@code Item#onItemUseFirst} 里：1.7.10 的这条链并不总是走到——
+ * <p>
+ * 为什么不放在 {@code Item#onItemUseFirst} 里：1.7.10 的这条链并不总是走到——
  * 客户端在 {@code PlayerControllerMP#onPlayerRightClick} 里先跑物品方法、再跑
  * {@code block.onBlockActivated}（AE2 的线缆/部件逻辑就在那里），而服务端是否把 C08
  * 落到 {@code activateBlockOrUseItem} 还受 {@code hasMoved}、距离、
  * {@code PlayerInteractEvent} 取消等前置条件影响。实测中 AE 方块的点击会整个绕过物品方法，
  * 卡片于是退化成原版 AE 内存卡。
  *
- * <p>{@code PlayerInteractEvent} 在 {@code Minecraft#func_147121_ag} 里最先触发，比上面两条都早，
+ * <p>
+ * {@code PlayerInteractEvent} 在 {@code Minecraft#func_147121_ag} 里最先触发，比上面两条都早，
  * 所以：
  * <ul>
  * <li>客户端：发 {@link CardInteractPacket} 并取消事件 —— 既不会跑本地 {@code block.onBlockActivated}，
@@ -29,7 +31,8 @@ import cpw.mods.fml.common.eventhandler.SubscribeEvent;
  * <li>服务端：作为兜底执行一次（客户端已取消事件时不会走到这里，所以不会重复执行）。</li>
  * </ul>
  *
- * <p>只处理方块右键；右键空气（粘贴）仍走 {@code Item#onItemRightClick}。
+ * <p>
+ * 只处理方块右键；右键空气（粘贴）仍走 {@code Item#onItemRightClick}。
  */
 public final class CardInteractHandler {
 
@@ -67,7 +70,8 @@ public final class CardInteractHandler {
                 // 那时射线依然指向方块。注意 1.7.10 里 objectMouseOver 永远不会是 null：
                 // 看向空气时它是 typeOfHit == MISS 的 MovingObjectPosition，
                 // 所以只能用 typeOfHit 判断，不能判 null（否则真正的空气右键会被吞掉）。
-                net.minecraft.util.MovingObjectPosition hit = net.minecraft.client.Minecraft.getMinecraft().objectMouseOver;
+                net.minecraft.util.MovingObjectPosition hit = net.minecraft.client.Minecraft
+                    .getMinecraft().objectMouseOver;
                 if (hit != null && hit.typeOfHit == net.minecraft.util.MovingObjectPosition.MovingObjectType.BLOCK) {
                     event.setCanceled(true);
                     return;

@@ -48,7 +48,8 @@ public class AdvancedMemoryCardItem extends ToolMemoryCard {
     /**
      * 关掉 AE2 内存卡的「潜行绕过方块交互」。
      *
-     * <p>父类返回 true，含义是「玩家潜行时仍然把点击交给方块」。AE2 方块看到手里的 IMemoryCard
+     * <p>
+     * 父类返回 true，含义是「玩家潜行时仍然把点击交给方块」。AE2 方块看到手里的 IMemoryCard
      * 就会自己执行原生内存卡的复制/粘贴，结果就是我们的卡片表现成普通 AE 内存卡。
      */
     @Override
@@ -63,8 +64,7 @@ public class AdvancedMemoryCardItem extends ToolMemoryCard {
             // 客户端不再走原版分派：直接发我们自己的包，并返回 true 阻止
             // PlayerControllerMP 继续执行 block.onBlockActivated（AE2 的线缆/部件逻辑就在那里）
             // 以及随后必然发出的 C08。服务端收到我们的包后统一执行。
-            NetworkHandler.sendToServer(
-                new CardInteractPacket(x, y, z, side, hitX, hitY, hitZ, player.isSneaking()));
+            NetworkHandler.sendToServer(new CardInteractPacket(x, y, z, side, hitX, hitY, hitZ, player.isSneaking()));
             return true;
         }
 
@@ -112,7 +112,8 @@ public class AdvancedMemoryCardItem extends ToolMemoryCard {
     /**
      * 服务端方块右键的兜底分支。
      *
-     * <p>这里刻意<b>不</b>调用 {@code super.onItemUse}：AE2 的 {@code ToolMemoryCard#onItemUse}
+     * <p>
+     * 这里刻意<b>不</b>调用 {@code super.onItemUse}：AE2 的 {@code ToolMemoryCard#onItemUse}
      * 在潜行时会 {@code stack.setTagCompound(null)}，把整张卡的数据（含模式与粘贴选项）清空。
      * 粘贴走的是右键空气（{@code onItemRightClick}），方块交互不需要它。
      */
@@ -136,7 +137,8 @@ public class AdvancedMemoryCardItem extends ToolMemoryCard {
      * 复刻 AE2 的复制分支：方块走 {@code downloadSettings}，P2P 部件走
      * {@code getMemoryCardData}，其余部件走 {@code onActivate}（它对内存卡的潜行分支就是复制）。
      *
-     * <p>为什么 P2P 不能像 1.12.2 那样走 {@code onActivate}：rv3 的
+     * <p>
+     * 为什么 P2P 不能像 1.12.2 那样走 {@code onActivate}：rv3 的
      * {@code PartP2PTunnel#useStandardMemoryCard()} 返回 false，而
      * {@code CableBusContainer#activate} 只调 {@code onActivate}，真正的
      * {@code onPartShiftActivate} 只有「手持 AE 部件物品」时才会被分派。走 onActivate
@@ -158,8 +160,11 @@ public class AdvancedMemoryCardItem extends ToolMemoryCard {
                 // downloadSettings 返回 null = 没有可复制的内容，交回原版/AE2 的处理
                 return false;
             }
-            card.setMemoryCardContents(stack, world.getBlock(x, y, z)
-                .getUnlocalizedName(), data);
+            card.setMemoryCardContents(
+                stack,
+                world.getBlock(x, y, z)
+                    .getUnlocalizedName(),
+                data);
             card.notifyUser(player, MemoryCardMessages.SETTINGS_SAVED);
             return true;
         }

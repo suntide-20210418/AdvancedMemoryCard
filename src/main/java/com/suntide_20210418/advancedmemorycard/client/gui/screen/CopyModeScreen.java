@@ -1,10 +1,10 @@
 package com.suntide_20210418.advancedmemorycard.client.gui.screen;
 
-import org.lwjgl.opengl.GL11;
-
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.util.ResourceLocation;
+
+import org.lwjgl.opengl.GL11;
 
 import com.suntide_20210418.advancedmemorycard.client.gui.ClickSound;
 import com.suntide_20210418.advancedmemorycard.item.custom.CopyOption;
@@ -21,16 +21,20 @@ import cpw.mods.fml.relauncher.SideOnly;
 /**
  * 粘贴选项面板。
  *
- * <p>布局沿用 1.12.2 / 1.21.1 的 {@code copy_mode_menu}：面板 176×181、标题 (10,10)、
+ * <p>
+ * 布局沿用 1.12.2 / 1.21.1 的 {@code copy_mode_menu}：面板 176×181、标题 (10,10)、
  * 每个选项一行（left 10、width 150、height 14、步进 19、首行 top 24）。
  *
- * <p>控件贴图用 {@code checkbox.png} 的四个 22×12 状态格：
+ * <p>
+ * 控件贴图用 {@code checkbox.png} 的四个 22×12 状态格：
+ * 
  * <pre>
  *   未选中      (0, 28)    未选中+悬停  (22, 28)
  *   选中        (0, 40)    选中+悬停    (22, 40)
  * </pre>
  *
- * <p>状态以服务端为准：点击时先本地更新（立即出画面），同时把整张掩码发给服务端；
+ * <p>
+ * 状态以服务端为准：点击时先本地更新（立即出画面），同时把整张掩码发给服务端；
  * 服务端落盘后回发 {@link CopyOptionsSyncPacket}，界面收到后以它覆盖本地值。
  * 直接读物品 NBT 刷新是错的——{@code CopyModeMenu} 是空容器，服务端改 NBT 后不会触发
  * 槽位同步，客户端要重开界面才看得到。
@@ -92,7 +96,8 @@ public class CopyModeScreen extends GuiContainer {
     /**
      * 采纳服务端的权威状态；没有新包就保持本地（点击后的即时反馈）。
      *
-     * <p>打开界面的同步包可能比开窗包先到，所以 initGui 里也要排空一次队列。
+     * <p>
+     * 打开界面的同步包可能比开窗包先到，所以 initGui 里也要排空一次队列。
      */
     private void drainSync() {
         CopyOptionsSyncPacket packet;
@@ -157,11 +162,8 @@ public class CopyModeScreen extends GuiContainer {
             .bindTexture(MENU_TEXTURE);
         Gui.func_146110_a(guiLeft, guiTop, 0, 0, xSize, ySize, MENU_TEX_SIZE, MENU_TEX_SIZE);
 
-        fontRendererObj.drawString(
-            TranslateHelper.CopyMode.optionsTitle(),
-            guiLeft + ROW_LEFT,
-            guiTop + 10,
-            TEXT_COLOR);
+        fontRendererObj
+            .drawString(TranslateHelper.CopyMode.optionsTitle(), guiLeft + ROW_LEFT, guiTop + 10, TEXT_COLOR);
 
         for (int i = 0; i < CopyOption.VALUES.length; i++) {
             CopyOption option = CopyOption.VALUES[i];
@@ -188,11 +190,20 @@ public class CopyModeScreen extends GuiContainer {
         GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
         mc.getTextureManager()
             .bindTexture(CHECKBOX_TEXTURE);
-        Gui.func_146110_a(x, y + 1, hovered ? CHECKBOX_U_HOVER : CHECKBOX_U_NORMAL, on ? CHECKBOX_V_ON : CHECKBOX_V_OFF,
-            CHECKBOX_W, CHECKBOX_H, CHECKBOX_TEX_SIZE, CHECKBOX_TEX_SIZE);
+        Gui.func_146110_a(
+            x,
+            y + 1,
+            hovered ? CHECKBOX_U_HOVER : CHECKBOX_U_NORMAL,
+            on ? CHECKBOX_V_ON : CHECKBOX_V_OFF,
+            CHECKBOX_W,
+            CHECKBOX_H,
+            CHECKBOX_TEX_SIZE,
+            CHECKBOX_TEX_SIZE);
 
-        String label = option == null ? TranslateHelper.CopyMode.autoOpen() : TranslateHelper.CopyMode.option(option.name()
-            .toLowerCase(java.util.Locale.ROOT));
+        String label = option == null ? TranslateHelper.CopyMode.autoOpen()
+            : TranslateHelper.CopyMode.option(
+                option.name()
+                    .toLowerCase(java.util.Locale.ROOT));
         fontRendererObj.drawString(label, x + CHECKBOX_W + 4, y + 3, TEXT_COLOR);
     }
 

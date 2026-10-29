@@ -6,11 +6,13 @@ import net.minecraft.nbt.NBTTagCompound;
 /**
  * 粘贴选项与「复制后自动弹出」开关的存储。
  *
- * <p>刻意写在卡片根标签的 {@code copy_options} 下，而不是 {@code mode_data} 里：
+ * <p>
+ * 刻意写在卡片根标签的 {@code copy_options} 下，而不是 {@code mode_data} 里：
  * {@link CardMode#save(NBTTagCompound)} 每次切换模式或重新复制都会重建 {@code mode_data}，
  * 放在里面的选项会被重置掉。
  *
- * <p>默认掩码为 0（全不选），与 1.12.2 / 1.20.1 的行为一致：未配置过的卡片粘贴时不改动
+ * <p>
+ * 默认掩码为 0（全不选），与 1.12.2 / 1.20.1 的行为一致：未配置过的卡片粘贴时不改动
  * 任何可选项，需要玩家显式勾选。
  */
 public final class CopyOptions {
