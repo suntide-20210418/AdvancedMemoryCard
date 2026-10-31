@@ -96,6 +96,11 @@ public final class P2PRenderHelper {
         if (level == null) {
             return null;
         }
+        // 必须先比维度：坐标是 (x,y,z) 加维度，光比坐标会把当前维度同坐标的方块实体
+        // 误当目标 —— 跨维度高亮时就会点亮一台毫不相干的设备。
+        if (info.dimension() != null && !level.dimension().equals(info.dimension())) {
+            return null;
+        }
         BlockPos pos = info.position();
         BlockEntity blockEntity = level.getBlockEntity(pos);
         if (blockEntity instanceof IPartHost host) {

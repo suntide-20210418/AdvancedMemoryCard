@@ -4,6 +4,9 @@
 
 An Applied Energistics 2 (AE2) add-on that gives the AE2 Memory Card two major capabilities: **bulk region pasting** and **centralized P2P tunnel configuration**.
 
+> **Current version: `1.2.0-1.21.1`** · Minecraft 1.21.1 / NeoForge 21.1.219+ / AE2 1.21.1 line
+> See [CHANGELOG.md](CHANGELOG.md) for what changed.
+
 ## 🌟 Features
 
 ### 🔧 Two Working Modes
@@ -27,19 +30,19 @@ The mode and the per-card preferences are stored in the item's `CUSTOM_DATA` com
 
 Which parts of the copied configuration get applied is controlled by 8 toggles:
 
-| Option | AE2 component | Description |
+| Option | Applies | Description |
 | --- | --- | --- |
-| Upgrades | `EXPORTED_UPGRADES` | Upgrade cards |
-| Settings | `EXPORTED_SETTINGS` | Generic settings of `IConfigurableObject` |
-| Priority | `EXPORTED_PRIORITY` | Priority |
-| Config inventory | `EXPORTED_CONFIG_INV` | Config slot contents (filter/marker items, etc.) |
-| Patterns | `EXPORTED_PATTERNS` | Patterns of a pattern provider |
-| P2P type | `EXPORTED_P2P_TYPE` | Tunnel type (decides whether a part is swapped) |
-| P2P frequency | `EXPORTED_P2P_FREQUENCY` | Tunnel frequency |
-| Name | `EXPORTED_CUSTOM_NAME` | Custom name |
+| Upgrades | Upgrade cards | Upgrade slots |
+| Settings | Generic settings | Generic settings of `IConfigurableObject` |
+| Priority | Priority | Priority |
+| Config inventory | Config slots | Config slot contents (filter/marker items, etc.) |
+| Patterns | Patterns | Patterns of a pattern provider |
+| P2P type | P2P type | Tunnel type (decides whether a part is swapped) |
+| P2P frequency | P2P frequency | Frequency the tunnel is bound to |
+| Name | Custom name | Custom name |
 
 - **Opening it**: Press `G` while holding the card in Copy Mode (rebindable in Controls). By default it also pops up **on every copy** (Shift + Right-click to copy a device's settings onto the card).
-- **Auto-open toggle**: The cog button attached to the left of the panel — `COG` = pop up after every copy, `COG_DISABLED` = never, also saved per card.
+- **Auto-open toggle**: The button in the vertical toolbar to the left of the panel — highlighted = pop up after every copy, greyed out = never, also saved per card.
 - **All unchecked by default**: A card that was never configured applies nothing, so you must opt in explicitly; the selection is written to the card and reused afterwards.
 - **"Not applied" means "target keeps its value"**: Unticking an option keeps it out of the paste. For patterns / P2P type / name, AE2 treats a missing component as "clear the target", so the paste refills the target's own current value instead — which is equivalent to leaving it untouched.
 - **Independent of mode switching**: The options live in the card's root tag (outside `mode_data`), so switching modes or copying again does not reset them.
@@ -48,13 +51,22 @@ Which parts of the copied configuration get applied is controlled by 8 toggles:
 
 Right-click any **P2P tunnel part** to open the configuration GUI and visually manage every P2P device in the current AE network:
 
-- **P2P tree list**: Automatically scans the network and lists all P2P devices grouped by type / channel, with expand-collapse and search filtering.
-- **Detail panel**: Shows the selected P2P's type, frequency, input/output role, and connection status.
+- **Pairing bar (source → target)**: A permanent bar at the top. The left slot is the source device (the one that will move), the right slot is the target channel; the arrow lights up once both are set. The × on the source slot resets it to the tunnel you right-clicked.
+- **Column-based P2P list**: Scans the network and lists type / channel / device in three levels. Four columns: status dot, name, channel, summary. The summary column adapts: a channel row reads "device count + channels left", an **ME tunnel row shows its channel usage with an `IN` / `OUT` prefix** — an input shows its own external network's used/max, an output shows `own used / (input remaining + own used)`, i.e. how much of the share this channel can still hand it has been taken, while inputs and non-ME devices show the IN/OUT role. Non-ME channels have no channel concept and show the device count only. Type rows use the part's translated name (e.g. "ME P2P Tunnel") instead of the raw resource path. Expand-collapse, search filtering, and pixel-accurate truncation with an ellipsis for long names.
+- **Channel dropdown**: Click the target slot (or its caret) to open a frequency list sorted by channel number, limited to channels of the same type as the current source; the last row is "New channel…". **Click the target slot again to collapse the list** — clicking anywhere else collapses it too.
+- **Ctrl-click for batch binding**: Hold `Ctrl` to select several devices (same type only — picking a device of a different type clears the whole selection). The source slot then shows "N selected" and the footer offers "Bind N devices to 0A1B, press Enter". The server binds them one by one: the first becomes that channel's input, the rest become outputs.
+- **Ctrl-drag to box-select**: hold `Ctrl`, press on a row and drag up or down — every device the drag passes over **has its selected state flipped by the drag as a whole**: starting on an unselected device sweeps selection on, starting on a selected device sweeps it off, and the whole drag goes one way. **Starting on a channel row takes the whole channel** (inputs and outputs alike), even while that channel is collapsed. Dragging back restores the rows you left behind, passing over a type header does not select that type, and the same-type-only rule still applies. Leaving the list keeps the drag pinned to the first/last visible row, so rows scrolled out of view are never swept into the selection.
+- **Batch mode**: the footer has a "Batch select" button left of "Bind". Click it to enter batch mode — the button turns into "Exit batch" and stays lit, and clicking it again leaves the mode. In batch mode you no longer hold `Ctrl`: a single click adds or removes a device and dragging still box-selects. **Clicking or dragging over a channel row now selects every device of that channel** — click it again while the whole channel is selected to remove it. In batch mode a channel row is expanded or collapsed with a **right-click** (the left button is reserved for selecting devices). `Ctrl`-clicking a channel row or a type header also enters the mode; type headers still only expand/collapse, and leaving the mode keeps the current selection.
+- **Rename refreshes immediately**: renaming a device or a channel re-scans the network right away, so the tree and the inspector show the new name without waiting for the next poll.
+- **Follows your selection**: picking a device expands the list to it and selects it; if the row is already visible the list does not scroll (so the 2 Hz sync doesn't yank it around). After a bind moves the device to another group, the list follows it there.
+- **Target stays put**: switching the source device keeps the selected target channel — it is only cleared when the new device has a different P2P type (cross-type binding is meaningless).
+- **One-key binding**: With a target set, the bottom **Bind** button and the Enter key both commit. The server returns a result code, so the status line reports either "Bound to 0A1B" or the exact reason it failed (no source / not bindable / network not ready). **The target slot survives the bind**, so you can pick the next device and bind it to the same channel right away.
+- **Inspector**: The right panel leads with status chips (connection / role / channel usage), then a property table, a 2×2 action grid and a channel-usage progress bar. Usage is only shown for ME P2P — other types simply do not have that concept — and the bar turns amber once the channel runs low. Renaming is in-place — the rest of the properties stay visible while you type, and Esc cancels.
 - **Rename / alias**: Set a custom name for an individual P2P, or an alias for a whole channel (its input side).
-- **Bind frequency**: Bind the selected P2P to a 4-digit hexadecimal frequency (e.g. `0A1B`). Every P2P type arbitrates its input/output role automatically: if the target frequency already has another input, the current tunnel becomes an output, otherwise it becomes the input.
-- **Assign new channel**: Assign a brand-new free frequency to the selected non-ME P2P and set it as the input side in one click.
+- **Assign new channel**: Assign a brand-new free frequency to the pairing source and make it the input side in one click.
 - **Auto-configure I/O (ME P2P only)**: Decides whether an ME P2P should act as input or output based on whether its external network is connected to an ME Controller, and assigns a frequency automatically.
-- **Highlight & locate**: Renders P2P tunnels in the world (self / input / output in different colors), optionally turns your head toward the target, and posts location info plus a teleport link to chat.
+- **Highlight doubles as locate**: clicking "Highlight" first closes the GUI, then renders the P2P tunnel in the world (self / input / output in different colors), then turns your head toward the target — the old "Locate" button is merged into it. Head rotation still honours the client option `rotateHeadOnHighlight`. Chat output is location info only; the clickable teleport link is gone. Highlighting a frequency node lists **every input and output** on that channel, each tagged `IN` / `OUT`.
+- **Optional Teleport button**: the 4th slot on P2P device rows and type rows is a standalone "Teleport" button executed server-side (cross-dimension supported). Once you land, the client highlights that device and turns your view toward it — that turn ignores `rotateHeadOnHighlight` (the option only governs highlights; a teleport is a move you asked for, and landing right on the device without turning leaves you disoriented). It only appears when the server option `allowTeleport = true`, and the server re-checks every teleport request. Frequency nodes have no position of their own, so they offer no teleport.
 - **Cross-dimension**: The encoding carries dimension info, so P2P devices can be located and highlighted across dimensions.
 
 ### ⌨️ Controls
@@ -98,18 +110,17 @@ Two config files are provided (in the `config/` directory):
 | Option | Default | Description |
 | --- | --- | --- |
 | `maxCopyVolume` | `2048` | Maximum region volume (block count, range 1 – `Integer.MAX_VALUE`) allowed in Copy Mode; larger selections are rejected |
-| `sendHighlightToChat` | `true` | Whether to post location info and a teleport link to chat when highlighting a P2P device |
+| `sendHighlightToChat` | `true` | Whether to post location info to chat when highlighting a P2P device |
+| `allowTeleport` | `false` | Whether the GUI's "Teleport" button may move the player to a P2P device (cross-dimension supported). When false the button is hidden and teleport requests are rejected server-side |
 
 ### Client config (`advanced_memory_card-client.toml`)
 
 Used to personalize the UI and rendering, organized by section:
 
 - `[client.highlight]`: `rotateHeadOnHighlight` (auto-turn your head when highlighting), `p2pHighlightDurationSec` (1–60 seconds).
-- `[client.treeColors]`: `bg` / `selected` / `hover`.
-- `[client.treeLayout]`: `indentWidth`, `rowHeight`, `iconTextSpacing`, `expandIconWidth`, `channelWarningThreshold`, `p2pNameMaxLength`.
-- `[client.panelColors]`: `bg` / `title` / `label` / `value` / `placeholder` / `separator` / `buttonAreaBg`, plus `notActive` / `notConnected` / `connected` under `[client.panelColors.status]`.
-- `[client.panelLayout]`: `buttonWidth`, `buttonHeight`, `buttonSpacing`, `lineHeight`, `paddingLeft`, `paddingTop`, `buttonCountMax`, etc.
-- `[client.buttonColors]`: `bg` / `hover` / `click` / `text` (generic FlatButton buttons).
+- `[client.treeLayout]`: `rowHeight` (default 14), `indentWidth` (per level, default 10), `channelWarningThreshold`, `nameMaxLength`.
+- `[client.palette]`: semantic palette — `textPrimary` / `textSecondary` / `textTertiary`, `accent` / `accentText`, `rowSelected` / `rowHover`, `surface` / `surfaceHover`, `divider`, `statusOk` / `statusWarn` / `statusDanger`, `chipOkBg` / `chipAccentBg` / `chipWarnBg` / `chipDangerBg`, `overlayBg` / `overlayBorder` / `overlayShadow`.
+  > Defaults are chosen for contrast: every text colour clears 4.5:1 on the list background `#ADB0C4`. The old `treeColors` / `panelColors` / `buttonColors` / `panelLayout` sections are replaced by `palette`.
 - `[client.copyColors]`: `startPos` / `endPos` / `targetedPos` / `overLimit`, plus `ready` / `first` / `second` under `[client.copyColors.selection]`.
 - `[client.highlightColors]`: `self` / `input` / `output` (P2P highlight rendering).
 - `[client.itemColors]`: `color` (base) and `tintColor` (tint).
@@ -125,13 +136,14 @@ Used to personalize the UI and rendering, organized by section:
 3. **Right-click** the opposite corner to mark the end point (white); the selection is now ready to paste (green).
 4. **Right-click air** to apply the configuration to every AE2 device inside the region.
 
-> The panel can be closed at any time; the options stay on the card. Click the cog button on its left to switch it to `COG_DISABLED` if you don't want it to pop up every time.
+> The panel can be closed at any time; the options stay on the card. Grey out the toggle in the left toolbar if you don't want it to pop up every time.
 
 ### Config Mode
 
 1. Switch to Config Mode and **right-click** any P2P tunnel part to open the configuration GUI.
 2. Browse / search the network's P2Ps in the left tree and select a node to view its details.
-3. Use the detail panel buttons to rename, bind a frequency, assign a new channel, auto-configure I/O, highlight & locate, and more.
+3. Use the detail panel buttons to highlight (which also turns your head toward the target), rename, bind a frequency, assign a new channel, auto-configure I/O, and — when `allowTeleport` is enabled — teleport to the device (you arrive facing it, with the device highlighted).
+4. To fix a batch of devices at once, click **Batch select** in the footer (or `Ctrl`-click a channel row / type header to enter it directly), select by clicking, dragging or clicking a channel row, then press Enter to bind.
 
 ## 🔧 Development & Build (for developers)
 
@@ -157,6 +169,23 @@ Used to personalize the UI and rendering, organized by section:
   - `P2PTunnelPartMixin`: exposes AE2's `P2PTunnelPart#setOutput`;
   - `AEBasePartAccessor`: an `@Accessor` that writes `AEBasePart#customName` directly, used for P2P renaming without the side effects of `importSettings`.
 - Resources are produced by the generators under `src/main/java/.../datagen` into `src/generated/resources/`: `ModRecipesProvider`, `ModItemModelsProvider`, `ModEnusLangProvider`, `ModZhcnLangProvider`.
+
+## 📝 Changelog
+
+Full history in [CHANGELOG.md](CHANGELOG.md). Latest release:
+
+### 1.2.0-1.21.1
+
+- **Added** a full Config Mode UI rewrite: source → target pair bar, frequency dropdown (with *New frequency…*), a status line that reports every action, inspector status chips, inline rename, follow-selection, and a four-column list (status / name / frequency / summary).
+- **Added** a teleport button (enabled by the server's `allowTeleport` option, cross-dimension capable; the client highlights the device and turns your view once you have actually arrived), channel highlights that list both inputs and outputs in chat, Ctrl-drag box selection, and a bottom-bar batch mode.
+- **Changed** highlight now also locates (close GUI → light up the world → turn the view), inspector buttons swapped (slot 2 rename, slot 4 teleport), no more teleport links in chat, type names read from the part's item name, and `[client.palette]` replaces the four old colour sections.
+- **Fixed** an intermittent sync-packet encoding crash (`ConcurrentModificationException` disconnecting the client).
+
+### 1.1.0-1.21.1
+
+- **Added** a paste-options panel for Copy Mode (upgrades / settings / priority / config inventory / patterns / P2P type / P2P frequency / name), opened with `G`, auto-opened after copying, stored per card.
+- **Fixed** P2P bindings being lost after relogging, channels permanently showing "not connected" when two inputs shared a frequency, renames not being saved, and part pasting failing when the card is in the off hand.
+- **Note** cards never configured now default to nothing selected.
 
 ## 📄 License
 

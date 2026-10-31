@@ -38,7 +38,7 @@ public class P2PRenderer {
      * @param startTime 开始渲染的时间戳（毫秒）
      * @param duration  持续时间（毫秒）
      * @param color     颜色
-     */ // 渲染信息内部类
+     */
     private record RenderInfo(long startTime, long duration, int color) {
 
         // 检查是否仍在渲染时间内

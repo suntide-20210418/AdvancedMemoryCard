@@ -97,7 +97,7 @@ public class ModZhcnLangProvider extends LanguageProvider {
         add(Keys.BUTTON_REFRESH, "刷新");
         add(Keys.BUTTON_CANCEL, "取消");
         add(Keys.BUTTON_BIND, "绑定");
-        add(Keys.BUTTON_LOCATE, "定位");
+        add(Keys.BUTTON_TELEPORT, "传送");
         add(Keys.BUTTON_INIT_P2P, "初始化P2P");
         add(Keys.BUTTON_ASSIGN_FREQ, "分配新频段");
 
@@ -111,14 +111,56 @@ public class ModZhcnLangProvider extends LanguageProvider {
 
         // 聊天消息
         add(Keys.CHAT_LOCATION_INFO, "%s 在 %s - (%s) ");
-        add(Keys.CHAT_CLICK_TO_TELEPORT, "【点击此处来传送】");
-        add(Keys.CHAT_TELEPORT_HOVER, "点击传送到 %s - (%s)\n需要开启作弊模式或拥有OP权限");
         add(Keys.CHAT_FREQ_HIGHLIGHT_HEADER, "=== 频段 %s 高亮 ===");
-        add(Keys.CHAT_TELEPORT_BUTTON, "【传送】");
 
         // 按键绑定
         add("key.categories.advanced_memory_card", "高级内存卡");
         add("key.advancedmemorycard.switch", "切换模式");
         add("key.advancedmemorycard.copy_options", "复制选项");
+
+        // ===== 配对条 =====
+        add(Keys.PAIR_SOURCE, "源");
+        add(Keys.PAIR_TARGET, "目标");
+        add(Keys.PAIR_TARGET_PLACEHOLDER, "点击选择频段");
+        add(Keys.PAIR_SOURCE_PLACEHOLDER, "在左侧选择设备");
+        add(Keys.PAIR_CLEAR, "解除");
+        add(Keys.PAIR_NEW_FREQ, "新建频段…");
+        add(Keys.PAIR_NO_CHANNEL, "没有可用频段");
+        add(Keys.PAIR_UNNAMED, "未命名");
+        add(Keys.PAIR_SOURCE_MULTI, "已选 %s 台");
+
+        // ===== 状态行 =====
+        add(Keys.STATUS_LINE_IDLE, "选择左侧设备作为源，再选一个频段作为目标");
+        add(Keys.STATUS_LINE_BIND_OK, "已绑定到 %s");
+        add(Keys.STATUS_LINE_BIND_NO_TARGET, "没有源设备：先在左侧选一台 P2P");
+        add(Keys.STATUS_LINE_BIND_INVALID_FREQ, "%s 不是可绑定频段");
+        add(Keys.STATUS_LINE_BIND_NO_GRID, "网络未就绪，绑定未执行");
+        add(Keys.STATUS_LINE_SOURCE_SELECTED, "源设备：%s");
+        add(Keys.STATUS_LINE_ASSIGNED, "已分配新频段 %s");
+        add(Keys.STATUS_LINE_RENAMED, "已改名为 %s");
+        add(Keys.STATUS_LINE_REFRESHED, "已刷新");
+        add(Keys.STATUS_LINE_RENAME_FAILED, "改名未生效：所选 P2P 已不在当前网络");
+        add(Keys.STATUS_LINE_BIND_BATCH_OK, "%s 台设备已绑定到 %s");
+        add(Keys.STATUS_LINE_BIND_BATCH_PARTIAL, "%s 台绑定成功，%s 台失败（目标 %s）");
+
+        // ===== 树列头与汇总 =====
+        add(Keys.TREE_COL_NAME, "名称");
+        add(Keys.TREE_COL_FREQ, "频段");
+        add(Keys.TREE_COL_SUMMARY, "汇总");
+        add(Keys.TREE_SUMMARY_CHANNEL, "%s台 余%s");
+        add(Keys.TREE_SUMMARY_CHANNEL_PLAIN, "%s台");
+        add(Keys.TREE_SUMMARY_TYPE, "%s台 %s频");
+        add(Keys.TREE_ROLE_INPUT, "输入");
+        add(Keys.TREE_ROLE_OUTPUT, "输出");
+        add(Keys.TREE_PREFIX_INPUT, "入");
+        add(Keys.TREE_PREFIX_OUTPUT, "出");
+
+        // ===== 底部操作条 =====
+        add(Keys.ACTION_BAR_HINT, "选中设备 → 选中频段 → 绑定");
+        add(Keys.ACTION_BAR_HINT_READY, "将 %s 绑定到 %s，回车确认");
+        add(Keys.ACTION_BAR_HINT_READY_MULTI, "把 %s 台设备绑定到 %s，回车确认");
+        add(Keys.ACTION_BAR_BIND, "绑定");
+        add(Keys.ACTION_BAR_BATCH, "批量操作");
+        add(Keys.ACTION_BAR_EXIT_BATCH, "退出批量操作");
     }
 }

@@ -1,27 +1,103 @@
 package com.suntide_20210418.advancedmemorycard.client.gui.widgets;
 
+import com.suntide_20210418.advancedmemorycard.client.gui.P2PTypeNames;
 import com.suntide_20210418.advancedmemorycard.config.ModConfigs;
 import com.suntide_20210418.advancedmemorycard.p2p.*;
 import com.suntide_20210418.advancedmemorycard.utils.TranslateHelper;
-import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
 
 import java.util.*;
 import java.util.function.Consumer;
 
 /**
- * P2P树形控件<br/>
- * 显示 P2P类型 -> 频段 -> P2P 的树形结构
+ * P2P 树控件 —— 列式渲染：状态 / 名称 / 频段 / 汇总。
+ *
+ * <p>和旧版的区别（都是可验证的测量结果，不是审美偏好）：
+ * <ul>
+ *   <li>旧版每级缩进 2px、图标预留 2px，三级文字起点只差 4px，层级等于没画；
+ *       现在 10px/级，靠“有没有折叠箭头 + 名称起点”表达层级。</li>
+ *   <li>旧版把别名/hex/台数/剩余频道拼成一个长串，152px 宽被 scissor 硬裁且没有省略号，
+ *       关键的剩余频道常年被切掉；现在拆成两个右对齐的定宽列，超宽按像素截断加省略号。</li>
+ *   <li>旧版用 GOLD/AQUA/GRAY 表达语义，实测对比度 1.08~1.75:1，等于不可读；
+ *       现在只用语义色板的深色文本 + 一个小圆点。</li>
+ * </ul>
  */
 public class P2PTreeWidget extends AbstractWidget {
 
-    // 行高（通过配置动态读取，保留静态常量以兼容外部引用）
-    private static final int ROW_HEIGHT = 12;
+    /** 状态列宽（只有 P2P 叶子节点画圆点） */
+    private static final int COL_STATUS_W = 12;
+    /** 频段列宽 */
+    private static final int COL_FREQ_W = 40;
+    /** 汇总列宽 */
+    private static final int COL_SUMMARY_W = 52;
+    /** 右侧给滚动条留的槽位宽度（滚动条 12px + 1px 间隙） */
+    private static final int SCROLLBAR_GUTTER = 14;
+    /** 折叠箭头的实际绘制宽度（MC 里箭头字宽约 7px，留 9 才不压字） */
+    private static final int CHEVRON_W = 9;
+    private static final int RIGHT_PAD = 4;
+
+    private Map<String, P2PTypeInfo> p2pTypeInfoMap;
+    private Map<P2PPosition, P2PInfo> p2pInfoMap;
+    private Map<String, ChannelInfo> channelInfoMap;
+
+    private final Map<String, Boolean> expandedStateCache = new HashMap<>();
+    private final List<TreeNode> flatNodes = new ArrayList<>();
+
+    private int currentScrollOffset = 0;
+
+    private TreeNode selectedNode = null;
+    private P2PInfo selectedP2PInfo = null;
+
+    private Consumer<P2PInfo> selectionListener;
+    private Consumer<TreeNode> nodeSelectionListener;
+
+    private String currentSearchQuery = null;
+    private boolean isSearchMode = false;
+    private int searchResultCount = 0;
+
+    private P2PInfo pendingNavigateTarget = null;
+    private boolean scrollToSelected = false;
+    private boolean pendingCenter = true;
+    private boolean isNavigating = false;
+    private boolean isRebuilding = false;
+
+    private TreeNode hoveredNode = null;
+
+    /** Ctrl+点击选中的多台设备（按选中顺序）。键是位置，保证重建树后依然对得上。 */
+    private final Set<P2PPosition> multiSelection = new LinkedHashSet<>();
+    /** 多选集合的类型。多选只允许同类型，跨类型时整组作废。 */
+    private String multiSelectionType;
+    /** 多选行的底色：比单选浅一档，左侧加一条绿条区分 */
+    private static final int MULTI_SELECTED_BG = 0xFF4A6EA9;
+    private static final int MULTI_SELECTED_BAR = 0xFF9BE3A8;
+
+    /**
+     * Ctrl + 按住左键向下拖动框选的锚点行下标，-1 表示当前没有拖动。
+     *
+     * <p>锚点用行下标而不是节点引用：拖动过程中树可能被同步包重建，
+     * 下标落在「第几行」这个语义上，重建后依然指得准。
+     */
+    private int dragAnchorIndex = -1;
+    private TreeNode dragAnchorNode;
+    /** 是否已经越过起始行 —— 越过之后才叫拖动，否则仍是一次普通点击 */
+    private boolean dragStarted;
+    /** 按下瞬间的多选集快照：每次拖动都从它重新累加，往回拖才能取消掉多余的行 */
+    private final LinkedHashSet<P2PPosition> dragBaseSelection = new LinkedHashSet<>();
+    private String dragBaseType;
+    /** 这次拖动的方向：true = 扫过即选中，false = 扫过即取消（由起手那一行的选中状态决定） */
+    private boolean dragSelecting = true;
+    /** 多选集变化回调（配对条要实时显示「已选 N 台」） */
+    private Runnable multiSelectionChangedListener;
+    /** 批量操作模式：单击即加选、拖动即框选，不必按着 Ctrl */
+    private boolean batchMode;
+    /** 批量模式开关状态回调（底部操作条要把按钮文字改成「退出批量操作」） */
+    private Consumer<Boolean> batchModeChangedListener;
+
     public P2PTreeWidget(int x, int y, int width, int height) {
         super(x, y, width, height, Component.empty());
     }
@@ -30,101 +106,97 @@ public class P2PTreeWidget extends AbstractWidget {
         return ModConfigs.getClientConfig().treeRowHeight.get();
     }
 
-    // 颜色从配置动态读取
-    private int getColorBg() { return ModConfigs.getClientConfig().treeColorBg.get(); }
+    private int getIndentWidth() {
+        return ModConfigs.getClientConfig().treeIndentWidth.get();
+    }
 
-    private int getColorSelected() { return ModConfigs.getClientConfig().treeColorSelected.get(); }
+    private int getChannelWarningThreshold() {
+        return ModConfigs.getClientConfig().treeChannelWarningThreshold.get();
+    }
 
-    private int getColorHover() { return ModConfigs.getClientConfig().treeColorHover.get(); }
+    private int getP2PNameMaxLength() {
+        return ModConfigs.getClientConfig().treeP2PNameMaxLength.get();
+    }
 
-    // 布局从配置动态读取
-    private int getIndentWidth() { return ModConfigs.getClientConfig().treeIndentWidth.get(); }
+    private int colorSelected() {
+        return ModConfigs.getClientConfig().paletteRowSelected.get();
+    }
 
-    private int getIconTextSpacing() { return ModConfigs.getClientConfig().treeIconTextSpacing.get(); }
+    private int colorHover() {
+        return ModConfigs.getClientConfig().paletteRowHover.get();
+    }
 
-    private int getExpandIconWidth() { return ModConfigs.getClientConfig().treeExpandIconWidth.get(); }
-    // 数据源
-    private Map<String, P2PTypeInfo> p2pTypeInfoMap;
-    // 持久化展开状态缓存：即使父节点收起，子节点的展开状态也会被保留，
-    // 下次展开父节点时自动恢复子节点的原有展开状态。
-    private final Map<String, Boolean> expandedStateCache = new HashMap<>();
-    private Map<P2PPosition, P2PInfo> p2pInfoMap;
+    private int colorText() {
+        return ModConfigs.getClientConfig().paletteTextPrimary.get();
+    }
 
-    // 树节点列表（平铺展示）
-    private List<TreeNode> flatNodes = new ArrayList<>();
+    private int colorTextSecondary() {
+        return ModConfigs.getClientConfig().paletteTextSecondary.get();
+    }
 
-    private int currentScrollOffset = 0;
-    private int totalContentHeight = 0;
+    private int colorTextOnSelected() {
+        return 0xFFFFFFFF;
+    }
 
-    // 选中项
-    private TreeNode selectedNode = null;
-    private P2PInfo selectedP2PInfo = null;
-    private Map<String, ChannelInfo> channelInfoMap;
-    // 选择监听器（仅 P2P 节点选中时回调）
-    private Consumer<P2PInfo> selectionListener;
+    private int colorTextOnSelectedSecondary() {
+        return 0xFFCCD6E8;
+    }
 
-    // 悬停项
-    private TreeNode hoveredNode = null;
-    // 节点选择监听器（所有节点类型选中时回调，包括 P2P_TYPE、CHANNEL、P2P）
-    private Consumer<TreeNode> nodeSelectionListener;
-    // 搜索相关
-    private String currentSearchQuery = null;
-    private boolean isSearchMode = false;
-    private int searchResultCount = 0;
-    // 导航定位相关
-    private P2PInfo pendingNavigateTarget = null;
-    private boolean scrollToSelected = false;
-    // 重入防护：防止 navigateToP2P -> rebuildTree -> restoreSelectedNode -> listener -> navigateToP2P 的无限递归
-    private boolean isNavigating = false;
-    // 重建标志：rebuildTree 期间抑制 listener 通知，防止重建过程中不必要的 navigateToP2P 触发滚动重置
-    private boolean isRebuilding = false;
+    private int colorOk() {
+        return ModConfigs.getClientConfig().paletteStatusOk.get();
+    }
 
-    private int getChannelWarningThreshold() { return ModConfigs.getClientConfig().treeChannelWarningThreshold.get(); }
+    private int colorWarn() {
+        return ModConfigs.getClientConfig().paletteStatusWarn.get();
+    }
 
-    private int getP2PNameMaxLength() { return ModConfigs.getClientConfig().treeP2PNameMaxLength.get(); }
+    private int colorMuted() {
+        return ModConfigs.getClientConfig().paletteTextTertiary.get();
+    }
 
-    /**
-     * 更新数据并重建树
-     */
+    // ==================== 数据 ====================
+
     public void updateData(Map<String, P2PTypeInfo> p2pTypeInfoMap,
                            Map<String, ChannelInfo> channelInfoMap,
                            Map<P2PPosition, P2PInfo> p2pInfoMap) {
         this.p2pTypeInfoMap = p2pTypeInfoMap != null ? p2pTypeInfoMap : new HashMap<>();
         this.channelInfoMap = channelInfoMap != null ? channelInfoMap : new HashMap<>();
         this.p2pInfoMap = p2pInfoMap != null ? p2pInfoMap : new HashMap<>();
-
         rebuildTree();
     }
 
-    /**
-     * 设置选择监听器（仅 P2P 节点选中时回调）
-     */
     public void setSelectionListener(Consumer<P2PInfo> listener) {
         this.selectionListener = listener;
     }
 
-    /**
-     * 设置节点选择监听器（所有节点类型选中时回调）
-     */
     public void setNodeSelectionListener(Consumer<TreeNode> listener) {
         this.nodeSelectionListener = listener;
     }
 
-    /**
-     * 导航到指定的 P2P 节点，自动展开父节点、选中目标并滚动到可见区域。
-     * 当外部需要将树视图聚焦到某个特定 P2P 时调用此方法（例如从详情面板点击某个 P2P 条目）。
-     */
+    /** 强制居中到目标设备（用于“定位”这类显式跳转）。 */
     public void navigateToP2P(P2PInfo targetP2P) {
+        navigate(targetP2P, true);
+    }
+
+    /**
+     * 展开祖先并选中目标设备；只有当它不在可视区时才滚动。
+     *
+     * <p>同步包每 0.5 秒来一次，如果每次都强制居中，玩家刚滚到别处就会被拽回去。
+     * 所以“跟随当前配对源”用这个入口，显式跳转才用 {@link #navigateToP2P}。
+     */
+    public void revealP2P(P2PInfo targetP2P) {
+        navigate(targetP2P, false);
+    }
+
+    private void navigate(P2PInfo targetP2P, boolean alwaysCenter) {
         if (targetP2P == null || isNavigating) return;
         this.pendingNavigateTarget = targetP2P;
         this.scrollToSelected = true;
-
-        // 退出搜索模式，切换到默认树视图以便定位
+        this.pendingCenter = alwaysCenter;
         if (isSearchMode) {
             isSearchMode = false;
             currentSearchQuery = null;
         }
-
         isNavigating = true;
         try {
             rebuildTree();
@@ -133,60 +205,48 @@ public class P2PTreeWidget extends AbstractWidget {
         }
     }
 
-    /**
-     * 重建树结构（保留展开和选中状态）
-     */
+    /** 当前选中的行是否完整落在可视区内 */
+    private boolean isSelectedRowVisible() {
+        if (selectedNode == null) return false;
+        int index = flatNodes.indexOf(selectedNode);
+        if (index < 0) return false;
+        int rowHeight = getRowHeight();
+        int top = index * rowHeight;
+        return top >= currentScrollOffset
+                && top + rowHeight <= currentScrollOffset + getHeight();
+    }
+
     private void rebuildTree() {
-        // 保存当前展开状态
         Set<String> expandedTypeIds = new HashSet<>();
         saveExpandedState(expandedTypeIds);
 
-        // 保存当前选中的节点ID
         String selectedNodeId = getSelectedNodeId();
 
-        // 确定需要确保祖先展开的目标 P2P
-        //   优先使用外部导航目标，其次使用当前已选中的 P2P 节点
         P2PInfo targetP2P = pendingNavigateTarget;
-        if (targetP2P == null
-                && selectedNode != null
-                && selectedNode.type == NodeType.P2P
-                && selectedNode.p2pInfo != null) {
+        if (targetP2P == null && selectedNode != null
+                && selectedNode.type == NodeType.P2P && selectedNode.p2pInfo != null) {
             targetP2P = selectedNode.p2pInfo;
         }
 
-        // 强制展开目标 P2P 的祖先节点，确保其在重建后可见
         if (targetP2P != null) {
             expandedTypeIds.add("type:" + targetP2P.p2pType());
             expandedTypeIds.add("channel:" + targetP2P.frequency());
-            // 同步更新持久化缓存，确保导航触发的展开状态也被记忆
             expandedStateCache.put("type:" + targetP2P.p2pType(), true);
             expandedStateCache.put("channel:" + targetP2P.frequency(), true);
         }
 
-        // 如果存在待导航目标，覆盖选中节点 ID 以确保导航到该目标
         if (pendingNavigateTarget != null) {
             selectedNodeId = TreeNode.p2pNodeId(pendingNavigateTarget);
         }
 
-        // 重建树
         flatNodes.clear();
 
-        // 搜索模式
         if (isSearchMode && currentSearchQuery != null) {
-            // 添加搜索结果头
-            TreeNode headerNode = new TreeNode();
-            headerNode.type = NodeType.SEARCH_HEADER;
-            headerNode.displayComponent = formatSearchHeader();
-            flatNodes.add(headerNode);
-
-            // 构建搜索结果
             buildSearchResults(currentSearchQuery);
         } else {
-            // 默认树
             buildDefaultTree(expandedTypeIds);
         }
 
-        // 恢复选中状态（抑制 listener 通知，避免重建过程中不必要的 navigateToP2P 触发滚动重置）
         isRebuilding = true;
         try {
             restoreSelectedNode(selectedNodeId);
@@ -194,42 +254,27 @@ public class P2PTreeWidget extends AbstractWidget {
             isRebuilding = false;
         }
 
-        // 导航定位完成后滚动视图使选中节点居中可见
         if (scrollToSelected && selectedNode != null) {
-            scrollToSelectedNode();
+            if (pendingCenter || !isSelectedRowVisible()) {
+                scrollToSelectedNode();
+            }
             scrollToSelected = false;
         }
-
-        // 清除一次性导航目标
         pendingNavigateTarget = null;
     }
 
-    /**
-     * 滚动视图使当前选中的节点处于可视区域中部
-     */
     private void scrollToSelectedNode() {
         if (selectedNode == null) return;
-
         int index = flatNodes.indexOf(selectedNode);
         if (index < 0) return;
-
-        int nodeY = index * getRowHeight();
-        int visibleHeight = getHeight();
-
-        // 将选中节点置于可见区域中部偏上
-        int targetScroll = nodeY - visibleHeight / 2 + getRowHeight() / 2;
-        targetScroll = Math.max(0,
-                Math.min(targetScroll, Math.max(0, getTotalContentHeight() - visibleHeight)));
-
+        int rowHeight = getRowHeight();
+        int nodeY = index * rowHeight;
+        int targetScroll = nodeY - getHeight() / 2 + rowHeight / 2;
+        targetScroll = Math.max(0, Math.min(targetScroll, Math.max(0, getTotalContentHeight() - getHeight())));
         this.currentScrollOffset = targetScroll;
     }
 
-    /**
-     * 构建默认树
-     */
     private void buildDefaultTree(Set<String> expandedTypeIds) {
-
-        // 按 P2P 类型排序
         List<String> sortedTypes = new ArrayList<>(p2pTypeInfoMap.keySet());
         sortedTypes.sort(String::compareTo);
 
@@ -240,81 +285,61 @@ public class P2PTreeWidget extends AbstractWidget {
             TreeNode typeNode = new TreeNode();
             typeNode.type = NodeType.P2P_TYPE;
             typeNode.typeName = typeName;
-            typeNode.displayComponent = formatTypeDisplayName(typeName, typeInfo);  // 存储 Component
-            // 优先使用本次重建会话中的展开状态，然后回退到持久化缓存
-            typeNode.expanded = expandedTypeIds.contains(typeNode.getNodeId())
-                    || expandedStateCache.getOrDefault(typeNode.getNodeId(), false);
+            typeNode.expanded = expandedTypeIds.contains("type:" + typeName)
+                    || expandedStateCache.getOrDefault("type:" + typeName, false);
             typeNode.data = typeInfo;
-
             flatNodes.add(typeNode);
 
-            if (typeNode.expanded) {
-                // 获取该类型下的所有频段
-                List<ChannelInfo> channels = typeInfo.channelInfoList();
-                if (channels != null) {
-                    channels.sort(Comparator.comparingInt(ch -> Integer.parseInt(ch.frequency(), 16)));
+            if (!typeNode.expanded) continue;
 
-                    for (ChannelInfo channelInfo : channels) {
-                        TreeNode channelNode = new TreeNode();
-                        channelNode.type = NodeType.CHANNEL;
-                        channelNode.frequency = channelInfo.frequency();
-                        channelNode.displayComponent = formatChannelDisplayName(channelInfo);
-                        // 恢复展开状态：优先本次会话，再回退到持久化缓存
-                        channelNode.expanded = expandedTypeIds.contains(channelNode.getNodeId())
-                                || expandedStateCache.getOrDefault(channelNode.getNodeId(), false);
-                        channelNode.data = channelInfo;
-                        channelNode.parent = typeNode;
+            List<ChannelInfo> channels = typeInfo.channelInfoList();
+            if (channels == null) continue;
+            List<ChannelInfo> sorted = new ArrayList<>(channels);
+            sorted.sort(Comparator.comparingInt(ch -> Integer.parseInt(ch.frequency(), 16)));
 
-                        flatNodes.add(channelNode);
+            for (ChannelInfo channelInfo : sorted) {
+                TreeNode channelNode = new TreeNode();
+                channelNode.type = NodeType.CHANNEL;
+                channelNode.frequency = channelInfo.frequency();
+                channelNode.expanded = expandedTypeIds.contains("channel:" + channelInfo.frequency())
+                        || expandedStateCache.getOrDefault("channel:" + channelInfo.frequency(), false);
+                channelNode.data = channelInfo;
+                channelNode.parent = typeNode;
+                flatNodes.add(channelNode);
 
-                        if (channelNode.expanded) {
-                            // 添加该频段下的所有 P2P
-                            List<P2PInfo> p2ps = channelInfo.p2pInfoList();
-                            if (p2ps != null) {
-                                p2ps.sort((a, b) -> Boolean.compare(a.isOutput(), b.isOutput()));
+                if (!channelNode.expanded) continue;
 
-                                for (P2PInfo p2pInfo : p2ps) {
-                                    TreeNode p2pNode = new TreeNode();
-                                    p2pNode.type = NodeType.P2P;
-                                    p2pNode.p2pInfo = p2pInfo;
-                                    p2pNode.displayComponent = formatP2PDisplayName(p2pInfo);
-                                    p2pNode.parent = channelNode;
-                                    p2pNode.frequency = String.valueOf(p2pInfo.frequency());
-                                    flatNodes.add(p2pNode);
-                                }
-                            }
-                        }
-                    }
+                List<P2PInfo> p2ps = channelInfo.p2pInfoList();
+                if (p2ps == null) continue;
+                List<P2PInfo> sortedP2P = new ArrayList<>(p2ps);
+                sortedP2P.sort((a, b) -> Boolean.compare(a.isOutput(), b.isOutput()));
+                for (P2PInfo p2pInfo : sortedP2P) {
+                    TreeNode p2pNode = new TreeNode();
+                    p2pNode.type = NodeType.P2P;
+                    p2pNode.p2pInfo = p2pInfo;
+                    p2pNode.parent = channelNode;
+                    p2pNode.frequency = p2pInfo.frequency();
+                    flatNodes.add(p2pNode);
                 }
             }
         }
     }
 
-    /**
-     * 保存当前展开状态，同时同步到持久化缓存，确保父节点收起后子节点状态不丢失
-     */
     private void saveExpandedState(Set<String> expandedNodeIds) {
         for (TreeNode node : flatNodes) {
             if (node.expanded) {
                 expandedNodeIds.add(node.getNodeId());
             }
-            // 将所有可展开节点的状态同步到持久化缓存
             if (node.type == NodeType.P2P_TYPE || node.type == NodeType.CHANNEL) {
                 expandedStateCache.put(node.getNodeId(), node.expanded);
             }
         }
     }
 
-    /**
-     * 获取当前选中的 P2P 信息，供外部（如详情面板）同步使用。
-     */
     public P2PInfo getSelectedP2PInfo() {
         return selectedP2PInfo;
     }
 
-    /**
-     * 获取当前选中的树节点，供外部（如详情面板）同步使用。
-     */
     public TreeNode getSelectedNode() {
         return selectedNode;
     }
@@ -323,23 +348,22 @@ public class P2PTreeWidget extends AbstractWidget {
         return currentScrollOffset;
     }
 
-    // 添加新的方法供外部设置滚动偏移
     public void setScrollOffset(int scrollOffset) {
-        this.currentScrollOffset = scrollOffset;
+        this.currentScrollOffset = Math.max(0, Math.min(scrollOffset,
+                Math.max(0, getTotalContentHeight() - getHeight())));
     }
 
-    // 添加获取总内容高度的方法
     public int getTotalContentHeight() {
         return flatNodes.size() * getRowHeight();
     }
 
-    /**
-     * 设置搜索过滤条件
-     * @param query 搜索关键字，为空或 null 时恢复默认树
-     */
+    public int getSearchResultCount() {
+        return searchResultCount;
+    }
+
     public void setSearchFilter(String query) {
         if (query == null || query.trim().isEmpty()) {
-            if (!isSearchMode) return; // 已经是默认模式，无需重建
+            if (!isSearchMode) return;
             this.currentSearchQuery = null;
             this.isSearchMode = false;
         } else {
@@ -349,491 +373,331 @@ public class P2PTreeWidget extends AbstractWidget {
         rebuildTree();
     }
 
-    /**
-     * 构建搜索结果树
-     */
-    private void buildSearchResults(String query) {
-        String lowerQuery = query.toLowerCase();
-        Map<String, Map<String, List<P2PInfo>>> groupedResults = new LinkedHashMap<>();
+    public boolean isSearchMode() {
+        return isSearchMode;
+    }
+
+    private void buildSearchResults(String lowerQuery) {
         searchResultCount = 0;
+        Map<String, Map<String, List<P2PInfo>>> grouped = new LinkedHashMap<>();
 
-        // 遍历所有 P2P 类型，获取其下的所有 P2PInfo
         for (P2PTypeInfo typeInfo : p2pTypeInfoMap.values()) {
-            List<P2PInfo> allP2ps = typeInfo.p2pInfoList();
-            if (allP2ps == null) continue;
-
-            List<P2PInfo> matchedP2ps = allP2ps.stream()
-                    .filter(p2p -> matchesSearch(p2p, lowerQuery))
-                    .toList();
-
-            if (matchedP2ps.isEmpty()) continue;
-
-            // 按频段分组
-            Map<String, List<P2PInfo>> byFrequency = new LinkedHashMap<>();
-            for (P2PInfo p2p : matchedP2ps) {
-                String freq = String.valueOf(p2p.frequency());
-                byFrequency.computeIfAbsent(freq, k -> new ArrayList<>()).add(p2p);
+            List<P2PInfo> all = typeInfo.p2pInfoList();
+            if (all == null) continue;
+            List<P2PInfo> matched = all.stream().filter(p -> matchesSearch(p, lowerQuery)).toList();
+            if (matched.isEmpty()) continue;
+            Map<String, List<P2PInfo>> byFreq = new LinkedHashMap<>();
+            for (P2PInfo p : matched) {
+                byFreq.computeIfAbsent(p.frequency(), k -> new ArrayList<>()).add(p);
             }
-
-            groupedResults.put(typeInfo.p2pType(), byFrequency);
-            searchResultCount += matchedP2ps.size();
+            grouped.put(typeInfo.p2pType(), byFreq);
+            searchResultCount += matched.size();
         }
 
-        // 构建树结构：类型 -> 频段 -> P2P
-        for (var typeEntry : groupedResults.entrySet()) {
-            String typeName = typeEntry.getKey();
-            Map<String, List<P2PInfo>> freqMap = typeEntry.getValue();
-
-            P2PTypeInfo typeInfo = p2pTypeInfoMap.get(typeName);
-            int typeMatchCount = freqMap.values().stream().mapToInt(List::size).sum();
-
+        for (var entry : grouped.entrySet()) {
             TreeNode typeNode = new TreeNode();
             typeNode.type = NodeType.P2P_TYPE;
-            typeNode.typeName = typeName;
-            typeNode.displayComponent = formatSearchTypeName(typeName, typeMatchCount);
-            typeNode.expanded = true; // 搜索模式下默认展开
-            typeNode.data = typeInfo;
+            typeNode.typeName = entry.getKey();
+            typeNode.expanded = true;
+            typeNode.data = p2pTypeInfoMap.get(entry.getKey());
             flatNodes.add(typeNode);
 
-            // 按频段数值排序
-            List<String> sortedFreqs = new ArrayList<>(freqMap.keySet());
-            sortedFreqs.sort(Comparator.comparingInt(f -> Integer.parseInt(f, 16)));
-
-            for (String freq : sortedFreqs) {
-                List<P2PInfo> p2ps = freqMap.get(freq);
-                ChannelInfo channelInfo = channelInfoMap.get(freq);
-
+            List<String> freqs = new ArrayList<>(entry.getValue().keySet());
+            freqs.sort(Comparator.comparingInt(f -> Integer.parseInt(f, 16)));
+            for (String freq : freqs) {
                 TreeNode channelNode = new TreeNode();
                 channelNode.type = NodeType.CHANNEL;
                 channelNode.frequency = freq;
-                channelNode.displayComponent = formatSearchChannelName(freq, channelInfo, p2ps.size());
-                channelNode.expanded = true; // 搜索模式下默认展开
-                channelNode.data = channelInfo;
+                channelNode.expanded = true;
+                channelNode.data = channelInfoMap.get(freq);
                 channelNode.parent = typeNode;
                 flatNodes.add(channelNode);
 
-                // P2P 设备按输出在前排序
+                List<P2PInfo> p2ps = new ArrayList<>(entry.getValue().get(freq));
                 p2ps.sort((a, b) -> Boolean.compare(a.isOutput(), b.isOutput()));
                 for (P2PInfo p2pInfo : p2ps) {
                     TreeNode p2pNode = new TreeNode();
                     p2pNode.type = NodeType.P2P;
                     p2pNode.p2pInfo = p2pInfo;
-                    p2pNode.displayComponent = formatP2PDisplayName(p2pInfo);
                     p2pNode.parent = channelNode;
-                    p2pNode.frequency = String.valueOf(p2pInfo.frequency());
+                    p2pNode.frequency = p2pInfo.frequency();
                     flatNodes.add(p2pNode);
                 }
             }
         }
     }
 
-    /**
-     * 判断 P2P 是否匹配搜索条件（部分匹配）
-     */
     private boolean matchesSearch(P2PInfo p2p, String lowerQuery) {
-        // 匹配 P2P 类型
-        if (p2p.p2pType() != null && p2p.p2pType().toLowerCase().contains(lowerQuery)) {
-            return true;
-        }
-        // 匹配频段
-        if (String.valueOf(p2p.frequency()).toLowerCase().contains(lowerQuery)) {
-            return true;
-        }
-        // 匹配 P2P 名字
-        if (p2p.name() != null && p2p.name().toLowerCase().contains(lowerQuery)) {
-            return true;
-        }
-        // 匹配频段别名（即输入端 P2P 名称）
-        ChannelInfo channelInfo = channelInfoMap.get(String.valueOf(p2p.frequency()));
-        if (channelInfo != null && channelInfo.alias() != null
-                && channelInfo.alias().toLowerCase().contains(lowerQuery)) {
-            return true;
-        }
-        return false;
+        if (p2p.p2pType() != null && p2p.p2pType().toLowerCase().contains(lowerQuery)) return true;
+        if (p2p.p2pType() != null
+                && P2PTypeNames.string(p2p.p2pType()).toLowerCase().contains(lowerQuery)) return true;
+        if (String.valueOf(p2p.frequency()).toLowerCase().contains(lowerQuery)) return true;
+        if (p2p.name() != null && p2p.name().toLowerCase().contains(lowerQuery)) return true;
+        ChannelInfo channelInfo = channelInfoMap.get(p2p.frequency());
+        return channelInfo != null && channelInfo.alias() != null
+                && channelInfo.alias().toLowerCase().contains(lowerQuery);
     }
 
-    /**
-     * 格式化搜索结果中的类型名称
-     */
-    private Component formatSearchTypeName(String typeName, int matchCount) {
-        return Component.literal("📁 ")
-                .append(Component.literal(typeName).withStyle(ChatFormatting.GOLD))
-                .append(Component.literal(String.format(" (%d)", matchCount))
-                        .withStyle(ChatFormatting.GRAY));
-    }
-
-    /**
-     * 格式化搜索结果中的频段名称
-     */
-    private Component formatSearchChannelName(String freq, ChannelInfo channelInfo, int matchCount) {
-        String alias = channelInfo != null ? channelInfo.alias() : null;
-        MutableComponent freqComponent;
-
-        if (alias != null && !alias.equals(freq)) {
-            freqComponent = Component.literal(alias).withStyle(ChatFormatting.AQUA)
-                    .append(Component.literal(String.format(" (%s)", freq)).withStyle(ChatFormatting.DARK_AQUA));
-        } else {
-            freqComponent = Component.literal(freq).withStyle(ChatFormatting.AQUA);
-        }
-
-        return Component.literal("📡 ")
-                .append(freqComponent)
-                .append(Component.literal(String.format(" (%d)", matchCount))
-                        .withStyle(ChatFormatting.GREEN));
-    }
-
-    /**
-     * 格式化搜索结果头
-     */
-    private Component formatSearchHeader() {
-        return TranslateHelper.P2PTree.searchResultCount(searchResultCount)
-                .copy().withStyle(ChatFormatting.YELLOW);
-    }
-
-    /**
-     * 获取当前选中节点的唯一标识
-     */
     private String getSelectedNodeId() {
-        if (selectedNode == null) return null;
-        return selectedNode.getNodeId();
+        return selectedNode == null ? null : selectedNode.getNodeId();
     }
 
-    /**
-     * 恢复选中的节点
-     */
     private void restoreSelectedNode(String selectedNodeId) {
         if (selectedNodeId == null) {
             selectedNode = null;
             selectedP2PInfo = null;
-            // 重建期间抑制 listener 通知
-            if (!isRebuilding && nodeSelectionListener != null) {
-                nodeSelectionListener.accept(null);
-            }
+            if (!isRebuilding && nodeSelectionListener != null) nodeSelectionListener.accept(null);
             return;
         }
-
         for (TreeNode node : flatNodes) {
             if (selectedNodeId.equals(node.getNodeId())) {
                 selectedNode = node;
                 selectedP2PInfo = node.type == NodeType.P2P ? node.p2pInfo : null;
-                if (selectionListener != null && selectedP2PInfo == null) {
-                    selectionListener.accept(null);
-                }
-                // 重建期间抑制 listener 通知
-                if (!isRebuilding && nodeSelectionListener != null) {
-                    nodeSelectionListener.accept(node);
-                }
-                break;
+                if (selectionListener != null && selectedP2PInfo == null) selectionListener.accept(null);
+                if (!isRebuilding && nodeSelectionListener != null) nodeSelectionListener.accept(node);
+                return;
             }
         }
-
-        if (selectedNode == null) {
-            selectedP2PInfo = null;
-            if (selectionListener != null) {
-                selectionListener.accept(null);
-            }
-            // 重建期间抑制 listener 通知
-            if (!isRebuilding && nodeSelectionListener != null) {
-                nodeSelectionListener.accept(null);
-            }
-        }
+        selectedNode = null;
+        selectedP2PInfo = null;
+        if (selectionListener != null) selectionListener.accept(null);
+        if (!isRebuilding && nodeSelectionListener != null) nodeSelectionListener.accept(null);
     }
 
-    /**
-     * 切换节点的展开/收起状态
-     */
     private void toggleNode(TreeNode node) {
-        if (node.type == NodeType.P2P) return; // P2P 不可展开
-        if (node.type == NodeType.SEARCH_HEADER) return; // 搜索头不可展开
-
+        if (node.type == NodeType.P2P) return;
         node.expanded = !node.expanded;
         rebuildTree();
     }
 
-    /**
-     * 格式化类型显示名称（返回 Component）
-     */
-    private Component formatTypeDisplayName(String typeName, P2PTypeInfo typeInfo) {
-        int p2pCount = typeInfo.p2pCount();
-        int channelCount = typeInfo.channelCount();
+    // ==================== 渲染 ====================
 
-        return Component.literal("📁 ")
-                .append(Component.literal(typeName).withStyle(ChatFormatting.GOLD))
-                .append(Component.literal(String.format(" (%d P2P, %d Freq)", p2pCount, channelCount))
-                        .withStyle(ChatFormatting.GRAY));
+    private int contentWidth() {
+        return width - SCROLLBAR_GUTTER;
     }
 
-    /**
-     * 格式化频段显示名称
-     */
-    private Component formatChannelDisplayName(ChannelInfo channelInfo) {
-        String alias = channelInfo.alias();
-        String freq = channelInfo.frequency();
-        int channelRemaining = channelInfo.channelRemaining();
-        int p2pCount = channelInfo.p2pCount();
-        boolean isMEP2P = channelInfo.p2pType().equals("me_p2p_tunnel");
-
-        MutableComponent freqComponent;
-
-        if (alias != null && !alias.equals(freq)) {
-            freqComponent = Component.literal(alias).withStyle(ChatFormatting.AQUA)
-                    .append(Component.literal(String.format(" (%s)", freq)).withStyle(ChatFormatting.DARK_AQUA));
-        } else {
-            freqComponent = Component.literal(freq).withStyle(ChatFormatting.AQUA);
-        }
-
-        MutableComponent result = Component.literal("📡 ")
-                .append(freqComponent);
-
-        if (isMEP2P) {
-            // ME P2P：显示 P2P 数量和剩余频道数，颜色根据剩余频道数动态变化
-            ChatFormatting channelColor = ChatFormatting.GREEN;
-            if (channelRemaining <= 0) {
-                channelColor = ChatFormatting.RED;
-            } else if (channelRemaining < getChannelWarningThreshold()) {
-                channelColor = ChatFormatting.YELLOW;
-            }
-            result.append(Component.literal(String.format(" [%d P2P | ⚡%d]", p2pCount, channelRemaining))
-                    .withStyle(channelColor));
-        } else {
-            // 非 ME P2P：不显示频道数，恒定绿色
-            result.append(Component.literal(String.format(" [%d P2P]", p2pCount))
-                    .withStyle(ChatFormatting.GREEN));
-        }
-
-        return result;
+    /** 频段列的右对齐基线 */
+    private int freqRight() {
+        return getX() + contentWidth() - COL_SUMMARY_W - RIGHT_PAD;
     }
 
-    /**
-     * 格式化 P2P 显示名称
-     */
-    private Component formatP2PDisplayName(P2PInfo p2pInfo) {
-        String name = p2pInfo.name().isEmpty() ? p2pInfo.toShortString() : p2pInfo.name();
-        boolean isOutput = p2pInfo.isOutput();
-        boolean isActive = p2pInfo.isActive();
-        boolean isConnected = p2pInfo.isConnected();
-        boolean isPendingBind = p2pInfo.isPendingBind();
-
-        // 状态图标和颜色
-        MutableComponent statusComponent;
-        if (!isActive) {
-            statusComponent = Component.literal("⭕").withStyle(ChatFormatting.GRAY);
-        } else if (isConnected) {
-            statusComponent = Component.literal("🟢").withStyle(ChatFormatting.GREEN);
-        } else {
-            statusComponent = Component.literal("🔴").withStyle(ChatFormatting.RED);
-        }
-
-        // 方向图标
-        MutableComponent directionComponent = isOutput ?
-                Component.literal("📤").withStyle(ChatFormatting.YELLOW) :
-                Component.literal("📥").withStyle(ChatFormatting.BLUE);
-
-        // 名称颜色（待绑定的特殊标记）
-        MutableComponent nameComponent;
-        if (isPendingBind) {
-            nameComponent = Component.literal(truncateString(name, getP2PNameMaxLength()))
-                    .withStyle(ChatFormatting.LIGHT_PURPLE, ChatFormatting.BOLD);
-        } else if (isActive && isConnected) {
-            nameComponent = Component.literal(truncateString(name, getP2PNameMaxLength()))
-                    .withStyle(ChatFormatting.WHITE);
-        } else {
-            nameComponent = Component.literal(truncateString(name, getP2PNameMaxLength()))
-                    .withStyle(ChatFormatting.YELLOW);
-        }
-
-        MutableComponent result = Component.literal("")
-                .append(statusComponent)
-                .append(directionComponent)
-                .append(Component.literal(" ").withStyle(ChatFormatting.RESET))
-                .append(nameComponent);
-
-        if (isPendingBind) {
-            result.append(Component.literal(" ◆ ").withStyle(ChatFormatting.LIGHT_PURPLE));
-        }
-
-        return result;
+    /** 汇总列的右对齐基线 */
+    private int summaryRight() {
+        return getX() + contentWidth() - RIGHT_PAD;
     }
 
-    /**
-     * 截断字符串
-     */
-    private String truncateString(String str, int maxLength) {
-        if (str == null) return "";
-        return str.length() > maxLength ? str.substring(0, maxLength - 3) + "..." : str;
+    /** 名称列可用宽度 */
+    private int nameMaxWidth(int nameX) {
+        int nameEnd = getX() + contentWidth() - COL_FREQ_W - COL_SUMMARY_W;
+        return Math.max(10, nameEnd - nameX - RIGHT_PAD);
     }
 
-    // 修改 getNodeAt 方法，移除滚动条检测
-    private TreeNode getNodeAt(double mouseX, double mouseY) {
-        if (mouseX < getX() || mouseX > getX() + width ||
-                mouseY < getY() || mouseY > getY() + height) {
-            return null;
-        }
+    /** 列头由 Screen 在 super.render() 之后调用，画在树区上方的空带里。 */
+    public void renderColumnHeader(GuiGraphics g, int headerX, int headerY) {
+        Font font = Minecraft.getInstance().font;
+        int textColor = colorTextSecondary();
+        g.drawString(font, TranslateHelper.TreeColumn.name().getString(),
+                headerX + COL_STATUS_W, headerY, textColor, false);
 
-        int relativeY = (int) (mouseY - getY() + currentScrollOffset);
-        int index = relativeY / getRowHeight();
+        String freq = TranslateHelper.TreeColumn.frequency().getString();
+        g.drawString(font, freq,
+                headerX + contentWidth() - COL_SUMMARY_W - RIGHT_PAD - font.width(freq),
+                headerY, textColor, false);
 
-        if (index >= 0 && index < flatNodes.size()) {
-            return flatNodes.get(index);
-        }
-        return null;
+        String summary = TranslateHelper.TreeColumn.summary().getString();
+        g.drawString(font, summary,
+                headerX + contentWidth() - RIGHT_PAD - font.width(summary),
+                headerY, textColor, false);
     }
 
     @Override
-    public void onClick(double mouseX, double mouseY) {
-        TreeNode clicked = getNodeAt(mouseX, mouseY);
-        if (clicked != null) {
-            // 搜索头不响应点击
-            if (clicked.type == NodeType.SEARCH_HEADER) return;
-            // 可展开的节点类型
-            toggleNode(clicked);
-            selectNode(clicked);
-        }
-    }
-
-    /**
-     * 选中节点
-     */
-    private void selectNode(TreeNode node) {
-        this.selectedNode = node;
-
-        if (node.type == NodeType.P2P) {
-            this.selectedP2PInfo = node.p2pInfo;
-            if (selectionListener != null) {
-                selectionListener.accept(node.p2pInfo);
-            }
-        } else {
-            this.selectedP2PInfo = null;
-            if (selectionListener != null) {
-                selectionListener.accept(null);
-            }
-        }
-
-        // 重建期间抑制 listener 通知，避免重建过程中触发 navigateToP2P 导致滚动重置
-        if (!isRebuilding && nodeSelectionListener != null) {
-            nodeSelectionListener.accept(node);
-        }
-    }
-
-    @Override
-    public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-
-        // 更新原生 isHovered 状态（MC 依赖此字段判断 isHoveredOrFocused()）
+    public void renderWidget(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         this.isHovered = mouseX >= getX() && mouseX <= getX() + width
                 && mouseY >= getY() && mouseY <= getY() + height;
-
-        // 更新悬停项
         hoveredNode = getNodeAt(mouseX, mouseY);
 
-        // 绘制背景
-        renderBackground(guiGraphics);
-
-        // 启用 scissor 裁剪
-        guiGraphics.enableScissor(getX(), getY(), getX() + width, getY() + height);
-
-        // 绘制树内容
-        renderTreeContent(guiGraphics, mouseX, mouseY);
-
-        // 禁用 scissor
-        guiGraphics.disableScissor();
+        g.enableScissor(getX(), getY(), getX() + width, getY() + height);
+        renderTreeContent(g);
+        g.disableScissor();
     }
 
-    /**
-     * 绘制背景
-     */
-    private void renderBackground(GuiGraphics guiGraphics) {
-        // 使用 GUI 默认背景色（透明或半透明，让 JSON 定义的背景透出）
-        // 这里绘制半透明深色作为基础背景
-        guiGraphics.fill(getX(), getY(), getX() + width, getY() + height, getColorBg());
-    }
+    private void renderTreeContent(GuiGraphics g) {
+        Font font = Minecraft.getInstance().font;
 
-    /**
-     * 绘制树内容（修改后，排除滚动条区域）
-     */
-    private void renderTreeContent(GuiGraphics guiGraphics, int mouseX, int mouseY) {
         if (flatNodes.isEmpty()) {
-            Component emptyText = TranslateHelper.P2PTree.empty()
-                    .copy().withStyle(ChatFormatting.BLACK);
-            int textWidth = Minecraft.getInstance().font.width(emptyText);
-            guiGraphics.drawString(Minecraft.getInstance().font, emptyText,
-                    getX() + (width - textWidth) / 2,
-                    getY() + height / 2 - 4,
-                    -1, false);
+            Component empty = TranslateHelper.P2PTree.empty();
+            int w = font.width(empty);
+            g.drawString(font, empty, getX() + (width - w) / 2, getY() + height / 2 - 4,
+                    colorTextSecondary(), false);
             return;
         }
 
         int rowHeight = getRowHeight();
         int startIndex = currentScrollOffset / rowHeight;
         int endIndex = Math.min(flatNodes.size(), startIndex + (height + rowHeight - 1) / rowHeight + 1);
-        int yOffset = getY() - currentScrollOffset + startIndex * rowHeight;
-
-        int clickableWidth = width;
+        int startY = getY() - currentScrollOffset + startIndex * rowHeight;
 
         for (int i = startIndex; i < endIndex; i++) {
             TreeNode node = flatNodes.get(i);
-            int rowY = yOffset + (i - startIndex) * rowHeight;
+            int rowY = startY + (i - startIndex) * rowHeight;
+            if (rowY + rowHeight < getY() || rowY > getY() + height) continue;
 
-            if (rowY + rowHeight < getY() || rowY > getY() + height) {
-                continue;
+            boolean isSelected = node == selectedNode;
+            boolean isMulti = node.type == NodeType.P2P && node.p2pInfo != null
+                    && multiSelection.contains(positionKey(node.p2pInfo));
+            boolean isHovered = node == hoveredNode && !isSelected && !isMulti;
+
+            if (isSelected) {
+                g.fill(getX(), rowY, getX() + contentWidth(), rowY + rowHeight, colorSelected());
+            } else if (isMulti) {
+                g.fill(getX(), rowY, getX() + contentWidth(), rowY + rowHeight, MULTI_SELECTED_BG);
+            } else if (isHovered) {
+                g.fill(getX(), rowY, getX() + contentWidth(), rowY + rowHeight, colorHover());
+            }
+            if (isMulti) {
+                g.fill(getX(), rowY, getX() + 2, rowY + rowHeight, MULTI_SELECTED_BAR);
             }
 
-            int indent = getIndent(node);
-            int iconX = getX() + indent;
-            int textX = getX() + indent + getExpandIconWidth() + getIconTextSpacing();
             int textY = rowY + (rowHeight - 8) / 2;
+            int indent = getIndent(node);
+            int nameX = getX() + COL_STATUS_W + indent;
 
-            // 绘制选中背景
-            if (node == selectedNode) {
-                guiGraphics.fill(getX(), rowY, getX() + clickableWidth, rowY + rowHeight, getColorSelected());
-            } else if (node == hoveredNode) {
-                guiGraphics.fill(getX(), rowY, getX() + clickableWidth, rowY + rowHeight, getColorHover());
+            int primary = isSelected ? colorTextOnSelected() : colorText();
+            int secondary = isSelected ? colorTextOnSelectedSecondary() : colorTextSecondary();
+
+            switch (node.type) {
+                case P2P_TYPE -> {
+                    drawChevron(g, nameX, rowY, node.expanded, secondary);
+                    String text = fit(font, P2PTypeNames.string(node.typeName),
+                            nameMaxWidth(nameX + CHEVRON_W));
+                    g.drawString(font, text, nameX + CHEVRON_W, textY, primary, false);
+                    if (node.data instanceof P2PTypeInfo info) {
+                        String summary = TranslateHelper.translate(
+                                TranslateHelper.Keys.TREE_SUMMARY_TYPE,
+                                info.p2pCount(), info.channelCount()).getString();
+                        drawRight(g, font, summary, summaryRight(), textY, secondary);
+                    }
+                }
+                case CHANNEL -> {
+                    drawChevron(g, nameX, rowY, node.expanded, secondary);
+                    ChannelInfo info = node.data instanceof ChannelInfo c ? c : null;
+                    String alias = info != null && info.alias() != null ? info.alias() : node.frequency;
+                    String text = fit(font, alias, nameMaxWidth(nameX + CHEVRON_W));
+                    g.drawString(font, text, nameX + CHEVRON_W, textY, primary, false);
+                    if (info != null) {
+                        P2PChannelUsage usage = P2PChannelUsage.ofChannel(info);
+                        String summary;
+                        int color = secondary;
+                        if (usage.available()) {
+                            summary = TranslateHelper.translate(
+                                    TranslateHelper.Keys.TREE_SUMMARY_CHANNEL,
+                                    info.p2pCount(), usage.remaining()).getString();
+                            if (usage.remaining() < getChannelWarningThreshold()) {
+                                color = isSelected ? 0xFFFFD9A0 : colorWarn();
+                            }
+                        } else {
+                            // 非 ME 频段没有“频道”这个概念，只报台数
+                            summary = TranslateHelper.translate(
+                                    TranslateHelper.Keys.TREE_SUMMARY_CHANNEL_PLAIN,
+                                    info.p2pCount()).getString();
+                        }
+                        drawRight(g, font, summary, summaryRight(), textY, color);
+                    }
+                    drawRight(g, font, node.frequency, freqRight(), textY, secondary);
+                }
+                case P2P -> {
+                    P2PInfo info = node.p2pInfo;
+                    if (info == null) break;
+                    int dotX = getX() + 4;
+                    int dotY = rowY + rowHeight / 2 - 2;
+                    g.fill(dotX, dotY, dotX + 5, dotY + 5, statusColor(info, isSelected));
+
+                    String label = info.name() == null || info.name().isEmpty()
+                            ? info.toShortString()
+                            : info.name();
+                    if (label.length() > getP2PNameMaxLength()) {
+                        label = label.substring(0, Math.max(1, getP2PNameMaxLength() - 1)) + "…";
+                    }
+                    String text = fit(font, label, nameMaxWidth(nameX));
+                    g.drawString(font, text, nameX, textY, primary, false);
+
+                    // ME 设备在汇总列显示频道占用，带「入 / 出」前缀区分角色：
+                    // 输入端用自己的外部网络数字，输出端用频道视角（见 P2PChannelUsage.ofRow）。
+                    // 非 ME 类型没有这个概念，仍然显示输入/输出角色。
+                    ChannelInfo channel = channelInfoMap == null ? null : channelInfoMap.get(info.frequency());
+                    P2PChannelUsage usage = P2PChannelUsage.ofRow(info, channel);
+                    String summaryText;
+                    int summaryColor;
+                    if (usage.available()) {
+                        String prefix = TranslateHelper.translate(info.isOutput()
+                                ? TranslateHelper.Keys.TREE_PREFIX_OUTPUT
+                                : TranslateHelper.Keys.TREE_PREFIX_INPUT).getString();
+                        summaryText = prefix + " " + usage.used() + "/" + usage.max();
+                        summaryColor = isSelected ? colorTextOnSelectedSecondary()
+                                : (usage.remaining() < getChannelWarningThreshold()
+                                ? colorWarn() : colorOk());
+                    } else {
+                        summaryText = TranslateHelper.translate(info.isOutput()
+                                ? TranslateHelper.Keys.TREE_ROLE_OUTPUT
+                                : TranslateHelper.Keys.TREE_ROLE_INPUT).getString();
+                        summaryColor = isSelected ? colorTextOnSelectedSecondary()
+                                : (info.isOutput() ? colorTextSecondary() : colorOk());
+                    }
+                    drawRight(g, font, summaryText, summaryRight(), textY, summaryColor);
+
+                    if (info.frequency() != null && !"0000".equals(info.frequency())) {
+                        drawRight(g, font, info.frequency(), freqRight(), textY, secondary);
+                    }
+                }
+                default -> { }
             }
-
-            // 绘制展开/收起图标（对于可展开的节点）
-            if (node.type == NodeType.P2P_TYPE || node.type == NodeType.CHANNEL) {
-                String iconSymbol = node.expanded ? "▼" : "▶";
-                MutableComponent iconComponent = Component.literal(iconSymbol)
-                        .withStyle(ChatFormatting.GOLD);
-                guiGraphics.drawString(Minecraft.getInstance().font, iconComponent,
-                        iconX, rowY + (rowHeight - 8) / 2, -1, false);
-            }
-
-            // 绘制文本（scissor 已启用，无需手动截断，直接绘制以保留颜色样式）
-            Component displayComponent = getDisplayComponent(node);
-            guiGraphics.drawString(Minecraft.getInstance().font, displayComponent,
-                    textX, textY, -1, false);
         }
     }
 
-    private Component getDisplayComponent(TreeNode node) {
-        return switch (node.type) {
-            case P2P_TYPE -> {
-                if (node.data instanceof P2PTypeInfo typeInfo) {
-                    yield formatTypeDisplayName(node.typeName, typeInfo);
-                }
-                yield node.displayComponent != null ? node.displayComponent : Component.literal(node.typeName);
-            }
-            case CHANNEL -> {
-                if (node.data instanceof ChannelInfo) {
-                    yield formatChannelDisplayName((ChannelInfo) node.data);
-                }
-                yield node.displayComponent != null ? node.displayComponent : Component.literal(node.frequency);
-            }
-            case P2P -> {
-                if (node.p2pInfo != null) {
-                    yield formatP2PDisplayName(node.p2pInfo);
-                }
-                yield TranslateHelper.P2PTree.unknownP2P();
-            }
-            case SEARCH_HEADER -> node.displayComponent != null
-                    ? node.displayComponent
-                    : TranslateHelper.P2PTree.searchResults();
-        };
+    private int statusColor(P2PInfo info, boolean isSelected) {
+        if (isSelected) return 0xFFB7E3BE;
+        if (!info.isActive()) return colorMuted();
+        return info.isConnected() ? colorOk() : colorWarn();
     }
 
-    /**
-     * 获取缩进级别（基于父链深度）
-     */
+    private void drawRight(GuiGraphics g, Font font, String text, int rightX, int y, int color) {
+        g.drawString(font, text, rightX - font.width(text), y, color, false);
+    }
+
+    private void drawChevron(GuiGraphics g, int x, int rowY, boolean expanded, int color) {
+        int cy = rowY + getRowHeight() / 2;
+        if (expanded) {
+            g.fill(x, cy - 1, x + 5, cy, color);
+            g.fill(x + 1, cy, x + 4, cy + 1, color);
+            g.fill(x + 2, cy + 1, x + 3, cy + 2, color);
+        } else {
+            g.fill(x, cy - 2, x + 1, cy + 3, color);
+            g.fill(x + 1, cy - 1, x + 2, cy + 2, color);
+            g.fill(x + 2, cy, x + 3, cy + 1, color);
+        }
+    }
+
+    /** 按像素宽度截断并补省略号。scissor 硬裁会切在字中间，看起来像渲染 bug。 */
+    private String fit(Font font, String text, int maxWidth) {
+        if (text == null) return "";
+        if (font.width(text) <= maxWidth) return text;
+        String ellipsis = "…";
+        int budget = maxWidth - font.width(ellipsis);
+        if (budget <= 0) return "";
+        StringBuilder sb = new StringBuilder();
+        int acc = 0;
+        for (int i = 0; i < text.length(); ) {
+            int cp = text.codePointAt(i);
+            String ch = new String(Character.toChars(cp));
+            int cw = font.width(ch);
+            if (acc + cw > budget) break;
+            sb.append(ch);
+            acc += cw;
+            i += Character.charCount(cp);
+        }
+        return sb + ellipsis;
+    }
+
     private int getIndent(TreeNode node) {
         int depth = 0;
         TreeNode current = node.parent;
@@ -842,6 +706,408 @@ public class P2PTreeWidget extends AbstractWidget {
             current = current.parent;
         }
         return depth * getIndentWidth();
+    }
+
+    private TreeNode getNodeAt(double mouseX, double mouseY) {
+        if (mouseX < getX() || mouseX > getX() + width
+                || mouseY < getY() || mouseY > getY() + height) {
+            return null;
+        }
+        int index = rowIndexAt(mouseY);
+        if (index >= 0 && index < flatNodes.size()) {
+            return flatNodes.get(index);
+        }
+        return null;
+    }
+
+    /**
+     * 屏幕 y 落在第几行。允许越界（负数或超出末行），由调用方决定是钳位还是丢弃 ——
+     * 框选时指针划出控件上下边界是常态，那里应该继续往首行 / 末行延伸。
+     */
+    private int rowIndexAt(double mouseY) {
+        int relativeY = (int) (mouseY - getY() + currentScrollOffset);
+        return Math.floorDiv(relativeY, getRowHeight());
+    }
+
+    private int clampRowIndex(int index) {
+        if (flatNodes.isEmpty()) return 0;
+        return Math.max(0, Math.min(flatNodes.size() - 1, index));
+    }
+
+    /**
+     * 把行下标限制在「当前可见的那一段」里。
+     *
+     * <p>框选时指针划出上下边界要能继续延伸，但不能顺手把滚出视野的行也选进来 ——
+     * 那些行玩家根本没看见，而选中的设备是要拿去绑频段的（会改角色），
+     * 误选一屏看不见的设备比「拖不到底」糟糕得多。想选更多就边拖边滚轮。
+     */
+    private int visibleRowIndex(int index) {
+        if (flatNodes.isEmpty()) return 0;
+        int rowHeight = getRowHeight();
+        int firstVisible = currentScrollOffset / rowHeight;
+        int visibleRows = Math.max(1, height / rowHeight);
+        int lastVisible = Math.min(flatNodes.size() - 1, firstVisible + visibleRows - 1);
+        return Math.max(firstVisible, Math.min(lastVisible, index));
+    }
+
+    @Override
+    public void onClick(double mouseX, double mouseY) {
+        TreeNode clicked = getNodeAt(mouseX, mouseY);
+        if (clicked == null || clicked.type == NodeType.SEARCH_HEADER) return;
+
+        // Ctrl 点非设备行 = 进批量模式：这是「我知道要选一堆，别让我一直按着 Ctrl」的入口。
+        // 设备行上的 Ctrl 单击仍然是「临时加选」，改的是这一次的选择，不改模式。
+        if (clicked.type != NodeType.P2P && isControlDown() && !batchMode) {
+            setBatchMode(true);
+        }
+        boolean additive = isAdditiveSelect();
+
+        if (clicked.type == NodeType.P2P) {
+            if (additive) {
+                // 加选 / 再点一次取消：攒多台设备，一次绑到同一个频段
+                P2PPosition key = positionKey(clicked.p2pInfo);
+                String type = clicked.p2pInfo == null ? null : clicked.p2pInfo.p2pType();
+                if (key != null) {
+                    if (multiSelection.contains(key)) {
+                        multiSelection.remove(key);
+                    } else if (!multiSelection.isEmpty() && !Objects.equals(multiSelectionType, type)) {
+                        // 类型不同：原来那几台全部取消，改成只选这一台。
+                        // 混着不同类型去绑同一条频段没有意义 —— 频段在树里就是按类型分组的。
+                        multiSelection.clear();
+                        multiSelection.add(key);
+                        multiSelectionType = type;
+                    } else {
+                        multiSelection.add(key);
+                        if (multiSelectionType == null) {
+                            multiSelectionType = type;
+                        }
+                    }
+                    if (multiSelection.isEmpty()) {
+                        multiSelectionType = null;
+                    }
+                }
+            } else {
+                clearMultiSelection();
+            }
+            selectNode(clicked);
+            return;
+        }
+
+        if (additive) {
+            // 批量模式下频段行是「整条频段的设备」快捷入口，不再是「选中目标频段」：
+            // 点它就等于把这条频段两端全部收进多选集，不必先展开、也不必拖。
+            if (clicked.type == NodeType.CHANNEL) {
+                toggleChannelSelection(clicked);
+            } else {
+                // 类型行只负责展开折叠，不选设备 —— 点一下标题就选走一整个类型太容易误操作
+                toggleNode(clicked);
+            }
+            return;
+        }
+
+        // 普通模式：类型 / 频段节点退出多选，并按原逻辑展开折叠、选中
+        clearMultiSelection();
+        toggleNode(clicked);
+        selectNode(clicked);
+    }
+
+    /**
+     * 批量模式下点频段行：整条频段的设备进多选集，再点一次则整条退掉。
+     *
+     * <p>做成「全有 / 全无」而不是无脑追加，是因为频段行本身就是这条频段的开关：
+     * 追加的话第二次点击没有任何可见反馈，玩家会以为没点上。
+     */
+    private void toggleChannelSelection(TreeNode channelNode) {
+        if (!(channelNode.data instanceof ChannelInfo info)) return;
+        List<P2PInfo> members = info.p2pInfoList();
+        if (members == null || members.isEmpty()) return;
+
+        String type = anchorType(channelNode);
+        boolean allSelected = true;
+        for (P2PInfo member : members) {
+            P2PPosition key = positionKey(member);
+            if (key == null || !multiSelection.contains(key)) {
+                allSelected = false;
+                break;
+            }
+        }
+        if (allSelected) {
+            for (P2PInfo member : members) {
+                P2PPosition key = positionKey(member);
+                if (key != null) multiSelection.remove(key);
+            }
+            if (multiSelection.isEmpty()) multiSelectionType = null;
+        } else {
+            if (!multiSelection.isEmpty() && type != null
+                    && !Objects.equals(multiSelectionType, type)) {
+                // 与 Ctrl 加选同一条规则：类型不同就整组换掉，不做混合
+                multiSelection.clear();
+            }
+            for (P2PInfo member : members) {
+                P2PPosition key = positionKey(member);
+                if (key != null) multiSelection.add(key);
+            }
+            if (multiSelectionType == null) multiSelectionType = type;
+        }
+        notifyMultiSelectionChanged();
+    }
+
+    /** 这次点击 / 拖动是否按「加选」处理：批量模式常开，或者临时按着 Ctrl。 */
+    private boolean isAdditiveSelect() {
+        return batchMode || isControlDown();
+    }
+
+    /** 是否处在批量操作模式（单击即选中，不需要按 Ctrl）。 */
+    public boolean isBatchMode() {
+        return batchMode;
+    }
+
+    /**
+     * 开关批量操作模式。
+     *
+     * <p>退出时不清掉已选集合：批量选完正好接着选目标频段去绑定，
+     * 模式只是决定「单击算不算加选」，与选择内容无关。
+     */
+    public void setBatchMode(boolean batchMode) {
+        if (this.batchMode == batchMode) return;
+        this.batchMode = batchMode;
+        // 模式是在点击过程中被切换的（Ctrl 点非设备行）时，按住不放的那次点击
+        // 也要按新语义处理，所以这里不打断现存的多选与拖动锚点。
+        if (batchModeChangedListener != null) {
+            batchModeChangedListener.accept(batchMode);
+        }
+    }
+
+    public void setBatchModeChangedListener(Consumer<Boolean> listener) {
+        this.batchModeChangedListener = listener;
+    }
+
+    /** 清空 Ctrl 多选（源槽上的 × 会用到）。 */
+    public void clearMultiSelection() {
+        multiSelection.clear();
+        multiSelectionType = null;
+    }
+
+    /** 是否正在 Ctrl 拖动框选（界面层用它决定要不要抢先转发拖动事件）。 */
+    public boolean isDragSelecting() {
+        return dragAnchorIndex >= 0;
+    }
+
+    /** 多选集变化回调。配对条要实时显示「已选 N 台」，不能等到下一次同步包。 */
+    public void setMultiSelectionChangedListener(Runnable listener) {
+        this.multiSelectionChangedListener = listener;
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        TreeNode hovered = getNodeAt(mouseX, mouseY);
+        // 批量模式里左键被「选中 / 取消选中设备」占用了，频段行的展开折叠挪到右键。
+        // 只在批量模式下改语义：普通模式左键点频段行仍然是展开/折叠。
+        if (button == 1 && batchMode && hovered != null && hovered.type == NodeType.CHANNEL) {
+            toggleNode(hovered);
+            notifyMultiSelectionChanged();
+            return true;
+        }
+        // 批量模式里不需要按着什么键，按下就能拖出框
+        if (button == 0 && isAdditiveSelect()) {
+            if (hovered != null && hovered.type != NodeType.SEARCH_HEADER) {
+                beginDragSelection(hovered, mouseY);
+            }
+        }
+        // 仍然交给原有逻辑：单击就是「加选 / 取消加选」，拖动则由 mouseDragged 接管
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    private void beginDragSelection(TreeNode node, double mouseY) {
+        dragAnchorIndex = clampRowIndex(rowIndexAt(mouseY));
+        dragAnchorNode = node;
+        dragStarted = false;
+        dragBaseSelection.clear();
+        dragBaseSelection.addAll(multiSelection);
+        dragBaseType = multiSelectionType;
+
+        // 拖动是「刷子」：整段拖动只朝一个方向改状态。
+        // 起手那一行的设备已经全在集合里时，这次拖动就是在取消；否则是在选中。
+        // （往回拖不会反复横跳，因为每次都是从按下瞬间的快照重算。）
+        LinkedHashSet<P2PPosition> anchorDevices = new LinkedHashSet<>();
+        collectDevices(node, anchorDevices, anchorType(node));
+        dragSelecting = anchorDevices.isEmpty() || !dragBaseSelection.containsAll(anchorDevices);
+    }
+
+    @Override
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+        if (button == 0 && dragAnchorIndex >= 0) {
+            int endIndex = visibleRowIndex(rowIndexAt(mouseY));
+            // 指针必须离开起手那一行才算拖动，否则 Ctrl 单击会被当成「只选了起手行」
+            if (endIndex != dragAnchorIndex) {
+                dragStarted = true;
+            }
+            if (dragStarted) {
+                applyDragSelection(endIndex);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        if (button == 0 && dragAnchorIndex >= 0) {
+            boolean wasDragging = dragStarted;
+            clearDragState();
+            if (wasDragging) {
+                notifyMultiSelectionChanged();
+                return true;
+            }
+        }
+        return super.mouseReleased(mouseX, mouseY, button);
+    }
+
+    /**
+     * 把 [锚点..endIndex] 之间的行按「覆盖到的设备」重新算进多选集。
+     *
+     * <p>每次都从按下瞬间的快照重算，而不是增量 add / remove —— 往回拖的时候要能把
+     * 多出来或少掉的行还原。方向由 {@link #dragSelecting} 决定：扫过即选中，或者扫过即取消。
+     */
+    private void applyDragSelection(int endIndex) {
+        if (flatNodes.isEmpty()) return;
+        int anchorIndex = clampRowIndex(dragAnchorIndex);
+        int from = Math.min(anchorIndex, endIndex);
+        int to = Math.max(anchorIndex, endIndex);
+
+        // 多选只允许同类型，和 Ctrl 加选同一条规则：起手那一行的类型优先，
+        // 判定不出时才用按下前已有选中集合的类型。
+        String pressedType = anchorType(dragAnchorNode);
+        String allowedType = pressedType != null ? pressedType : dragBaseType;
+
+        // 被这次拖动覆盖到的设备（已按类型过滤）
+        LinkedHashSet<P2PPosition> covered = new LinkedHashSet<>();
+        for (int i = from; i <= to; i++) {
+            collectDevices(flatNodes.get(i), covered, allowedType);
+        }
+        // 从频段行起手：整条频段的两端都算覆盖到，而不只是被拖过的子行 ——
+        // 频段行折叠起来时子行根本不在 flatNodes 里。
+        if (dragAnchorNode != null && dragAnchorNode.type == NodeType.CHANNEL) {
+            collectDevices(dragAnchorNode, covered, allowedType);
+        }
+
+        // 已有选中集合与这次拖动的类型不同时整组丢掉 —— 和 Ctrl 点到其他类型设备时
+        // 「之前选中的全部取消」是同一个语义。多选集内部恒为同一类型（multiSelectionType
+        // 始终记录它），所以这里只需比对一次整组，不用逐台查类型。
+        LinkedHashSet<P2PPosition> picked = new LinkedHashSet<>();
+        if (allowedType == null || dragBaseType == null || dragBaseType.equals(allowedType)) {
+            picked.addAll(dragBaseSelection);
+        }
+        if (dragSelecting) {
+            picked.addAll(covered);
+        } else {
+            picked.removeAll(covered);
+        }
+
+        multiSelection.clear();
+        multiSelection.addAll(picked);
+        multiSelectionType = picked.isEmpty() ? null : (allowedType != null ? allowedType : dragBaseType);
+        notifyMultiSelectionChanged();
+    }
+
+    /** 起手那一行属于哪个 P2P 类型；判定不出时返回 null（不按类型过滤）。 */
+    private String anchorType(TreeNode node) {
+        if (node == null) return null;
+        return switch (node.type) {
+            case P2P -> node.p2pInfo == null ? null : node.p2pInfo.p2pType();
+            case CHANNEL -> node.data instanceof ChannelInfo info ? info.p2pType()
+                    : (node.parent == null ? null : node.parent.typeName);
+            case P2P_TYPE -> node.typeName;
+            case SEARCH_HEADER -> null;
+        };
+    }
+
+    /**
+     * 收集一行代表的设备：设备行是它自己，频段行是这条频段下的全部设备。
+     * 类型行不展开 —— 划过类型标题不该把整个类型都选上。
+     */
+    private void collectDevices(TreeNode node, Set<P2PPosition> sink, String allowedType) {
+        if (node == null) return;
+        if (node.type == NodeType.P2P) {
+            addDevice(node.p2pInfo, sink, allowedType);
+        } else if (node.type == NodeType.CHANNEL && node.data instanceof ChannelInfo info) {
+            List<P2PInfo> members = info.p2pInfoList();
+            if (members == null) return;
+            for (P2PInfo p : members) {
+                addDevice(p, sink, allowedType);
+            }
+        }
+    }
+
+    private void addDevice(P2PInfo info, Set<P2PPosition> sink, String allowedType) {
+        if (info == null) return;
+        if (allowedType != null && !allowedType.equals(info.p2pType())) return;
+        P2PPosition key = positionKey(info);
+        if (key != null) {
+            sink.add(key);
+        }
+    }
+
+    private void notifyMultiSelectionChanged() {
+        if (multiSelectionChangedListener != null) {
+            multiSelectionChangedListener.run();
+        }
+    }
+
+    private void clearDragState() {
+        dragAnchorIndex = -1;
+        dragAnchorNode = null;
+        dragStarted = false;
+        dragBaseSelection.clear();
+        dragBaseType = null;
+        dragSelecting = true;
+    }
+
+    /** Ctrl 是否按下。Screen 才有这个方法，widget 自己拿不到。 */
+    private static boolean isControlDown() {
+        var screen = Minecraft.getInstance().screen;
+        return screen != null && screen.hasControlDown();
+    }
+
+    /** 设备身份键：维度 + 坐标 + 朝向，和服务端下发的 map 键一致 */
+    private static P2PPosition positionKey(P2PInfo info) {
+        if (info == null) return null;
+        return new P2PPosition(info.position(), info.direction(),
+                info.dimension().location().toString());
+    }
+
+    /**
+     * 当前该作为“配对源”的设备列表。
+     *
+     * <p>有 Ctrl 多选时返回多选集合（按选中顺序，第一台会成为该频段的输入端），
+     * 否则返回当前单选的设备。
+     */
+    public List<P2PInfo> getSourceCandidates() {
+        if (!multiSelection.isEmpty()) {
+            List<P2PInfo> picked = new ArrayList<>();
+            for (P2PPosition key : multiSelection) {
+                P2PInfo p = p2pInfoMap.get(key);
+                if (p != null) picked.add(p);
+            }
+            if (!picked.isEmpty()) {
+                return picked;
+            }
+        }
+        return selectedP2PInfo == null ? List.of() : List.of(selectedP2PInfo);
+    }
+
+    private void selectNode(TreeNode node) {
+        this.selectedNode = node;
+        if (node.type == NodeType.P2P) {
+            this.selectedP2PInfo = node.p2pInfo;
+            if (selectionListener != null) selectionListener.accept(node.p2pInfo);
+        } else {
+            this.selectedP2PInfo = null;
+            if (selectionListener != null) selectionListener.accept(null);
+        }
+        if (!isRebuilding && nodeSelectionListener != null) {
+            nodeSelectionListener.accept(node);
+        }
     }
 
     @Override

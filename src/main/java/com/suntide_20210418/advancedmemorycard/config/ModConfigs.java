@@ -52,4 +52,20 @@ public class ModConfigs {
     public static ServerConfig getServerConfig() {
         return serverConfig;
     }
+
+    /**
+     * 是否允许传送至 P2P 设备（{@code server.allowTeleport}）。
+     *
+     * <p>服务端配置由 NeoForge 同步到客户端，所以客户端也读同一个值来决定「传送」按钮
+     * 是否显示；但客户端不可信，服务端处理传送 action 时会再判一次。
+     *
+     * <p>配置尚未加载时按「不允许」处理：{@code ConfigValue#get()} 在 spec 未加载时
+     * 会抛 {@link IllegalStateException}，而界面可能在世界刚载入时就被打开。
+     */
+    public static boolean isTeleportAllowed() {
+        if (serverConfig == null || serverSpec == null || !serverSpec.isLoaded()) {
+            return false;
+        }
+        return serverConfig.allowTeleport.get();
+    }
 }
