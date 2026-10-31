@@ -81,21 +81,28 @@ jobs:
           echo "jar=${jars[0]}" >> "$GITHUB_OUTPUT"
           echo "发布产物：${jars[0]}"
 
-      # 变更日志自己生成，范围限定在同一条 MC 线，避免把 1.20.1 / 1.21.1 的提交混进来。
+      # 变更日志：优先用 .changelogs/<标签>.md 的手写版本（GTNH 惯例），
+      # 没有才回落到 git log，范围限定在同一条 MC 线，避免混入 1.20.1 / 1.21.1 的提交。
       - name: Generate changelog
         shell: bash
         run: |
           set -euo pipefail
           tag="${GITHUB_REF_NAME}"
-          prev="$(git describe --tags --abbrev=0 --match '*.*.*-1.7.10*' "${tag}^" 2>/dev/null || true)"
-          if [ -n "${prev}" ]; then
-            echo "变更范围：${prev}..${tag}"
-            range="${prev}..${tag}"
+          override=".changelogs/${tag}.md"
+          if [ -f "${override}" ]; then
+            echo "使用手写变更日志：${override}"
+            cp "${override}" CHANGELOG_LATEST.md
           else
-            echo "未找到本线上的历史标签，输出截至该标签的完整提交记录"
-            range="${tag}"
+            prev="$(git describe --tags --abbrev=0 --match '*.*.*-1.7.10*' "${tag}^" 2>/dev/null || true)"
+            if [ -n "${prev}" ]; then
+              echo "变更范围：${prev}..${tag}"
+              range="${prev}..${tag}"
+            else
+              echo "未找到本线上的历史标签，输出截至该标签的完整提交记录"
+              range="${tag}"
+            fi
+            git log --no-merges --pretty='- %s (%h)' "${range}" > CHANGELOG_LATEST.md
           fi
-          git log --no-merges --pretty='- %s (%h)' "${range}" > CHANGELOG_LATEST.md
           echo "变更日志 $(wc -l < CHANGELOG_LATEST.md) 行"
 
       - name: Create GitHub release
