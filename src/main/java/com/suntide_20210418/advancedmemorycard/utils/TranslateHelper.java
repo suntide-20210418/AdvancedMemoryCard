@@ -28,12 +28,11 @@ public class TranslateHelper {
         public static final String COPY_MODE_COMPLETED = COPY_MODE_PREFIX + "completed";
         public static final String COPY_MODE_ALREADY_MARKED = COPY_MODE_PREFIX + "already_marked";
         public static final String COPY_MODE_FAILED = COPY_MODE_PREFIX + "failed";
-
-        public static final String COPY_MODE_SCREEN_PREFIX = SCREEN_PREFIX + "advanced_memory_card.player.copy.";
-        public static final String COPY_MODE_SCREEN_START_POS = COPY_MODE_SCREEN_PREFIX + "start_pos";
-        public static final String COPY_MODE_SCREEN_END_POS = COPY_MODE_SCREEN_PREFIX + "end_pos";
-        public static final String COPY_MODE_SCREEN_CLEAR_TOOLTIP = COPY_MODE_SCREEN_PREFIX + "clear_tooltip";
-        public static final String COPY_MODE_SCREEN_TITLE = COPY_MODE_SCREEN_PREFIX + "title";
+        public static final String COPY_OPTION_PREFIX = COPY_MODE_PREFIX + "option.";
+        public static final String COPY_OPTIONS_TITLE = COPY_MODE_PREFIX + "options_title";
+        public static final String COPY_OPTIONS_AUTO_OPEN = COPY_MODE_PREFIX + "auto_open";
+        public static final String COPY_OPTIONS_SKIPPED = COPY_MODE_PREFIX + "skipped";
+        public static final String COPY_OPTIONS_EMPTY = COPY_MODE_PREFIX + "options_empty";
 
         public static final String CONFIG_MODE_SCREEN_PREFIX = SCREEN_PREFIX + "advanced_memory_card.player.config.";
         public static final String CONFIG_MODE_SCREEN_TITLE = CONFIG_MODE_SCREEN_PREFIX + "title";
@@ -85,6 +84,7 @@ public class TranslateHelper {
         public static final String STATUS_CURRENT_SELECTED = STATUS_PREFIX + "current_selected";
 
         public static final String CHAT_PREFIX = GUI_PREFIX + "advanced_memory_card.chat.";
+        public static final String CHAT_NO_P2P = CHAT_PREFIX + "no_p2p";
         public static final String CHAT_LOCATION_INFO = CHAT_PREFIX + "location_info";
         public static final String CHAT_CLICK_TO_TELEPORT = CHAT_PREFIX + "click_to_teleport";
         public static final String CHAT_TELEPORT_HOVER = CHAT_PREFIX + "teleport_hover";
@@ -107,7 +107,10 @@ public class TranslateHelper {
     }
 
     public static String translate(String key, Object... args) {
-        return StatCollector.translateToLocalFormatted(key, args);
+        // 1.7.10 的 .lang 没有 1.12.2 的 #PARSE_ESCAPES 头，文件里写的 "\n" 会原样输出两个字符；
+        // 这里统一还原成换行，让 tooltip 的多行文案与 1.12.2 表现一致。
+        return StatCollector.translateToLocalFormatted(key, args)
+            .replace("\\n", "\n");
     }
 
     public static String formatCoordinates(int x, int y, int z) {
@@ -148,12 +151,24 @@ public class TranslateHelper {
             return translate(Keys.COPY_MODE_FAILED);
         }
 
-        public static String screenStartPos() {
-            return translate(Keys.COPY_MODE_SCREEN_START_POS);
+        public static String optionsTitle() {
+            return translate(Keys.COPY_OPTIONS_TITLE);
         }
 
-        public static String screenEndPos() {
-            return translate(Keys.COPY_MODE_SCREEN_END_POS);
+        public static String autoOpen() {
+            return translate(Keys.COPY_OPTIONS_AUTO_OPEN);
+        }
+
+        public static String option(String id) {
+            return translate(Keys.COPY_OPTION_PREFIX + id);
+        }
+
+        public static String optionsEmpty() {
+            return translate(Keys.COPY_OPTIONS_EMPTY);
+        }
+
+        public static String skipped(int count) {
+            return translate(Keys.COPY_OPTIONS_SKIPPED, count);
         }
     }
 
@@ -351,6 +366,10 @@ public class TranslateHelper {
     }
 
     public static class Chat {
+
+        public static String noP2PFound() {
+            return translate(Keys.CHAT_NO_P2P);
+        }
 
         public static String locationInfo(Object... args) {
             return translate(Keys.CHAT_LOCATION_INFO, args);

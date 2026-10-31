@@ -316,6 +316,15 @@ public class DetailPanelWidget {
 
     private void onNameConfirm() {
         if (!isEditing) return;
+
+        // 编辑的是「频段」节点时走别名分支。
+        // 之前这里只判断 selectedP2PInfo != null，而选中频段节点时它是 null，
+        // 于是回车只是关掉编辑框、一个请求都不发 —— onChannelAliasConfirm 从来没被调用过。
+        if (selectedNode != null && selectedNode.type == NodeType.CHANNEL) {
+            onChannelAliasConfirm();
+            return;
+        }
+
         if (selectedP2PInfo != null) {
             String newName = nameField.getText()
                 .trim();

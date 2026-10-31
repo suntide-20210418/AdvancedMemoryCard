@@ -19,7 +19,14 @@ public class ModKey {
         Keyboard.KEY_V,
         KEY_CATEGORY);
 
+    // 打开粘贴选项面板（对应 1.12.2 的 G 键）
+    public static final KeyBinding COPY_GUI_KEY = new KeyBinding(
+        "key.advancedmemorycard.copy_options",
+        Keyboard.KEY_G,
+        KEY_CATEGORY);
+
     public static void register() {
         ClientRegistry.registerKeyBinding(MODE_SWITCH_KEY);
+        ClientRegistry.registerKeyBinding(COPY_GUI_KEY);
     }
 }

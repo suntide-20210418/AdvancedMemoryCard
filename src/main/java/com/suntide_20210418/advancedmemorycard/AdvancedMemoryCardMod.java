@@ -24,7 +24,9 @@ public class AdvancedMemoryCardMod {
 
     public static final String MOD_ID = "advanced_memory_card";
     public static final String NAME = "Advanced Memory Card";
-    public static final String VERSION = "1.0.0";
+    // Tags 由 GTNH 构建约定在 injectTags 源集里生成（gradle.properties: generateGradleTokenClass），
+    // 这样 @Mod(version) 与 mcmod.info 的 ${modVersion} 才来自同一个 gradle 版本号。
+    public static final String VERSION = Tags.VERSION;
 
     // GUI 标识（服务端/客户端共用，避免通用代码引用 client 包下的类）
     public static final int CONFIG_GUI_ID = 0;
@@ -46,6 +48,10 @@ public class AdvancedMemoryCardMod {
         NetworkRegistry.INSTANCE.registerGuiHandler(this, new GuiHandler());
         CardMode.initializeModes();
         ModItems.register();
+        // 右键接管：PlayerInteractEvent 早于 PlayerControllerMP#onPlayerRightClick 里的物品分派，
+        // 是 1.7.10 上唯一稳定的拦截点。
+        net.minecraftforge.common.MinecraftForge.EVENT_BUS
+            .register(new com.suntide_20210418.advancedmemorycard.event.CardInteractHandler());
         proxy.preInit(event);
     }
 

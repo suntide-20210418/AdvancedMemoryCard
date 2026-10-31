@@ -17,6 +17,10 @@ public class NetworkHandler {
     // 由客户端的 ConfigModeMenu 在每 tick 抽取并应用到本地缓存（避免在数据包处理线程中触碰客户端类）。
     public static final ConcurrentLinkedQueue<ConfigModeSyncPacket> syncQueue = new ConcurrentLinkedQueue<>();
 
+    // 粘贴选项同步队列：CopyModeMenu 是空容器，服务端改 NBT 不会触发槽位同步，
+    // 只能靠 CopyOptionsSyncPacket 显式推下来；同样由客户端界面每 tick 抽取。
+    public static final ConcurrentLinkedQueue<CopyOptionsSyncPacket> copyOptionsQueue = new ConcurrentLinkedQueue<>();
+
     private static int discriminator = 0;
 
     public static void register() {
@@ -39,6 +43,17 @@ public class NetworkHandler {
             discriminator++,
             Side.CLIENT);
         INSTANCE.registerMessage(HighlightPacket.Handler.class, HighlightPacket.class, discriminator++, Side.CLIENT);
+        // id 6：粘贴选项同步。必须排在最后，两侧 id 顺序必须一致。
+        INSTANCE.registerMessage(
+            CopyOptionsSyncPacket.Handler.class,
+            CopyOptionsSyncPacket.class,
+            discriminator++,
+            Side.CLIENT);
+        // id 7：客户端发起的方块右键交互（不依赖原版 C08）
+        INSTANCE
+            .registerMessage(CardInteractPacket.Handler.class, CardInteractPacket.class, discriminator++, Side.SERVER);
+        // id 8：客户端发起的右键空气使用（粘贴）
+        INSTANCE.registerMessage(CardUsePacket.Handler.class, CardUsePacket.class, discriminator++, Side.SERVER);
     }
 
     public static void sendToServer(IMessage msg) {

@@ -49,7 +49,7 @@ public class ClientProxy extends CommonProxy {
             return new ConfigModeScreen(menu, player);
         } else if (ID == AdvancedMemoryCardMod.COPY_GUI_ID) {
             CopyModeMenu menu = new CopyModeMenu(player.inventory);
-            return new CopyModeScreen(menu, player);
+            return new CopyModeScreen(menu);
         }
         return null;
     }

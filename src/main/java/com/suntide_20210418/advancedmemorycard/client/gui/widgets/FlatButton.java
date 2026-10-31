@@ -1,6 +1,5 @@
 package com.suntide_20210418.advancedmemorycard.client.gui.widgets;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 
 import com.suntide_20210418.advancedmemorycard.config.ModConfigs;
@@ -81,11 +80,7 @@ public class FlatButton {
 
     public boolean mouseClicked(int mouseX, int mouseY, int button) {
         if (active && visible && button == 0 && isMouseOver(mouseX, mouseY)) {
-            Minecraft.getMinecraft()
-                .getSoundHandler()
-                .playSound(
-                    net.minecraft.client.audio.PositionedSoundRecord
-                        .func_147674_a(new net.minecraft.util.ResourceLocation("gui.button.press"), 1.0F));
+            com.suntide_20210418.advancedmemorycard.client.gui.ClickSound.play();
             pressed = true;
             return true;
         }
