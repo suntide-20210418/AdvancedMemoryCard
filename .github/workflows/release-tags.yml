@@ -54,15 +54,14 @@ jobs:
         with:
           validate-wrappers: true
 
-      - name: Make gradlew executable
-        run: chmod +x ./gradlew
-
-      # 与 GTNH 共享工作流保持一致：先把 MC 反编译/工作区准备好，再构建。
+      # 不要用 chmod +x：gradlew 在仓库里记录的是 100644，chmod 会把工作区改成
+      # dirty，GTNHGradle 的版本串就会追加 -dirty（1.1.0 的产物名就是这么被污染的：
+      # ...-git+0ca60aa95e-dirty.jar）。gradlew 本身是 POSIX sh 脚本，用 sh 调用即可。
       - name: Prepare workspace
-        run: ./gradlew --stacktrace setupCIWorkspace
+        run: sh ./gradlew --stacktrace setupCIWorkspace
 
       - name: Build
-        run: ./gradlew --stacktrace build
+        run: sh ./gradlew --stacktrace build
 
       # 精确挑出唯一一个 reobf 产物：排除 -dev 与 -sources。
       # 数量不等于 1 就直接失败，不猜、不通配。
