@@ -106,6 +106,7 @@ public class ModEnusLangProvider extends LanguageProvider {
         add(Keys.BUTTON_TELEPORT, "Teleport");
         add(Keys.BUTTON_INIT_P2P, "Init P2P");
         add(Keys.BUTTON_ASSIGN_FREQ, "Assign New Frequency");
+        add(Keys.BUTTON_SWITCH_INPUT, "Make Input");
 
         // 状态文本
         add(Keys.STATUS_NOT_ACTIVE, "Inactive");
@@ -148,6 +149,10 @@ public class ModEnusLangProvider extends LanguageProvider {
         add(Keys.STATUS_LINE_RENAME_FAILED, "Rename failed: device is no longer on this network");
         add(Keys.STATUS_LINE_BIND_BATCH_OK, "Bound %s devices to %s");
         add(Keys.STATUS_LINE_BIND_BATCH_PARTIAL, "%s bound, %s failed (target %s)");
+        add(Keys.STATUS_LINE_SWITCHED_TO_INPUT, "%s is now the input; the previous input became an output");
+        add(Keys.STATUS_LINE_SWITCH_NO_CHANNEL, "%s has no channel bound, cannot become an input");
+        add(Keys.STATUS_LINE_SWITCH_ALREADY_INPUT, "This device is already an input");
+        add(Keys.STATUS_LINE_SWITCH_FAILED, "Switch failed: network not ready or device left this network");
 
         // ===== Tree columns =====
         add(Keys.TREE_COL_NAME, "Name");

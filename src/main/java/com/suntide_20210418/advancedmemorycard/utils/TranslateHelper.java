@@ -104,6 +104,7 @@ public class TranslateHelper {
         public static final String BUTTON_TELEPORT = BUTTON_PREFIX + "teleport";
         public static final String BUTTON_INIT_P2P = BUTTON_PREFIX + "init_p2p";
         public static final String BUTTON_ASSIGN_FREQ = BUTTON_PREFIX + "assign_freq";
+        public static final String BUTTON_SWITCH_INPUT = BUTTON_PREFIX + "switch_to_input";
 
         // 状态文本
         public static final String STATUS_PREFIX = GUI_PREFIX + "advanced_memory_card.status.";
@@ -159,6 +160,10 @@ public class TranslateHelper {
         public static final String STATUS_LINE_RENAME_FAILED = STATUS_LINE_PREFIX + "rename_failed";
         public static final String STATUS_LINE_BIND_BATCH_OK = STATUS_LINE_PREFIX + "bind_batch_ok";
         public static final String STATUS_LINE_BIND_BATCH_PARTIAL = STATUS_LINE_PREFIX + "bind_batch_partial";
+        public static final String STATUS_LINE_SWITCHED_TO_INPUT = STATUS_LINE_PREFIX + "switched_to_input";
+        public static final String STATUS_LINE_SWITCH_NO_CHANNEL = STATUS_LINE_PREFIX + "switch_no_channel";
+        public static final String STATUS_LINE_SWITCH_ALREADY_INPUT = STATUS_LINE_PREFIX + "switch_already_input";
+        public static final String STATUS_LINE_SWITCH_FAILED = STATUS_LINE_PREFIX + "switch_failed";
 
         public static final String TREE_COL_PREFIX = GUI_PREFIX + "advanced_memory_card.tree_col.";
         public static final String TREE_COL_NAME = TREE_COL_PREFIX + "name";
@@ -592,6 +597,11 @@ public class TranslateHelper {
 
         public static MutableComponent assignFreq() {
             return translate(Keys.BUTTON_ASSIGN_FREQ);
+        }
+
+        /** 「设为输入端」按钮：只在设备当前是输出端时显示。 */
+        public static MutableComponent switchToInput() {
+            return translate(Keys.BUTTON_SWITCH_INPUT);
         }
     }
 

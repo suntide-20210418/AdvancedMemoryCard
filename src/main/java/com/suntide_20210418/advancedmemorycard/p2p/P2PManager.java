@@ -44,6 +44,18 @@ public class P2PManager {
         NO_SERVICE
     }
 
+    /** {@link #switchToInput(P2PTunnelPart)} 的结果码。 */
+    public enum RoleResult {
+        OK,
+        NO_TARGET,
+        /** 设备没绑定频段（0000）：没有通道可以接管。 */
+        NO_CHANNEL,
+        /** 已经是输入端。界面上不该出现这个按钮，这里只做防御。 */
+        ALREADY_INPUT,
+        NO_GRID,
+        NO_SERVICE
+    }
+
     public P2PManager(P2PTunnelPart<?> p2pTunnelPartBinding, Player player) {
         this.p2pTunnelPartBinding = p2pTunnelPartBinding;
         this.pendingBindTarget = p2pTunnelPartBinding;
@@ -286,6 +298,93 @@ public class P2PManager {
         this.grid = currentGrid;
         this.p2pService = currentP2PService;
         return BindResult.OK;
+    }
+
+    /**
+     * 把一台输出端设备改成它所在频段的输入端，原来那台输入端降级为输出端。
+     *
+     * <p>为什么必须成对做：{@code P2PService.inputs} 是 {@code HashMap<Short, P2PTunnelPart>}，
+     * 一个频段只留一个输入端，而 {@code updateFreq} 末尾是裸的 {@code inputs.put(freq, part)}，
+     * 会直接覆盖旧条目。若先把当前设备提升为输入端，旧输入端不会被删除，只是从 map 里消失：
+     * 它的 {@code output} 字段仍是 false，却再也不在 inputs 里，也就永远等不到输出端。
+     * 那正是 {@link #repairChannelInputs()} 要修的那种孤儿输入端，而且会被 {@code markForSave}
+     * 写进存档，重进存档也照旧。
+     *
+     * <p>所以顺序固定为：先把该频段上所有「非输出端」（含被挤出 map 的孤儿）降级为输出端，
+     * 再提升目标。降级时 {@code updateFreq} 走的是 {@code inputs.containsValue(part)} 分支，
+     * 会按频段键把自己那条删掉，正好给目标腾出位置。
+     */
+    public RoleResult switchToInput(P2PTunnelPart<?> target) {
+        if (target == null) {
+            return RoleResult.NO_TARGET;
+        }
+
+        // 频段 0 是 AE2 的「未绑定」，没有通道可接管；而且 freq=0 的设备会被 P2PService
+        // 登记进 inputs[0]/outputs[0]，对它们做角色切换只会让一堆未绑定设备互相「连通」。
+        short freq = target.getFrequency();
+        if (freq == 0) {
+            return RoleResult.NO_CHANNEL;
+        }
+        if (!target.isOutput()) {
+            return RoleResult.ALREADY_INPUT;
+        }
+
+        IGrid currentGrid = null;
+        IGridNode gridNode = target.getGridNode();
+        if (gridNode != null) {
+            currentGrid = gridNode.getGrid();
+        }
+        if (currentGrid == null) {
+            return RoleResult.NO_GRID;
+        }
+
+        P2PService currentP2PService = P2PService.get(currentGrid);
+        if (currentP2PService == null) {
+            return RoleResult.NO_SERVICE;
+        }
+
+        demoteInputsAt(currentP2PService, freq, target);
+
+        ((P2PTunnelPartMixin) target).invokeSetOutput(false);
+        currentP2PService.updateFreq(target, freq);
+        // 频段没变 → updateFreq 既不 markForSave 也不通知邻居。角色变了却不落盘，
+        // 重进存档又会变回输出端，所以两件事都显式补一次。
+        target.getHost().markForSave();
+        // updateFreq 只在频段变化时调 updateTunnel → onTunnelNetworkChange。这里频段没变，
+        // ME P2P 的连线表得自己催一次，否则要等下一次网络事件才按新角色重建。
+        target.onTunnelNetworkChange();
+
+        this.grid = currentGrid;
+        this.p2pService = currentP2PService;
+        return RoleResult.OK;
+    }
+
+    /**
+     * 把指定频段上所有「非输出端」改成输出端并重登记。
+     *
+     * <p>遍历 {@link #p2pDevicesMap} 而不是只取 {@code getInput(freq)}：旧版本写坏的存档里
+     * 可能有多台 {@code isOutput()==false} 的部件，其中只有一台在 map 里。只处理 map 里那台，
+     * 剩下的会在目标提升之后变成孤儿。
+     */
+    private void demoteInputsAt(P2PService service, short freq, P2PTunnelPart<?> promoteTarget) {
+        for (P2PTunnelPart<?> part : new ArrayList<>(p2pDevicesMap.keySet())) {
+            if (part == null || part == promoteTarget) continue;
+            if (part.getFrequency() != freq || part.isOutput()) continue;
+            ((P2PTunnelPartMixin) part).invokeSetOutput(true);
+            service.updateFreq(part, freq);
+            part.getHost().markForSave();
+            part.onTunnelNetworkChange();
+        }
+
+        // 兜底：map 里那个输入端若不在 p2pDevicesMap（例如扫描时它所在节点离线），
+        // 上面那轮会漏掉它。这里再问一次 P2PService，免得提升目标时把它挤成孤儿。
+        P2PTunnelPart<?> stillInput = service.getInput(freq);
+        if (stillInput != null && stillInput != promoteTarget) {
+            ((P2PTunnelPartMixin) stillInput).invokeSetOutput(true);
+            service.updateFreq(stillInput, freq);
+            stillInput.getHost().markForSave();
+            stillInput.onTunnelNetworkChange();
+        }
     }
 
     /**

@@ -51,7 +51,7 @@ public class DetailPanelWidget extends AbstractWidget {
     private String selectionId;
     private ActionCallback actionCallback;
 
-    private final FlatButton[] buttons = new FlatButton[4];
+    private final FlatButton[] buttons = new FlatButton[5];
 
     public DetailPanelWidget(ScreenStyle style, int x, int y, int width, int height) {
         super(x, y, width, height, Component.empty());
@@ -131,18 +131,26 @@ public class DetailPanelWidget extends AbstractWidget {
     }
 
     private void repositionButtons() {
-        int bw = (width - 2 * PAD - BTN_GAP) / 2;
+        int innerW = width - 2 * PAD;
+        int bw = (innerW - BTN_GAP) / 2;
         int top = buttonsTop();
         // 按「可见按钮」编号占位，而不是按数组下标：类型行只剩两个按钮时，
         // 按下标摆会留出左上和右下两个空洞，看起来像按钮漂移。
+        int visibleCount = 0;
+        for (FlatButton button : buttons) {
+            if (button.visible) visibleCount++;
+        }
         int slot = 0;
         for (FlatButton button : buttons) {
             if (!button.visible) continue;
             int col = slot % 2;
             int row = slot / 2;
-            button.setX(getX() + PAD + col * (bw + BTN_GAP));
+            // 奇数个按钮时，最后落单的那个拉通整行：右下角留一个空槽会看起来像「少画了一个」。
+            // 拉通之后末尾那个动作也自然成了一条独立的行动条。
+            boolean alone = slot == visibleCount - 1 && col == 0;
+            button.setX(getX() + PAD + (alone ? 0 : col * (bw + BTN_GAP)));
             button.setY(top + row * (BTN_H + BTN_GAP));
-            button.setWidth(bw);
+            button.setWidth(alone ? innerW : bw);
             button.setHeight(BTN_H);
             slot++;
         }
@@ -189,6 +197,25 @@ public class DetailPanelWidget extends AbstractWidget {
             }
         }
         return false;
+    }
+
+    /**
+     * 这台设备能不能「设为输入端」。
+     *
+     * <p>两个前置条件，缺一不可：
+     * <ul>
+     *   <li>它现在是<b>输出端</b> —— 反方向会把这条通道唯一的输入端改掉，通道立即失效；</li>
+     *   <li>它已绑定真实频段 —— 0000 是 AE2 的「未绑定」，没有通道可接管，而且
+     *       freq=0 的设备会被 P2PService 登记进 inputs[0]，对它们做角色切换只会让
+     *       一堆未绑定设备在界面里互相「连通」。</li>
+     * </ul>
+     */
+    private boolean canSwitchToInput(P2PInfo info) {
+        if (info == null || !info.isOutput()) {
+            return false;
+        }
+        String freq = info.frequency();
+        return freq != null && !"0000".equals(freq);
     }
 
     private int getRowCount() {
@@ -421,7 +448,7 @@ public class DetailPanelWidget extends AbstractWidget {
     // ==================== 按钮 ====================
 
     private void updateButtons() {
-        String[] labels = new String[4];
+        String[] labels = new String[5];
         if (selectedNode == null) {
             for (FlatButton b : buttons) b.visible = false;
             return;
@@ -434,7 +461,13 @@ public class DetailPanelWidget extends AbstractWidget {
                 labels[1] = editing ? TranslateHelper.Button.cancel().getString()
                         : TranslateHelper.Button.rename().getString();
                 labels[2] = TranslateHelper.Button.assignFreq().getString();
-                labels[3] = teleportAllowed && selectedP2PInfo != null
+                // 「设为输入端」只在设备当前是输出端时出现。反方向（输入端 → 输出端）
+                // 不给入口：一条通道只能有一个输入端，把它改成输出就等于让整条通道
+                // 没有输入端、彻底不工作，没有任何场景需要这个操作。
+                labels[3] = canSwitchToInput(selectedP2PInfo)
+                        ? TranslateHelper.Button.switchToInput().getString()
+                        : null;
+                labels[4] = teleportAllowed && selectedP2PInfo != null
                         ? TranslateHelper.Button.teleport().getString()
                         : null;
             }
@@ -490,7 +523,8 @@ public class DetailPanelWidget extends AbstractWidget {
                     // 高亮与定位已合并：关界面 → 世界内高亮 → 转头朝向目标
                     case 0 -> actionCallback.onHighlightP2P(info);
                     case 2 -> actionCallback.onAssignFreq();
-                    case 3 -> actionCallback.onTeleportP2P(info);
+                    case 3 -> actionCallback.onSwitchToInput(info);
+                    case 4 -> actionCallback.onTeleportP2P(info);
                     default -> { }
                 }
             }
@@ -662,6 +696,9 @@ public class DetailPanelWidget extends AbstractWidget {
         void onUseAsTarget(String frequency);
 
         void onAssignFreq();
+
+        /** 把当前输出端设备改成本频段的输入端，原输入端自动降级为输出。 */
+        void onSwitchToInput(P2PInfo info);
 
         void onInitP2P();
 
