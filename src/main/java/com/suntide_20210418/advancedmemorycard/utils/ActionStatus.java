@@ -30,6 +30,12 @@ public final class ActionStatus {
     public static final int BIND_BATCH_OK = 10;
     /** 参数："成功台数|失败台数|频段" */
     public static final int BIND_BATCH_PARTIAL = 11;
+    /** 参数：频段 hex */
+    public static final int SWITCHED_TO_INPUT = 12;
+    /** 参数：频段 hex */
+    public static final int SWITCH_NO_CHANNEL = 13;
+    public static final int SWITCH_ALREADY_INPUT = 14;
+    public static final int SWITCH_FAILED = 15;
 
     // 语义等级：0 中性 / 1 成功 / 2 警告 / 3 错误
     public static final int SEV_NEUTRAL = 0;
@@ -44,6 +50,9 @@ public final class ActionStatus {
             case BIND_OK, ASSIGNED, RENAMED, REFRESHED, SOURCE_SELECTED -> SEV_OK;
             case BIND_NO_TARGET, BIND_INVALID_FREQ, RENAME_FAILED -> SEV_WARN;
             case BIND_NO_GRID -> SEV_ERROR;
+            case SWITCHED_TO_INPUT -> SEV_OK;
+            case SWITCH_NO_CHANNEL, SWITCH_ALREADY_INPUT -> SEV_WARN;
+            case SWITCH_FAILED -> SEV_ERROR;
             default -> SEV_NEUTRAL;
         };
     }
@@ -61,6 +70,14 @@ public final class ActionStatus {
             case RENAMED -> TranslateHelper.translate(TranslateHelper.Keys.STATUS_LINE_RENAMED, p);
             case REFRESHED -> TranslateHelper.translate(TranslateHelper.Keys.STATUS_LINE_REFRESHED);
             case RENAME_FAILED -> TranslateHelper.translate(TranslateHelper.Keys.STATUS_LINE_RENAME_FAILED);
+            case SWITCHED_TO_INPUT -> TranslateHelper.translate(
+                    TranslateHelper.Keys.STATUS_LINE_SWITCHED_TO_INPUT, p);
+            case SWITCH_NO_CHANNEL -> TranslateHelper.translate(
+                    TranslateHelper.Keys.STATUS_LINE_SWITCH_NO_CHANNEL, p);
+            case SWITCH_ALREADY_INPUT -> TranslateHelper.translate(
+                    TranslateHelper.Keys.STATUS_LINE_SWITCH_ALREADY_INPUT);
+            case SWITCH_FAILED -> TranslateHelper.translate(
+                    TranslateHelper.Keys.STATUS_LINE_SWITCH_FAILED);
             case BIND_BATCH_OK -> {
                 String[] parts = p.split("\\|");
                 yield TranslateHelper.translate(TranslateHelper.Keys.STATUS_LINE_BIND_BATCH_OK,

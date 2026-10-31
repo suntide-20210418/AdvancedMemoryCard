@@ -155,6 +155,12 @@ public class ConfigModeScreen extends AEBaseScreen<ConfigModeMenu> {
             }
 
             @Override
+            public void onSwitchToInput(P2PInfo info) {
+                menu.dispatchClientAction("switch_to_input", encodeP2PPosition(info));
+                resetUpdateCooldown();
+            }
+
+            @Override
             public void onInitP2P() {
                 menu.dispatchClientAction("auto_config_io");
                 resetUpdateCooldown();

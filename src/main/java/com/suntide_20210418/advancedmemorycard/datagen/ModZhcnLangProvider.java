@@ -100,6 +100,7 @@ public class ModZhcnLangProvider extends LanguageProvider {
         add(Keys.BUTTON_TELEPORT, "传送");
         add(Keys.BUTTON_INIT_P2P, "初始化P2P");
         add(Keys.BUTTON_ASSIGN_FREQ, "分配新频段");
+        add(Keys.BUTTON_SWITCH_INPUT, "设为输入端");
 
         // 状态文本
         add(Keys.STATUS_NOT_ACTIVE, "未激活");
@@ -142,6 +143,10 @@ public class ModZhcnLangProvider extends LanguageProvider {
         add(Keys.STATUS_LINE_RENAME_FAILED, "改名未生效：所选 P2P 已不在当前网络");
         add(Keys.STATUS_LINE_BIND_BATCH_OK, "%s 台设备已绑定到 %s");
         add(Keys.STATUS_LINE_BIND_BATCH_PARTIAL, "%s 台绑定成功，%s 台失败（目标 %s）");
+        add(Keys.STATUS_LINE_SWITCHED_TO_INPUT, "%s 已设为输入端，原输入端转为输出");
+        add(Keys.STATUS_LINE_SWITCH_NO_CHANNEL, "%s 未绑定频段，无法设为输入端");
+        add(Keys.STATUS_LINE_SWITCH_ALREADY_INPUT, "该设备已经是输入端");
+        add(Keys.STATUS_LINE_SWITCH_FAILED, "切换失败：网络未就绪或设备已不在当前网络");
 
         // ===== 树列头与汇总 =====
         add(Keys.TREE_COL_NAME, "名称");

@@ -4,6 +4,24 @@
 
 ---
 
+## 1.2.1-1.21.1 — 2026-10-31
+
+**Minecraft** 1.21.1 · **NeoForge** 21.1.219 或更高 · **AE2** 1.21.1 版本线（开发基于 19.2.17）
+
+**输入端可以在界面上换人**：一条通道只有一个输入端。以前要让另一台设备接管，只能去世界里手动改，现在检查器里点一下就行。
+
+### 新增
+
+- **设为输入端**：设备当前是输出端时，检查器第 4 格出现「设为输入端」—— 这台设备接管所在频段的输入端，原来那台输入端自动降级为输出。顺序在服务端固定为「先降级、再提升」：`P2PService.inputs` 是 `HashMap<Short, Part>`，`updateFreq` 末尾是裸的 `inputs.put`，先提升会把旧输入端直接挤出映射 —— 它的 `output` 字段仍是 false，却再也不在 `inputs` 里，永远等不到输出端，而且这个坏状态会随 `markForSave` 写进存档。降级一侧遍历本频段上所有「非输出端」而不只是映射里那一台：旧版本写坏的存档可能残留孤儿输入端，只处理映射里的只会把孤儿留在原地。输入端与未绑定频段（0000）的设备不显示此按钮：前者那个方向会让通道失去唯一的输入端而彻底失效，后者没有通道可接管。
+- **切换的回执**：状态行分别报「0A1B 已设为输入端，原输入端转为输出」/「0000 未绑定频段，无法设为输入端」/「该设备已经是输入端」/「切换失败：网络未就绪或设备已不在当前网络」。切换成功后服务端立刻重扫一次网络，树里的输入/输出标记与频段汇总不用等下一个同步包。
+
+### 改变
+
+- **传送挪到第 5 格**：设备行的动作顺序现在是「高亮 / 改名 / 分配新频段 / 设为输入端 / 传送」，其中后两格按条件占位 —— 已是输入端或未绑定频段时没有「设为输入端」，`allowTeleport = false` 时没有「传送」。频段行仍是三格（频段本身没有位置，不提供传送），类型行仍是两格。
+- **落单按钮拉通整行**：次级按钮排两列，数量为奇数时最后那个占满整行 —— 多了「设为输入端」之后设备行变成 5 个，右下角空一格会看起来像少画了一个；频段行原本 3 个按钮的同款空槽一并修掉。
+
+---
+
 ## 1.2.0-1.21.1 — 2026-10-28
 
 **Minecraft** 1.21.1 · **NeoForge** 21.1.219 或更高 · **AE2** 1.21.1 版本线（开发基于 19.2.17）
@@ -27,7 +45,7 @@
 - **「选择」的副作用被拆开**：以前它改的是 `p2pTunnelPartBinding`，而那个字段同时是网络扫描的锚点 —— 换配对目标会顺带把整个界面切到另一张网络。现在配对目标独立存放，扫描锚点只在打开界面时确定。
 - **角色按钮语义修正**：「待绑定」实际执行的是「定位到待绑定设备」，已随旧按钮一并移除。
 - **「高亮」与「定位」合并**：点一次「高亮」现在依次做三件事 —— 在世界里点亮、关掉界面、把视角转向目标。顺序是刻意的：位置信息的动作包要在关界面之前发出（关界面会立刻发出容器关闭包，之后服务端不再受理这个 menu 的动作）；界面要在下一帧渲染前撤掉，否则会看到「界面还在、世界已经亮起」；转头放最后，因为它改的是玩家朝向，界面还开着时会被 GUI 的鼠标捕获抵消。转头仍受 `[client.highlight] rotateHeadOnHighlight` 控制，关掉它的玩家不会被强行掰头。
-- **按钮换位**：检查器第 2 格从「定位」改为「改名」（改名原先在第 4 格），第 4 格改为「传送」。频段行同样换位（第 2 格改名），但不提供传送 —— 频段本身没有位置，只剩三格内容；类型行第 1 格仍是「高亮」（退化为该类型第一台输入端设备），第 2 格仍是「初始化 P2P」，只在 ME P2P 下出现，第 4 格是「传送」（目标是该类型下第一台输入端设备）。
+- **按钮换位**：检查器第 2 格从「定位」改为「改名」（改名原先在第 4 格），第 4 格改为「传送」。频段行同样换位（第 2 格改名），但不提供传送 —— 频段本身没有位置，只剩三格内容；类型行只保留「初始化 P2P」（仅 ME P2P）与「刷新」两格。
 - **聊天栏不再附带传送链接**：高亮只发位置信息。旧链接本质是 `/execute in <dim> run tp @p …` 命令，需要 OP 或开启作弊；现在传送由服务端 API 执行，是否允许完全由 `allowTeleport` 决定，与权限等级解耦。
 - **频段高亮列出两端**：以前点频段节点的高亮只把输入端写进聊天栏，玩家看不到频道最终流向哪几台设备。现在输入端与输出端分两段全部列出，每行带「输入」/「输出」标记。
 - **列表只在新数据到达时重建**：以前每 tick 重建一次（20 次/秒），现在跟随同步包（2 次/秒）。
@@ -56,6 +74,24 @@
 - **新增** `[server] allowTeleport`（默认 `false`）：是否允许界面上的「传送」按钮把玩家直接送到 P2P 设备位置。默认关闭是因为它绕过了原版传送权限（旧的可点击链接要求 OP / 开启作弊）。服务端配置由 NeoForge 同步到客户端，因此开服时改这一项即可，客户端无需改配置。
 
 > 旧的这四段配置会被直接忽略（不会报错）。想保留自定义颜色的话，对照 `palette` 重新填一遍即可。
+
+---
+
+## 1.2.1 (English)
+
+**Minecraft** 1.21.1 · **NeoForge** 21.1.219+ · **AE2** 1.21.1 line (developed against 19.2.17)
+
+**The input side can now be handed over from the GUI**: a channel has exactly one input. Changing which device holds it used to mean going into the world and rewiring by hand; now it is one click in the inspector.
+
+### Added
+
+- **Make input**: when the selected device is an output, the 4th slot of the inspector reads *Make Input* — that device takes over the channel's input role and the previous input is demoted to an output. The server always demotes first and promotes second: `P2PService.inputs` is a `HashMap<Short, Part>` whose `updateFreq` ends in a bare `inputs.put`, so promoting first silently evicts the old input — its `output` flag still says "input" while the map no longer knows it, it never sees an output again, and `markForSave` persists that state into the save file. The demotion pass walks every non-output part on that frequency rather than just the one in the map, because saves written by older builds can still contain orphaned inputs; handling only the mapped one would leave the orphans behind. Devices that are already inputs, or that have no channel bound (0000), get no button: the first direction would strip the channel of its only input and kill it, the second has nothing to take over.
+- **Result reporting**: the status line distinguishes "0A1B is now the input; the previous input became an output" / "0000 has no channel bound" / "already an input" / "switch failed: network not ready or device left this network". On success the server rescans the network immediately, so the in/out tags in the tree and the channel summary do not wait for the next sync packet.
+
+### Changed
+
+- **Teleport moved to the 5th slot**: device rows now read *Highlight / Rename / Assign channel / Make Input / Teleport*, with the last two conditional — no *Make Input* when the device is already an input or has no channel, no *Teleport* when `allowTeleport = false`. Frequency rows keep three slots (a frequency has no position, so no teleport); type rows keep two.
+- **A lone trailing button spans the full row**: secondary actions are laid out in two columns, and an odd count makes the last one take the whole row — with *Make Input* the device row now carries five buttons, and an empty bottom-right slot reads as a missing one. The same hole on three-button frequency rows is fixed too.
 
 ---
 

@@ -57,6 +57,7 @@ public class ConfigModeMenu extends AEBaseMenu {
     private static final String CLEAR_PENDING_BIND = "clear_pending_bind";
     private static final String AUTO_CONFIG_IO = "auto_config_io";
     private static final String ASSIGN_FREQ = "assign_freq";
+    private static final String SWITCH_TO_INPUT = "switch_to_input";
     private static final String HIGHLIGHT_P2P = "highlight_p2p";
     private static final String HIGHLIGHT_P2P_TUNNEL = "highlight_p2p_tunnel";
     private static final String TELEPORT_P2P = "teleport_p2p";
@@ -110,6 +111,7 @@ public class ConfigModeMenu extends AEBaseMenu {
         registerClientAction(CLEAR_PENDING_BIND, this::handleClearPendingBind);
         registerClientAction(AUTO_CONFIG_IO, this::handleAutoConfigIO);
         registerClientAction(ASSIGN_FREQ, this::handleAssignFreq);
+        registerClientAction(SWITCH_TO_INPUT, String.class, this::handleSwitchToInput);
         registerClientAction(HIGHLIGHT_P2P, String.class, this::handleHighlightP2P);
         registerClientAction(HIGHLIGHT_P2P_TUNNEL, String.class, this::handleHighlightP2PTunnel);
         registerClientAction(TELEPORT_P2P, String.class, this::handleTeleportP2P);
@@ -219,6 +221,28 @@ public class ConfigModeMenu extends AEBaseMenu {
 
     private void handleAssignFreq() {
         assignFreq();
+    }
+
+    /**
+     * 把选中的输出端设备改成它所在频段的输入端：原输入端会被降级为输出。
+     *
+     * <p>顺序由 {@code P2PManager.switchToInput} 保证（先降级、再提升），这里只负责
+     * 把结果码翻成状态行文案，并立刻重扫一次 —— 角色变了，树里的输入/输出标记
+     * 与频段汇总都依赖这次重扫，否则要等下一个轮询周期才更新。
+     */
+    private void handleSwitchToInput(String positionData) {
+        if (p2pManager == null) return;
+        P2PTunnelPart<?> p2p = parsingP2P(positionData);
+        P2PManager.RoleResult result = p2pManager.switchToInput(p2p);
+        statusParam = p2p == null ? "" : String.format("%04X", p2p.getFrequency() & 0xFFFF);
+        statusCode = switch (result) {
+            case OK -> ActionStatus.SWITCHED_TO_INPUT;
+            case NO_CHANNEL -> ActionStatus.SWITCH_NO_CHANNEL;
+            case ALREADY_INPUT -> ActionStatus.SWITCH_ALREADY_INPUT;
+            case NO_TARGET, NO_GRID, NO_SERVICE -> ActionStatus.SWITCH_FAILED;
+        };
+        p2pManager.analysisP2P();
+        updateItemInfo();
     }
 
     // 接收时解析 P2P 位置字符串并重新获取 P2P 部件（格式：x|y|z|side）

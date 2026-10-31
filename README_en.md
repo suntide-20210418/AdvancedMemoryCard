@@ -4,7 +4,7 @@
 
 An Applied Energistics 2 (AE2) add-on that gives the AE2 Memory Card two major capabilities: **bulk region pasting** and **centralized P2P tunnel configuration**.
 
-> **Current version: `1.2.0-1.21.1`** · Minecraft 1.21.1 / NeoForge 21.1.219+ / AE2 1.21.1 line
+> **Current version: `1.2.1-1.21.1`** · Minecraft 1.21.1 / NeoForge 21.1.219+ / AE2 1.21.1 line
 > See [CHANGELOG.md](CHANGELOG.md) for what changed.
 
 ## 🌟 Features
@@ -61,12 +61,13 @@ Right-click any **P2P tunnel part** to open the configuration GUI and visually m
 - **Follows your selection**: picking a device expands the list to it and selects it; if the row is already visible the list does not scroll (so the 2 Hz sync doesn't yank it around). After a bind moves the device to another group, the list follows it there.
 - **Target stays put**: switching the source device keeps the selected target channel — it is only cleared when the new device has a different P2P type (cross-type binding is meaningless).
 - **One-key binding**: With a target set, the bottom **Bind** button and the Enter key both commit. The server returns a result code, so the status line reports either "Bound to 0A1B" or the exact reason it failed (no source / not bindable / network not ready). **The target slot survives the bind**, so you can pick the next device and bind it to the same channel right away.
-- **Inspector**: The right panel leads with status chips (connection / role / channel usage), then a property table, a 2×2 action grid and a channel-usage progress bar. Usage is only shown for ME P2P — other types simply do not have that concept — and the bar turns amber once the channel runs low. Renaming is in-place — the rest of the properties stay visible while you type, and Esc cancels.
+- **Inspector**: The right panel leads with status chips (connection / role / channel usage), then a property table, a two-column action grid (the button count depends on the node type; a lone trailing button spans the full row) and a channel-usage progress bar. Usage is only shown for ME P2P — other types simply do not have that concept — and the bar turns amber once the channel runs low. Renaming is in-place — the rest of the properties stay visible while you type, and Esc cancels.
 - **Rename / alias**: Set a custom name for an individual P2P, or an alias for a whole channel (its input side).
+- **Make input**: when the selected device is an **output**, the 4th slot of the inspector reads *Make Input*. Clicking it hands the input role of that channel to this device and demotes the previous input to an output — a channel only ever has one input, so the server **demotes first, promotes second** (doing it the other way round evicts the old input from `P2PService`'s input map, leaving a tunnel whose `output` flag says "input" while the service has never heard of it, and neither end moves anything). The button is absent when the device is already an input or has no channel bound (0000): the first direction would leave the channel without its only input and kill it outright, the second has no channel to take over.
 - **Assign new channel**: Assign a brand-new free frequency to the pairing source and make it the input side in one click.
 - **Auto-configure I/O (ME P2P only)**: Decides whether an ME P2P should act as input or output based on whether its external network is connected to an ME Controller, and assigns a frequency automatically.
 - **Highlight doubles as locate**: clicking "Highlight" first closes the GUI, then renders the P2P tunnel in the world (self / input / output in different colors), then turns your head toward the target — the old "Locate" button is merged into it. Head rotation still honours the client option `rotateHeadOnHighlight`. Chat output is location info only; the clickable teleport link is gone. Highlighting a frequency node lists **every input and output** on that channel, each tagged `IN` / `OUT`.
-- **Optional Teleport button**: the 4th slot on P2P device rows and type rows is a standalone "Teleport" button executed server-side (cross-dimension supported). Once you land, the client highlights that device and turns your view toward it — that turn ignores `rotateHeadOnHighlight` (the option only governs highlights; a teleport is a move you asked for, and landing right on the device without turning leaves you disoriented). It only appears when the server option `allowTeleport = true`, and the server re-checks every teleport request. Frequency nodes have no position of their own, so they offer no teleport.
+- **Optional Teleport button**: the 5th slot on P2P device rows is a standalone "Teleport" button executed server-side (cross-dimension supported). Once you land, the client highlights that device and turns your view toward it — that turn ignores `rotateHeadOnHighlight` (the option only governs highlights; a teleport is a move you asked for, and landing right on the device without turning leaves you disoriented). It only appears when the server option `allowTeleport = true`, and the server re-checks every teleport request. Frequency nodes have no position of their own, so they offer no teleport.
 - **Cross-dimension**: The encoding carries dimension info, so P2P devices can be located and highlighted across dimensions.
 
 ### ⌨️ Controls
@@ -173,6 +174,11 @@ Used to personalize the UI and rendering, organized by section:
 ## 📝 Changelog
 
 Full history in [CHANGELOG.md](CHANGELOG.md). Latest release:
+
+### 1.2.1-1.21.1
+
+- **Added** a *Make Input* button: an output device can take over the input role of its channel in one click, and the previous input becomes an output (the server always demotes first, promotes second, so the old input is never evicted from `P2PService`'s input map and left as an orphan that never moves anything). The status line reports success / no channel / already an input / failure.
+- **Changed** *Teleport* moved to the 5th slot, so device rows now read *Highlight / Rename / Assign channel / Make Input / Teleport*; a lone trailing secondary button spans the full row, fixing the empty bottom-right slot on five-button device rows and three-button frequency rows.
 
 ### 1.2.0-1.21.1
 
