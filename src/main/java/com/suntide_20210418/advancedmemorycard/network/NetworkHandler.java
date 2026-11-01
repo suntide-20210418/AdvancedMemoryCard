@@ -9,7 +9,13 @@ import net.minecraftforge.network.simple.SimpleChannel;
 
 public class NetworkHandler {
     private static int packetId = 0;
-    private static final String PROTOCOL_VERSION = "1";
+    /**
+     * 通道协议版本。
+     *
+     * <p>1.3.0 的配置模式同步包加了配对源与状态码字段，与 1.2.0 的字节布局不兼容。
+     * 升到 "2" 让旧客户端在握手期就被拒绝，而不是进游戏后在读包时错位解析。
+     */
+    private static final String PROTOCOL_VERSION = "2";
     public static final SimpleChannel INSTANCE = NetworkRegistry.newSimpleChannel(
             ResourceLocationHelper.modLoc("main"),
             () -> PROTOCOL_VERSION,

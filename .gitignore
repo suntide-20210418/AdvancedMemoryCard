@@ -21,5 +21,8 @@ build
 eclipse
 run
 
+# datagen 缓存（只用于判断是否需要重跑，不该进 jar 也不该进版本库）
+src/generated/resources/.cache/
+
 # Files from Forge MDK
 forge*changelog.txt

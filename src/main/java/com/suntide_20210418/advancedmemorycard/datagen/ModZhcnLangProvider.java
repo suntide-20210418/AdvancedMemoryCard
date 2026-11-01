@@ -114,6 +114,24 @@ public class ModZhcnLangProvider extends LanguageProvider {
         add(Keys.STATUS_INPUT, "（输入端）");
         add(Keys.STATUS_CURRENT_SELECTED, "（当前选中）");
 
+        // 状态行回执（ActionStatus 的 16 个码）
+        add(Keys.STATUS_LINE_IDLE, "选择左侧设备作为源，再选一个频段作为目标");
+        add(Keys.STATUS_LINE_BIND_OK, "已绑定到 %s");
+        add(Keys.STATUS_LINE_BIND_NO_TARGET, "没有源设备：先在左侧选一台 P2P");
+        add(Keys.STATUS_LINE_BIND_INVALID_FREQ, "%s 不是可绑定频段");
+        add(Keys.STATUS_LINE_BIND_NO_GRID, "网络未就绪，绑定未执行");
+        add(Keys.STATUS_LINE_SOURCE_SELECTED, "源设备：%s");
+        add(Keys.STATUS_LINE_ASSIGNED, "已分配新频段 %s");
+        add(Keys.STATUS_LINE_RENAMED, "已改名为 %s");
+        add(Keys.STATUS_LINE_REFRESHED, "已刷新");
+        add(Keys.STATUS_LINE_RENAME_FAILED, "改名未生效：所选 P2P 已不在当前网络");
+        add(Keys.STATUS_LINE_BIND_BATCH_OK, "%s 台设备已绑定到 %s");
+        add(Keys.STATUS_LINE_BIND_BATCH_PARTIAL, "%s 台绑定成功，%s 台失败（目标 %s）");
+        add(Keys.STATUS_LINE_SWITCHED_TO_INPUT, "%s 已设为输入端，原输入端转为输出");
+        add(Keys.STATUS_LINE_SWITCH_NO_CHANNEL, "%s 未绑定频段，无法设为输入端");
+        add(Keys.STATUS_LINE_SWITCH_ALREADY_INPUT, "该设备已经是输入端");
+        add(Keys.STATUS_LINE_SWITCH_FAILED, "切换失败：网络未就绪或设备已不在当前网络");
+
         // 聊天消息
         add(Keys.CHAT_LOCATION_INFO, "%s 在 %s - (%s) ");
         add(Keys.CHAT_CLICK_TO_TELEPORT, "【点击此处来传送】");

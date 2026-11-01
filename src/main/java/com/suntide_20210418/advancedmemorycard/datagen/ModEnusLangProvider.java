@@ -120,6 +120,24 @@ public class ModEnusLangProvider extends LanguageProvider {
         add(Keys.STATUS_INPUT, " (Input)");
         add(Keys.STATUS_CURRENT_SELECTED, " (Currently Selected)");
 
+        // 状态行回执（ActionStatus 的 16 个码）
+        add(Keys.STATUS_LINE_IDLE, "Pick a device as source, then a channel as target");
+        add(Keys.STATUS_LINE_BIND_OK, "Bound to %s");
+        add(Keys.STATUS_LINE_BIND_NO_TARGET, "No source device — pick a P2P on the left");
+        add(Keys.STATUS_LINE_BIND_INVALID_FREQ, "%s is not a bindable channel");
+        add(Keys.STATUS_LINE_BIND_NO_GRID, "Network not ready, bind skipped");
+        add(Keys.STATUS_LINE_SOURCE_SELECTED, "Source: %s");
+        add(Keys.STATUS_LINE_ASSIGNED, "Assigned new channel %s");
+        add(Keys.STATUS_LINE_RENAMED, "Renamed to %s");
+        add(Keys.STATUS_LINE_REFRESHED, "Refreshed");
+        add(Keys.STATUS_LINE_RENAME_FAILED, "Rename failed: device is no longer on this network");
+        add(Keys.STATUS_LINE_BIND_BATCH_OK, "Bound %s devices to %s");
+        add(Keys.STATUS_LINE_BIND_BATCH_PARTIAL, "%s bound, %s failed (target %s)");
+        add(Keys.STATUS_LINE_SWITCHED_TO_INPUT, "%s is now the input; the previous input became an output");
+        add(Keys.STATUS_LINE_SWITCH_NO_CHANNEL, "%s has no channel bound, cannot become an input");
+        add(Keys.STATUS_LINE_SWITCH_ALREADY_INPUT, "This device is already an input");
+        add(Keys.STATUS_LINE_SWITCH_FAILED, "Switch failed: network not ready or device left this network");
+
         // 聊天消息
         add(Keys.CHAT_LOCATION_INFO, "%s at %s - (%s) ");
         add(Keys.CHAT_CLICK_TO_TELEPORT, "[Click to Teleport]");

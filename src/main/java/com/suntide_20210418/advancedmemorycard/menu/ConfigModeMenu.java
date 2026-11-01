@@ -12,6 +12,7 @@ import com.suntide_20210418.advancedmemorycard.item.custom.CardMode;
 import com.suntide_20210418.advancedmemorycard.network.ConfigModeSyncPacket;
 import com.suntide_20210418.advancedmemorycard.network.NetworkHandler;
 import com.suntide_20210418.advancedmemorycard.p2p.*;
+import com.suntide_20210418.advancedmemorycard.utils.ActionStatus;
 import com.suntide_20210418.advancedmemorycard.utils.TranslateHelper;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
@@ -24,6 +25,8 @@ import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -50,13 +53,17 @@ public class ConfigModeMenu extends AEBaseMenu {
     //action 标识符
     private static final String REFRESH_P2P = "refresh_p2p";
     private static final String BIND_FREQUENCY = "bind_frequency";
+    private static final String BIND_FREQUENCY_BATCH = "bind_frequency_batch";
     private static final String SET_CHANNEL_ALIAS = "set_channel_alias";
     private static final String SET_P2P_ALIAS = "set_p2p_alias";
     private static final String SET_PENDING_BIND = "set_pending_bind";
+    private static final String CLEAR_PENDING_BIND = "clear_pending_bind";
     private static final String AUTO_CONFIG_IO = "auto_config_io";
     private static final String ASSIGN_FREQ = "assign_freq";
+    private static final String SWITCH_TO_INPUT = "switch_to_input";
     private static final String HIGHLIGHT_P2P = "highlight_p2p";
     private static final String HIGHLIGHT_P2P_TUNNEL = "highlight_p2p_tunnel";
+    private static final String TELEPORT_P2P = "teleport_p2p";
     private static final String UPDATE_ITEM_INFO = "update_item_info";
 
 
@@ -78,6 +85,18 @@ public class ConfigModeMenu extends AEBaseMenu {
 
     // 客户端缓存的当前待绑定 P2P 信息（从同步数据中提取，isPendingBind=true 的那一个）
     private P2PInfo clientPendingBindP2PInfo = null;
+    private P2PPosition clientPendingBindPosition = null;
+    private int clientStatusCode = ActionStatus.NONE;
+    private String clientStatusParam = "";
+    /** 每收到一次同步包 +1。客户端据此决定要不要重建树，避免每 tick 重建 20 次。 */
+    private int syncVersion = 0;
+
+    /**
+     * 最近一次操作的結果码 + 参数，随同步包一起下发。
+     * 客户端把它渲染成状态行文案；下次操作覆盖。
+     */
+    private int statusCode = ActionStatus.NONE;
+    private String statusParam = "";
 
     @GuiSync(3)
     private Component mode;
@@ -88,13 +107,17 @@ public class ConfigModeMenu extends AEBaseMenu {
         //action 注册，注意只能在这个构造函数注册
         registerClientAction(REFRESH_P2P, this::handleRefreshP2P);
         registerClientAction(BIND_FREQUENCY, String.class, this::handleBindFrequency);
+        registerClientAction(BIND_FREQUENCY_BATCH, String.class, this::handleBindFrequencyBatch);
         registerClientAction(SET_CHANNEL_ALIAS, String.class, this::handleSetChannelAlias);
         registerClientAction(SET_P2P_ALIAS, String.class, this::handleSetP2PAlias);
         registerClientAction(SET_PENDING_BIND, String.class, this::handleSetPendingBind);
+        registerClientAction(CLEAR_PENDING_BIND, this::handleClearPendingBind);
         registerClientAction(AUTO_CONFIG_IO, this::handleAutoConfigIO);
         registerClientAction(ASSIGN_FREQ, this::handleAssignFreq);
+        registerClientAction(SWITCH_TO_INPUT, String.class, this::handleSwitchToInput);
         registerClientAction(HIGHLIGHT_P2P, String.class, this::handleHighlightP2P);
         registerClientAction(HIGHLIGHT_P2P_TUNNEL, String.class, this::handleHighlightP2PTunnel);
+        registerClientAction(TELEPORT_P2P, String.class, this::handleTeleportP2P);
         registerClientAction(UPDATE_ITEM_INFO, this::handleUpdateItemInfo);
     }
 
@@ -109,7 +132,10 @@ public class ConfigModeMenu extends AEBaseMenu {
     // ==================== 服务端 Action 处理（由 registerClientAction 回调触发） ====================
 
     private void handleRefreshP2P() {
+        if (p2pManager == null) return;
         p2pManager.analysisP2P();
+        statusCode = ActionStatus.REFRESHED;
+        statusParam = "";
     }
 
     private void handleUpdateItemInfo() {
@@ -118,9 +144,84 @@ public class ConfigModeMenu extends AEBaseMenu {
 
     private void handleBindFrequency(String frequencyHex) {
         if (p2pManager == null) return;
-        p2pManager.bind(frequencyHex);
+        P2PManager.BindResult result = p2pManager.bind(frequencyHex);
+        statusParam = frequencyHex == null ? "" : frequencyHex;
+        statusCode = switch (result) {
+            case OK -> ActionStatus.BIND_OK;
+            case NO_TARGET -> ActionStatus.BIND_NO_TARGET;
+            case INVALID_FREQUENCY -> ActionStatus.BIND_INVALID_FREQ;
+            case NO_GRID, NO_SERVICE -> ActionStatus.BIND_NO_GRID;
+        };
         // 立即回读一次真实状态：否则界面要等下一个轮询周期才更新，
         // 玩家会把"绑定失败/被拒绝"误读成绑定成功。
+        updateItemInfo();
+    }
+
+    /**
+     * 批量绑定：payload = "频段;位置1;位置2;…"，位置用 {@code x|y|z|side|dim}。
+     *
+     * <p>逐台调用 {@code bindTo}：角色仲裁在 P2PService 层面完成，
+     * 第一台会成为该频段的输入端，其余成为输出端。
+     */
+    private void handleBindFrequencyBatch(String data) {
+        if (p2pManager == null) return;
+        String[] parts = data.split(";");
+        if (parts.length < 2 || parts[0].isEmpty()) {
+            statusCode = ActionStatus.BIND_NO_TARGET;
+            statusParam = "";
+            return;
+        }
+        String frequency = parts[0];
+        int ok = 0;
+        int fail = 0;
+        for (int i = 1; i < parts.length; i++) {
+            if (parts[i].isEmpty()) continue;
+            P2PTunnelPart<?> p2p = parsingP2P(parts[i]);
+            if (p2p == null) {
+                fail++;
+                continue;
+            }
+            if (p2pManager.bindTo(p2p, frequency) == P2PManager.BindResult.OK) {
+                ok++;
+            } else {
+                fail++;
+            }
+        }
+        statusCode = fail == 0 ? ActionStatus.BIND_BATCH_OK : ActionStatus.BIND_BATCH_PARTIAL;
+        statusParam = fail == 0
+                ? (ok + "|" + frequency)
+                : (ok + "|" + fail + "|" + frequency);
+        updateItemInfo();
+    }
+
+    /** 把配对源退回“打开界面时右键的那一台”，而不是清成一个空指针。 */
+    private void handleClearPendingBind() {
+        if (p2pManager == null) return;
+        p2pManager.setPendingBindTarget(p2pManager.getP2PTunnelPart());
+        statusCode = ActionStatus.NONE;
+        statusParam = "";
+        sendSyncPacketToClient();
+    }
+
+    /**
+     * 把选中的输出端设备改成它所在频段的输入端：原输入端会被降级为输出。
+     *
+     * <p>顺序由 {@code P2PManager.switchToInput} 保证（先降级、再提升），这里只负责
+     * 把结果码翻成状态行文案，并立刻重扫一次 —— 角色变了，树里的输入/输出标记
+     * 与频段汇总都依赖这次重扫，否则要等下一个轮询周期才更新。
+     */
+    private void handleSwitchToInput(String positionData) {
+        if (p2pManager == null) return;
+        P2PTunnelPart<?> p2p = parsingP2P(positionData);
+        P2PManager.RoleResult result = p2pManager.switchToInput(p2p);
+        statusParam = p2p == null ? "" : String.format("%04X", p2p.getFrequency() & 0xFFFF);
+        statusCode = switch (result) {
+            case OK -> ActionStatus.SWITCHED_TO_INPUT;
+            case NO_CHANNEL -> ActionStatus.SWITCH_NO_CHANNEL;
+            case ALREADY_INPUT -> ActionStatus.SWITCH_ALREADY_INPUT;
+            case NO_TARGET, NO_GRID, NO_SERVICE -> ActionStatus.SWITCH_FAILED;
+        };
+        p2pManager.analysisP2P();
         updateItemInfo();
     }
 
@@ -158,6 +259,38 @@ public class ConfigModeMenu extends AEBaseMenu {
         highlightP2PTunnel(frequencyHex);
     }
 
+    private void handleTeleportP2P(String positionData) {
+        if (!ModConfigs.isTeleportAllowed()) {
+            // 按钮只在允许时显示，但包可以伪造：服务端必须自己再判一次。
+            return;
+        }
+        teleportTo(parsingP2P(positionData));
+    }
+
+    /**
+     * 把玩家送到 P2P 部件所在位置（支持跨维度）。
+     *
+     * <p>落点取方块中心；方块有碰撞体积时抬高一格，避免卡在方块里。
+     * 不在此处清空界面：客户端在收到成功回执后自行关闭并转头。
+     */
+    private void teleportTo(P2PTunnelPart<?> p2pPart) {
+        if (p2pPart == null || p2pPart.getBlockEntity() == null) return;
+        if (!(getPlayer() instanceof ServerPlayer player)) return;
+
+        Level level = p2pPart.getBlockEntity().getLevel();
+        if (!(level instanceof ServerLevel serverLevel)) return;
+
+        BlockPos pos = p2pPart.getBlockEntity().getBlockPos();
+        boolean collisionFree = serverLevel.getBlockState(pos)
+                .getCollisionShape(serverLevel, pos)
+                .isEmpty();
+        double x = pos.getX() + 0.5;
+        double y = collisionFree ? pos.getY() + 0.5 : pos.getY() + 1.0;
+        double z = pos.getZ() + 0.5;
+
+        player.teleportTo(serverLevel, x, y, z, player.getYRot(), player.getXRot());
+    }
+
     /**
      * 服务端：构建并发送同步数据包
      */
@@ -192,11 +325,27 @@ public class ConfigModeMenu extends AEBaseMenu {
                     positionDevicesMap,
                     positionInfoMap,
                     channelInfoMap,
-                    p2pTypeInfoMap
+                    p2pTypeInfoMap,
+                    resolveBindTargetPosition(),
+                    statusCode,
+                    statusParam
             );
 
             NetworkHandler.sendToPlayer(packet, getPlayer());
         }
+    }
+
+    /** 把当前配对源设备换算成位置键；设备所在区块未加载时返回 null。 */
+    private P2PPosition resolveBindTargetPosition() {
+        if (p2pManager == null) return null;
+        P2PTunnelPart<?> target = p2pManager.getBindTarget();
+        if (target == null || target.getBlockEntity() == null) return null;
+        var host = target.getBlockEntity();
+        if (host.getLevel() == null) return null;
+        return new P2PPosition(
+                host.getBlockPos(),
+                target.getSide(),
+                host.getLevel().dimension().location().toString());
     }
 
     /**
@@ -220,14 +369,16 @@ public class ConfigModeMenu extends AEBaseMenu {
             this.clientP2PTypeInfoMap.clear();
             this.clientP2PTypeInfoMap.putAll(packet.getP2PTypeInfoMap());
 
-            // 从同步数据中提取当前待绑定的 P2P 信息（isPendingBind=true 的）
-            this.clientPendingBindP2PInfo = null;
-            for (P2PInfo info : clientP2PInfoMap.values()) {
-                if (info.isPendingBind()) {
-                    this.clientPendingBindP2PInfo = info;
-                    break;
-                }
-            }
+            this.syncVersion++;
+            this.clientStatusCode = packet.getStatusCode();
+            this.clientStatusParam = packet.getStatusParam();
+            this.clientPendingBindPosition = packet.getPendingBindPosition();
+
+            // 配对源直接按位置键查表：比“遍历找 isPendingBind”更可靠，
+            // 而且切换配对源时服务端只需重发包，不必重跑全网格扫描。
+            this.clientPendingBindP2PInfo = this.clientPendingBindPosition == null
+                    ? null
+                    : clientP2PInfoMap.get(this.clientPendingBindPosition);
         }
     }
 
@@ -262,7 +413,7 @@ public class ConfigModeMenu extends AEBaseMenu {
             boolean isOutput = p2p.isOutput();
             boolean isConnected = P2PManager.isConnected(p2p);
             boolean isMEP2P = p2p instanceof MEP2PTunnelPart;
-            boolean isPendingBind = Objects.equals(p2p, p2pManager.getP2PTunnelPart());
+            boolean isPendingBind = Objects.equals(p2p, p2pManager.getBindTarget());
             int channel = isMEP2P ? p2p.getExternalFacingNode().getUsedChannels() : 0;
             int maxChannel = isMEP2P ? p2p.getExternalFacingNode().getMaxChannels() : 0;
             short rawFrequency = p2p.getFrequency();
@@ -489,7 +640,23 @@ public class ConfigModeMenu extends AEBaseMenu {
     }
 
     private void setPendingBind(P2PTunnelPart<?> p2p) {
-        p2pManager.setP2PTunnelPart(p2p);
+        if (p2pManager == null) return;
+        if (p2p == null) {
+            statusCode = ActionStatus.BIND_NO_TARGET;
+            statusParam = "";
+        } else {
+            // 只改配对源，不动扫描锚点：否则“选一台设备”会顺带切掉整个网络视图
+            p2pManager.setPendingBindTarget(p2p);
+            Component custom = p2p.getCustomName();
+            String name = custom == null ? "" : custom.getString();
+            if (name.isEmpty() && p2p.getBlockEntity() != null) {
+                name = p2p.getBlockEntity().getBlockPos().toShortString();
+            }
+            statusCode = ActionStatus.SOURCE_SELECTED;
+            statusParam = name;
+        }
+        // 只是换配对源，没必要重跑 analysisP2P：把现有缓存重发一次即可
+        sendSyncPacketToClient();
     }
 
     private void autoConfigIO() {
@@ -645,5 +812,29 @@ public class ConfigModeMenu extends AEBaseMenu {
         this.p2pManager = manager;
         // 立刻更新一次信息（在服务端构造时会触发）
         updateItemInfo();
+    }
+
+    /** 客户端缓存中的配对源位置；null 表示未选择。 */
+    public P2PPosition getClientPendingBindPosition() {
+        return clientPendingBindPosition;
+    }
+
+    /** 客户端缓存的状态码。 */
+    public int getClientStatusCode() {
+        return clientStatusCode;
+    }
+
+    public String getClientStatusParam() {
+        return clientStatusParam;
+    }
+
+    /**
+     * 同步版本号：每收到一个同步包 +1。
+     *
+     * <p>界面用它做节流 —— 之前是每 tick 无条件重建整棵树（20 次/秒），
+     * 数据没变时纯属白烧 CPU，还会打断正在进行的选择与编辑。
+     */
+    public int getSyncVersion() {
+        return syncVersion;
     }
 }
