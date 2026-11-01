@@ -16,16 +16,9 @@ public class ClientConfig {
     public final ForgeConfigSpec.ConfigValue<Boolean> rotateHeadOnHighlight;
     public final ForgeConfigSpec.IntValue p2pHighlightDurationSec;
 
-    // ========== P2P 树控件颜色 ==========
-    public final ForgeConfigSpec.IntValue treeColorBg;
-    public final ForgeConfigSpec.IntValue treeColorSelected;
-    public final ForgeConfigSpec.IntValue treeColorHover;
-
     // ========== P2P 树控件布局 ==========
     public final ForgeConfigSpec.IntValue treeIndentWidth;
     public final ForgeConfigSpec.IntValue treeRowHeight;
-    public final ForgeConfigSpec.IntValue treeIconTextSpacing;
-    public final ForgeConfigSpec.IntValue treeExpandIconWidth;
     public final ForgeConfigSpec.IntValue treeChannelWarningThreshold;
     public final ForgeConfigSpec.IntValue treeP2PNameMaxLength;
 
@@ -50,35 +43,6 @@ public class ClientConfig {
     public final ForgeConfigSpec.IntValue paletteOverlayBg;
     public final ForgeConfigSpec.IntValue paletteOverlayBorder;
     public final ForgeConfigSpec.IntValue paletteOverlayShadow;
-
-    // ========== 详情面板颜色 ==========
-    public final ForgeConfigSpec.IntValue panelColorBg;
-    public final ForgeConfigSpec.IntValue panelColorTitle;
-    public final ForgeConfigSpec.IntValue panelColorLabel;
-    public final ForgeConfigSpec.IntValue panelColorValue;
-    public final ForgeConfigSpec.IntValue panelColorPlaceholder;
-    public final ForgeConfigSpec.IntValue panelColorSeparator;
-    public final ForgeConfigSpec.IntValue panelColorButtonAreaBg;
-    public final ForgeConfigSpec.IntValue panelStatusNotActive;
-    public final ForgeConfigSpec.IntValue panelStatusNotConnected;
-    public final ForgeConfigSpec.IntValue panelStatusConnected;
-
-    // ========== 详情面板布局 ==========
-    public final ForgeConfigSpec.IntValue panelButtonWidth;
-    public final ForgeConfigSpec.IntValue panelButtonHeight;
-    public final ForgeConfigSpec.IntValue panelButtonSpacing;
-    public final ForgeConfigSpec.IntValue panelInfoAreaHeightRatio;
-    public final ForgeConfigSpec.IntValue panelTotalHeightRatio;
-    public final ForgeConfigSpec.IntValue panelLineHeight;
-    public final ForgeConfigSpec.IntValue panelPaddingLeft;
-    public final ForgeConfigSpec.IntValue panelPaddingTop;
-    public final ForgeConfigSpec.IntValue panelButtonCountMax;
-
-    // ========== FlatButton 颜色 ==========
-    public final ForgeConfigSpec.IntValue buttonColorBg;
-    public final ForgeConfigSpec.IntValue buttonColorHover;
-    public final ForgeConfigSpec.IntValue buttonColorClick;
-    public final ForgeConfigSpec.IntValue buttonColorText;
 
     // ========== 复制模式选择框颜色 ==========
     public final ForgeConfigSpec.IntValue copyColorStartPos;
@@ -114,42 +78,21 @@ public class ClientConfig {
 
         builder.pop(); // highlight
 
-        // ---- P2P 树控件颜色 ----
-        builder.comment("P2P 树控件颜色设置 (ARGB)").push("treeColors");
-
-        treeColorBg = builder
-                .comment("树控件背景色")
-                .defineInRange("bg", 0xFFADB0C4, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        treeColorSelected = builder
-                .comment("选中行背景色")
-                .defineInRange("selected", 0xFF4A6EA9, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        treeColorHover = builder
-                .comment("悬停行背景色")
-                .defineInRange("hover", 0xFF3A5A8A, Integer.MIN_VALUE, Integer.MAX_VALUE);
-
-        builder.pop(); // treeColors
-
         // ---- P2P 树控件布局 ----
         builder.comment("P2P 树控件布局设置").push("treeLayout");
 
         treeIndentWidth = builder
                 .comment("每级缩进像素")
-                .defineInRange("indentWidth", 2, 0, 100);
+                .defineInRange("indentWidth", 10, 0, 40);
         treeRowHeight = builder
                 .comment("每行高度（像素）")
-                .defineInRange("rowHeight", 12, 4, 64);
-        treeIconTextSpacing = builder
-                .comment("图标与文字间距（像素）")
-                .defineInRange("iconTextSpacing", 4, 0, 32);
-        treeExpandIconWidth = builder
-                .comment("展开/收起图标宽度（像素）")
-                .defineInRange("expandIconWidth", 2, 0, 16);
+                .defineInRange("rowHeight", 14, 10, 32);
         treeChannelWarningThreshold = builder
                 .comment("频道剩余数低于此值显示黄色警告")
                 .defineInRange("channelWarningThreshold", 8, 0, 128);
         treeP2PNameMaxLength = builder
                 .comment("P2P 设备名称最大显示长度（超出截断）")
-                .defineInRange("p2pNameMaxLength", 20, 5, 100);
+                .defineInRange("nameMaxLength", 14, 4, 64);
 
         builder.pop(); // treeLayout
 
@@ -221,96 +164,6 @@ public class ClientConfig {
                 .defineInRange("overlayShadow", 0x40000000, Integer.MIN_VALUE, Integer.MAX_VALUE);
 
         builder.pop(); // palette
-
-        // ---- 详情面板颜色 ----
-        builder.comment("详情面板颜色设置 (ARGB)").push("panelColors");
-
-        panelColorBg = builder
-                .comment("面板背景色")
-                .defineInRange("bg", 0xFF9A9FB4, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        panelColorTitle = builder
-                .comment("标题文字颜色")
-                .defineInRange("title", 0xFFFFFFFF, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        panelColorLabel = builder
-                .comment("标签文字颜色")
-                .defineInRange("label", 0xFF000000, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        panelColorValue = builder
-                .comment("值文字颜色")
-                .defineInRange("value", 0xFFFFFFFF, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        panelColorPlaceholder = builder
-                .comment("占位符文字颜色")
-                .defineInRange("placeholder", 0xFF888888, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        panelColorSeparator = builder
-                .comment("分隔线颜色")
-                .defineInRange("separator", 0xFF888888, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        panelColorButtonAreaBg = builder
-                .comment("按钮区域背景色")
-                .defineInRange("buttonAreaBg", 0xFF9A9FB4, Integer.MIN_VALUE, Integer.MAX_VALUE);
-
-        builder.comment("详情面板状态颜色").push("status");
-        panelStatusNotActive = builder
-                .comment("未激活状态颜色")
-                .defineInRange("notActive", 0xFF000000, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        panelStatusNotConnected = builder
-                .comment("未连接状态颜色")
-                .defineInRange("notConnected", 0xFFFC5454, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        panelStatusConnected = builder
-                .comment("已连接状态颜色")
-                .defineInRange("connected", 0xFF54FC54, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        builder.pop(); // status
-
-        builder.pop(); // panelColors
-
-        // ---- 详情面板布局 ----
-        builder.comment("详情面板布局设置").push("panelLayout");
-
-        panelButtonWidth = builder
-                .comment("按钮宽度")
-                .defineInRange("buttonWidth", 46, 10, 200);
-        panelButtonHeight = builder
-                .comment("按钮高度")
-                .defineInRange("buttonHeight", 14, 6, 64);
-        panelButtonSpacing = builder
-                .comment("按钮间距")
-                .defineInRange("buttonSpacing", 4, 0, 32);
-        panelInfoAreaHeightRatio = builder
-                .comment("信息区高度比例分子（3/4）")
-                .defineInRange("infoAreaHeightRatio", 3, 1, 10);
-        panelTotalHeightRatio = builder
-                .comment("总高度比例分母（3/4）")
-                .defineInRange("totalHeightRatio", 4, 1, 10);
-        panelLineHeight = builder
-                .comment("行高")
-                .defineInRange("lineHeight", 12, 6, 64);
-        panelPaddingLeft = builder
-                .comment("左侧内边距")
-                .defineInRange("paddingLeft", 4, 0, 64);
-        panelPaddingTop = builder
-                .comment("顶部内边距")
-                .defineInRange("paddingTop", 4, 0, 64);
-        panelButtonCountMax = builder
-                .comment("最大按钮数量")
-                .defineInRange("buttonCountMax", 6, 1, 12);
-
-        builder.pop(); // panelLayout
-
-        // ---- FlatButton 颜色 ----
-        builder.comment("通用按钮颜色设置 (ARGB)").push("buttonColors");
-
-        buttonColorBg = builder
-                .comment("按钮默认背景色")
-                .defineInRange("bg", 0xFF7E8299, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        buttonColorHover = builder
-                .comment("按钮悬停背景色")
-                .defineInRange("hover", 0xFF3A5A8A, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        buttonColorClick = builder
-                .comment("按钮点击按下背景色")
-                .defineInRange("click", 0xFF2A4A7A, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        buttonColorText = builder
-                .comment("按钮文字颜色")
-                .defineInRange("text", 0xFFFFFFFF, Integer.MIN_VALUE, Integer.MAX_VALUE);
-
-        builder.pop(); // buttonColors
 
         // ---- 复制模式选择框颜色 ----
         builder.comment("复制模式选择框颜色 (RGB)").push("copyColors");

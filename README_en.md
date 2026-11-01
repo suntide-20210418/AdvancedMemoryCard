@@ -4,7 +4,7 @@
 
 An Applied Energistics 2 (AE2) add-on that gives the AE2 Memory Card two major capabilities: **bulk region pasting** and **centralized P2P tunnel configuration**.
 
-> **Current version: `1.2.0-1.20.1`** · Minecraft 1.20.1 / Forge 47.4.10+ / AE2 15.4.10+
+> **Current version: `1.3.0-1.20.1`** · Minecraft 1.20.1 / Forge 47.4.10+ / AE2 15.4.10+
 > See [CHANGELOG.md](CHANGELOG.md) for what changed.
 
 ## 🌟 Features
@@ -164,11 +164,13 @@ Used to personalize the UI and rendering, organized by section:
 
 Full history in [CHANGELOG.md](CHANGELOG.md). Latest release:
 
-### 1.2.0-1.20.1
+### 1.3.0-1.20.1
 
-- **Added** a paste-options panel for Copy Mode (upgrades / settings / priority / config inventory / patterns / P2P type / P2P frequency / name), opened with `G`, auto-opened after copying, stored per card.
-- **Fixed** P2P bindings being lost after relogging, channels permanently showing "not connected" when two inputs shared a frequency, binding to "Unconnected (0000)" silently unbinding, renames not being saved, and part pasting failing when the card is in the off hand.
-- **Note** cards never configured now default to nothing selected; Shift + Right-click on air switches modes.
+- **Added** a rebuilt Config Mode UI: a source → target pairing bar with a channel dropdown, a four-column list (status / name / channel / info), Ctrl multi-select and drag-select, batch binding, an inspector plus a bottom action bar, a teleport button, and "Make Input".
+- **Added** an action result line that reports success or the concrete reason for a failure.
+- **Added** a semantic palette (`client.palette.*`) that controls the whole UI.
+- **Fixed** batch-bind status dots not changing colour, channel renames doing nothing, renames running the settings-import path (touching upgrades/priority and possibly forcing the device to output), selection being lost when connectivity changed, and the scrollbar overlapping list text.
+- **Note** the channel protocol is now version 2, so 1.2.x clients and servers are incompatible. The old colour groups (treeColors / panelColors / buttonColors / panelLayout) no longer apply — use `client.palette.*`.
 
 ## 📄 License
 
