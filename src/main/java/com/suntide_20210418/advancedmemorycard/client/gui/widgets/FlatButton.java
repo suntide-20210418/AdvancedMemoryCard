@@ -11,8 +11,8 @@ import net.minecraft.client.gui.FontRenderer;
 public class FlatButton {
     private int x;
     private int y;
-    private final int width;
-    private final int height;
+    private int width;
+    private int height;
     private String label;
     private final Runnable onClickAction;
 
@@ -36,6 +36,8 @@ public class FlatButton {
 
     public void setX(int x) { this.x = x; }
     public void setY(int y) { this.y = y; }
+    public void setWidth(int width) { this.width = width; }
+    public void setHeight(int height) { this.height = height; }
     public int getX() { return x; }
     public int getY() { return y; }
     public int getWidth() { return width; }

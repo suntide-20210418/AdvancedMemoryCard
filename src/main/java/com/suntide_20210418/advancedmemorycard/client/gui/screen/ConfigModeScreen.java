@@ -1,24 +1,36 @@
 package com.suntide_20210418.advancedmemorycard.client.gui.screen;
 
-import com.suntide_20210418.advancedmemorycard.client.gui.menu.ConfigModeMenu;
-import com.suntide_20210418.advancedmemorycard.client.gui.widgets.DetailPanelWidget;
-import com.suntide_20210418.advancedmemorycard.client.gui.widgets.P2PTreeWidget;
-import com.suntide_20210418.advancedmemorycard.config.ModConfigs;
-import com.suntide_20210418.advancedmemorycard.network.ConfigModeSyncPacket;
-import com.suntide_20210418.advancedmemorycard.network.NetworkHandler;
-import com.suntide_20210418.advancedmemorycard.p2p.NodeType;
-import com.suntide_20210418.advancedmemorycard.p2p.P2PInfo;
-import com.suntide_20210418.advancedmemorycard.p2p.TreeNode;
-import com.suntide_20210418.advancedmemorycard.utils.TranslateHelper;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.math.BlockPos;
+
+import org.lwjgl.input.Mouse;
+
+import com.suntide_20210418.advancedmemorycard.client.gui.ConfigUiLayout;
+import com.suntide_20210418.advancedmemorycard.client.gui.GuiDraw;
+import com.suntide_20210418.advancedmemorycard.client.gui.menu.ConfigModeMenu;
+import com.suntide_20210418.advancedmemorycard.client.gui.widgets.ActionBarWidget;
+import com.suntide_20210418.advancedmemorycard.client.gui.widgets.DetailPanelWidget;
+import com.suntide_20210418.advancedmemorycard.client.gui.widgets.P2PTreeWidget;
+import com.suntide_20210418.advancedmemorycard.client.gui.widgets.PairBarWidget;
+import com.suntide_20210418.advancedmemorycard.config.ModConfigs;
+import com.suntide_20210418.advancedmemorycard.network.ConfigModeSyncPacket;
+import com.suntide_20210418.advancedmemorycard.network.NetworkHandler;
+import com.suntide_20210418.advancedmemorycard.p2p.ChannelInfo;
+import com.suntide_20210418.advancedmemorycard.p2p.NodeType;
+import com.suntide_20210418.advancedmemorycard.p2p.P2PInfo;
+import com.suntide_20210418.advancedmemorycard.p2p.TreeNode;
+import com.suntide_20210418.advancedmemorycard.utils.TranslateHelper;
+
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
-import org.lwjgl.input.Mouse;
 
 @SideOnly(Side.CLIENT)
 public class ConfigModeScreen extends GuiContainer {
@@ -28,41 +40,27 @@ public class ConfigModeScreen extends GuiContainer {
 
     private P2PTreeWidget p2pTree;
     private DetailPanelWidget detailPanel;
+    private PairBarWidget pairBar;
+    private ActionBarWidget actionBar;
     private GuiTextField searchField;
-
-    /** 与 1.21.1 的 assets/ae2/screens/config_mode_menu.json 保持一致。 */
-    private static final int PANEL_WIDTH = 352;
-    private static final int PANEL_HEIGHT = 282;
-    private static final int SEARCH_LEFT = 7;
-    private static final int SEARCH_TOP = 25;
-    private static final int SEARCH_WIDTH = 120;
-    private static final int SEARCH_HEIGHT = 12;
-    private static final int TREE_LEFT = 15;
-    private static final int TREE_TOP = 53;
-    private static final int TREE_WIDTH = 152;
-    private static final int TREE_HEIGHT = 200;
-    private static final int SCROLLBAR_LEFT = 169;
-    private static final int DETAIL_LEFT = 184;
-    private static final int DETAIL_WIDTH = 152;
-    private static final int DETAIL_HEIGHT = 210;
-    private static final int INFO_TOP = 269;
-    private static final int TEXT_COLOR = 0x404040;
-    /** 贴图画布是 512×512：drawTexturedModalRect 固定按 256×256 算 UV，必须用 custom sized 版本。 */
-    private static final int MENU_TEX_SIZE = 512;
-
-    private static final net.minecraft.util.ResourceLocation MENU_TEXTURE =
-            new net.minecraft.util.ResourceLocation(
-                    com.suntide_20210418.advancedmemorycard.AdvancedMemoryCardMod.MOD_ID,
-                    "textures/gui/config_mode_menu.png");
 
     private static final int UPDATE_ITEM_INFO_INTERVAL = 10;
     private int updateItemInfoCooldown = 0;
     private P2PInfo lastNavigatedP2P = null;
 
+    // 与基准 1.20.1 / 1.21.1 的 440×312 面板一致；旧版没有 AE2 的 ScreenStyle，
+    // 这里用 ConfigUiLayout 同数值的矩形 + 自绘扁平面板承担。
+    private static final int PANEL_WIDTH = ConfigUiLayout.PANEL_W;
+    private static final int PANEL_HEIGHT = ConfigUiLayout.PANEL_H;
+    private static final int TEXT_COLOR = 0x404040;
+
     private boolean scrollDragging = false;
     private int scrollDragStartY = 0;
     private int scrollDragStartOffset = 0;
     private String lastSearchText = "";
+
+    /** 同步版本号：每收到一个同步包 +1。只在变化时刷新配对条/操作条的“来自服务端”数据。 */
+    private int lastSyncVersion = -1;
 
     public ConfigModeScreen(ConfigModeMenu menu, EntityPlayer player) {
         super(menu);
@@ -73,11 +71,18 @@ public class ConfigModeScreen extends GuiContainer {
     }
 
     private static String encodeP2PPosition(P2PInfo p2pInfo) {
-        return p2pInfo.position().getX() + "|"
-                + p2pInfo.position().getY() + "|"
-                + p2pInfo.position().getZ() + "|"
-                + p2pInfo.direction().ordinal() + "|"
-                + p2pInfo.dimensionId();
+        return p2pInfo.position()
+            .getX() + "|"
+            + p2pInfo.position()
+                .getY()
+            + "|"
+            + p2pInfo.position()
+                .getZ()
+            + "|"
+            + p2pInfo.direction()
+                .ordinal()
+            + "|"
+            + p2pInfo.dimensionId();
     }
 
     @Override
@@ -86,47 +91,129 @@ public class ConfigModeScreen extends GuiContainer {
         this.ySize = PANEL_HEIGHT;
         super.initGui();
 
-        int treeX = guiLeft + TREE_LEFT;
-        int treeY = guiTop + TREE_TOP;
-        int treeW = TREE_WIDTH;
-        int treeH = TREE_HEIGHT;
+        int treeX = guiLeft + ConfigUiLayout.TREE.x;
+        int treeY = guiTop + ConfigUiLayout.TREE.y;
 
-        p2pTree = new P2PTreeWidget(treeX, treeY, treeW, treeH);
-        p2pTree.setNodeSelectionListener(node -> {
-            if (node != null && node.type != NodeType.SEARCH_HEADER) {
-                if (node.p2pInfo != null) {
-                    p2pTree.navigateToP2P(node.p2pInfo);
-                }
-                updateDetailPanelNode(node);
-            }
-        });
+        p2pTree = new P2PTreeWidget(treeX, treeY, ConfigUiLayout.TREE.w, ConfigUiLayout.TREE.h);
+        p2pTree.setNodeSelectionListener(this::onNodeSelected);
+        p2pTree.setBatchModeChangedListener(this::onBatchModeChanged);
 
-        detailPanel = new DetailPanelWidget(guiLeft + DETAIL_LEFT, treeY, DETAIL_WIDTH, DETAIL_HEIGHT);
+        int detailX = guiLeft + ConfigUiLayout.DETAIL.x;
+        int detailY = guiTop + ConfigUiLayout.DETAIL.y;
+        detailPanel = new DetailPanelWidget(detailX, detailY, ConfigUiLayout.DETAIL.w, ConfigUiLayout.DETAIL.h);
         detailPanel.setActionCallback(new DetailPanelWidget.ActionCallback() {
-            @Override public void onRename(P2PInfo p2pInfo, String newName) {
-                if (!newName.isEmpty()) { actionSetP2PAlias(p2pInfo, newName); resetUpdateCooldown(); }
+
+            @Override
+            public void onHighlightP2P(P2PInfo p2pInfo) {
+                actionHighlightP2P(p2pInfo);
+                if (ModConfigs.getClientConfig().rotateHeadOnHighlight) rotatePlayerTowardsP2P(p2pInfo);
             }
-            @Override public void onBind(P2PInfo p2pInfo) { actionBindFrequency(p2pInfo.frequency()); }
-            @Override public void onSelect(P2PInfo p2pInfo) { actionSetPendingBind(p2pInfo); }
-            @Override public void onHighlight(P2PInfo p2pInfo) { actionHighlightP2P(p2pInfo); if (ModConfigs.getClientConfig().rotateHeadOnHighlight) rotatePlayerTowardsP2P(p2pInfo); }
-            @Override public void onLocate(P2PInfo p2pInfo) { navigateToP2P(p2pInfo); }
-            @Override public void onAutoAssign() { actionAutoConfigIO(); }
-            @Override public void onAssignFreq(P2PInfo p2pInfo) { actionAssignFreq(); }
-            @Override public void onChannelRename(String frequency, String newAlias) { actionSetChannelAlias(frequency, newAlias); resetUpdateCooldown(); }
-            @Override public void onChannelBind(String frequency) { actionBindFrequency(frequency); }
-            @Override public void onChannelHighlight(String frequency) { actionHighlightP2PTunnel(frequency); }
-            @Override public void onRefresh() { actionRefreshP2P(); resetUpdateCooldown(); }
+
+            @Override
+            public void onHighlightChannel(String frequency) {
+                actionHighlightP2PTunnel(frequency);
+            }
+
+            @Override
+            public void onTeleportP2P(P2PInfo p2pInfo) {
+                actionTeleportP2P(p2pInfo);
+            }
+
+            @Override
+            public void onUseAsTarget(String frequency) {
+                String alias = menu.getClientP2PFrequencyAndAlias()
+                    .getOrDefault(frequency, frequency);
+                pairBar.setTarget(frequency, alias);
+                updateActionBar();
+            }
+
+            @Override
+            public void onAssignFreq() {
+                actionAssignFreq();
+            }
+
+            @Override
+            public void onSwitchToInput(P2PInfo p2pInfo) {
+                actionSwitchToInput(p2pInfo);
+            }
+
+            @Override
+            public void onInitP2P() {
+                actionAutoConfigIO();
+            }
+
+            @Override
+            public void onRenameP2P(P2PInfo p2pInfo, String newName) {
+                if (!newName.isEmpty()) {
+                    actionSetP2PAlias(p2pInfo, newName);
+                    resetUpdateCooldown();
+                }
+            }
+
+            @Override
+            public void onRenameChannel(String frequency, String newAlias) {
+                actionSetChannelAlias(frequency, newAlias);
+                resetUpdateCooldown();
+            }
+
+            @Override
+            public void onRefresh() {
+                actionRefreshP2P();
+                resetUpdateCooldown();
+            }
         });
 
-        searchField = new GuiTextField(0, fontRenderer, guiLeft + SEARCH_LEFT, guiTop + SEARCH_TOP,
-                SEARCH_WIDTH, SEARCH_HEIGHT);
+        // 配对条：源 → 目标 + 频段下拉 + 状态行
+        pairBar = new PairBarWidget(
+            guiLeft + ConfigUiLayout.PAIR_BAR.x,
+            guiTop + ConfigUiLayout.PAIR_BAR.y,
+            ConfigUiLayout.PAIR_BAR.w,
+            ConfigUiLayout.PAIR_BAR.h);
+        pairBar.setCallback(new PairBarWidget.Callback() {
+
+            @Override
+            public void onSourceCleared() {
+                menu.dispatchClientAction("clear_pending_bind");
+            }
+
+            @Override
+            public void onTargetChanged(String frequency) {
+                // 目标频段是纯客户端概念（点了树里的频段行或下拉项），无需上报；
+                // 真正绑定时再随 bind_frequency 一起发给服务端。
+                updateActionBar();
+            }
+
+            @Override
+            public void onNewFrequency() {
+                actionAssignFreq();
+            }
+        });
+
+        // 底部操作条
+        actionBar = new ActionBarWidget(
+            guiLeft + ConfigUiLayout.ACTION_BAR.x,
+            guiTop + ConfigUiLayout.ACTION_BAR.y,
+            ConfigUiLayout.ACTION_BAR.w,
+            ConfigUiLayout.ACTION_BAR.h);
+        actionBar.setOnBind(this::doBind);
+        actionBar.setOnBatchToggle(this::toggleBatchMode);
+
+        searchField = new GuiTextField(
+            0,
+            fontRenderer,
+            guiLeft + ConfigUiLayout.SEARCH.x,
+            guiTop + ConfigUiLayout.SEARCH.y,
+            ConfigUiLayout.SEARCH.w,
+            ConfigUiLayout.SEARCH.h);
         searchField.setMaxStringLength(64);
         searchField.setFocused(false);
 
         updateTreeData();
     }
 
-    private void actionAssignFreq() { menu.dispatchClientAction("assign_freq"); }
+    private void actionAssignFreq() {
+        menu.dispatchClientAction("assign_freq");
+    }
 
     public void navigateToP2P(P2PInfo targetP2P) {
         if (p2pTree != null && targetP2P != null) {
@@ -136,7 +223,8 @@ public class ConfigModeScreen extends GuiContainer {
 
     private void updateTreeData() {
         if (p2pTree != null) {
-            p2pTree.updateData(menu.getClientP2PTypeInfoMap(), menu.getClientChannelInfoMap(), menu.getClientP2PInfoMap());
+            p2pTree
+                .updateData(menu.getClientP2PTypeInfoMap(), menu.getClientChannelInfoMap(), menu.getClientP2PInfoMap());
         }
     }
 
@@ -146,24 +234,52 @@ public class ConfigModeScreen extends GuiContainer {
         }
     }
 
-    private void resetUpdateCooldown() { updateItemInfoCooldown = 0; }
+    private void resetUpdateCooldown() {
+        updateItemInfoCooldown = 0;
+    }
 
-    public void actionRefreshP2P() { menu.dispatchClientAction("refresh_p2p"); }
-    public void actionUpdateItemInfo() { menu.dispatchClientAction("update_item_info"); }
-    public void actionBindFrequency(String frequencyHex) { menu.dispatchClientAction("bind_frequency", frequencyHex); }
-    public void actionSetChannelAlias(String frequency, String alias) { menu.dispatchClientAction("set_channel_alias", frequency + "|" + alias); }
+    public void actionRefreshP2P() {
+        menu.dispatchClientAction("refresh_p2p");
+    }
+
+    public void actionUpdateItemInfo() {
+        menu.dispatchClientAction("update_item_info");
+    }
+
+    public void actionBindFrequency(String frequencyHex) {
+        menu.dispatchClientAction("bind_frequency", frequencyHex);
+    }
+
+    public void actionSetChannelAlias(String frequency, String alias) {
+        menu.dispatchClientAction("set_channel_alias", frequency + "|" + alias);
+    }
+
     public void actionSetP2PAlias(P2PInfo p2pInfo, String alias) {
         menu.dispatchClientAction("set_p2p_alias", encodeP2PPosition(p2pInfo) + "::" + alias);
     }
+
     public void actionSetPendingBind(P2PInfo p2pInfo) {
         menu.dispatchClientAction("set_pending_bind", encodeP2PPosition(p2pInfo));
     }
-    public void actionAutoConfigIO() { menu.dispatchClientAction("auto_config_io"); }
+
+    public void actionAutoConfigIO() {
+        menu.dispatchClientAction("auto_config_io");
+    }
+
     public void actionHighlightP2P(P2PInfo p2pInfo) {
         menu.dispatchClientAction("highlight_p2p", encodeP2PPosition(p2pInfo));
     }
+
     public void actionHighlightP2PTunnel(String frequencyHex) {
         menu.dispatchClientAction("highlight_p2p_tunnel", frequencyHex);
+    }
+
+    public void actionTeleportP2P(P2PInfo p2pInfo) {
+        menu.dispatchClientAction("teleport_p2p", encodeP2PPosition(p2pInfo));
+    }
+
+    public void actionSwitchToInput(P2PInfo p2pInfo) {
+        menu.dispatchClientAction("switch_to_input", encodeP2PPosition(p2pInfo));
     }
 
     private void rotatePlayerTowardsP2P(P2PInfo p2pInfo) {
@@ -179,6 +295,69 @@ public class ConfigModeScreen extends GuiContainer {
         p.rotationYaw = yaw;
         p.rotationPitch = pitch;
         p.setRotationYawHead(yaw);
+    }
+
+    // ==================== 树节点选择 → 配对条 ====================
+
+    private void onNodeSelected(TreeNode node) {
+        detailPanel.setSelectedNode(node, menu.getClientChannelInfoMap(), menu.getClientP2PTypeInfoMap());
+
+        if (node == null) return;
+
+        if (node.type == NodeType.CHANNEL && node.data instanceof ChannelInfo) {
+            // 选中频段行 = 把它填进目标槽，这是配对的主路径。
+            // 类型取“它在树里挂的那个分组”，而不是 ChannelInfo 里的第一台设备类型。
+            ChannelInfo info = (ChannelInfo) node.data;
+            String groupType = node.parent != null ? node.parent.typeName : null;
+            pairBar.pickChannel(info, groupType);
+            updateActionBar();
+        } else if (node.type == NodeType.P2P && node.p2pInfo != null) {
+            // 换配对源时保留已选目标频段 —— 前提是类型没变。
+            String targetType = pairBar.getTargetType();
+            if (targetType != null && !targetType.equals(node.p2pInfo.p2pType())) {
+                pairBar.clearTarget();
+            }
+            // 选中设备 = 它成为配对源。只改配对目标，不动扫描锚点。
+            actionSetPendingBind(node.p2pInfo);
+        }
+    }
+
+    private void onBatchModeChanged(boolean active) {
+        if (actionBar != null) {
+            actionBar.setBatchActive(active);
+        }
+    }
+
+    private void toggleBatchMode() {
+        if (p2pTree == null) return;
+        p2pTree.setBatchMode(!p2pTree.isBatchMode());
+    }
+
+    private void updateActionBar() {
+        if (actionBar == null || pairBar == null || p2pTree == null) return;
+        List<P2PInfo> candidates = p2pTree.getSourceCandidates();
+        P2PInfo source = candidates.isEmpty() ? pairBar.getSource() : candidates.get(0);
+        String name = source == null ? ""
+            : (source.name() == null || source.name()
+                .isEmpty() ? source.toShortString() : source.name());
+        actionBar.setReady(pairBar.isReady(), name, pairBar.getTargetFrequency(), candidates.size());
+    }
+
+    private void doBind() {
+        if (pairBar == null || p2pTree == null || !pairBar.isReady()) return;
+        String frequency = pairBar.getTargetFrequency();
+        List<P2PInfo> candidates = p2pTree.getSourceCandidates();
+        if (candidates.size() > 1) {
+            // 多选批量绑定：payload = "频段;位置1;位置2;…"
+            StringBuilder payload = new StringBuilder(frequency);
+            for (P2PInfo info : candidates) {
+                payload.append(';')
+                    .append(encodeP2PPosition(info));
+            }
+            menu.dispatchClientAction("bind_frequency_batch", payload.toString());
+        } else {
+            menu.dispatchClientAction("bind_frequency", frequency);
+        }
     }
 
     @Override
@@ -200,13 +379,37 @@ public class ConfigModeScreen extends GuiContainer {
 
         updateTreeData();
 
+        // 服务端数据变化时才刷新“来自服务端”的配对条字段（频道列表 / 状态 / 配对源回执）
+        if (menu.getSyncVersion() != lastSyncVersion) {
+            lastSyncVersion = menu.getSyncVersion();
+            if (pairBar != null) {
+                pairBar.setChannels(
+                    new ArrayList<>(
+                        menu.getClientChannelInfoMap()
+                            .values()));
+                pairBar.setStatus(menu.getClientStatusCode(), menu.getClientStatusParam());
+            }
+        }
+
+        // 配对源以树里的选择为准（可能是 Ctrl 多选的一组）；还没在树里点过时退回服务端配对源。
+        if (pairBar != null && p2pTree != null) {
+            List<P2PInfo> candidates = p2pTree.getSourceCandidates();
+            P2PInfo serverSource = menu.getClientPendingBindP2PInfo();
+            if (candidates.isEmpty()) {
+                pairBar.setSources(
+                    serverSource == null ? Collections.emptyList() : Collections.singletonList(serverSource));
+            } else {
+                pairBar.setSources(candidates);
+            }
+            updateActionBar();
+        }
+
         tryAutoNavigateToPendingBind();
 
         if (p2pTree != null) {
             updateDetailPanelNode(p2pTree.getSelectedNode());
         }
         if (detailPanel != null) {
-            detailPanel.setPendingBindP2P(lastNavigatedP2P);
             detailPanel.updateScreen();
         }
 
@@ -214,7 +417,7 @@ public class ConfigModeScreen extends GuiContainer {
         String text = searchField != null ? searchField.getText() : "";
         if (!text.equals(lastSearchText)) {
             lastSearchText = text;
-            p2pTree.setSearchFilter(text);
+            if (p2pTree != null) p2pTree.setSearchFilter(text);
         }
     }
 
@@ -235,25 +438,31 @@ public class ConfigModeScreen extends GuiContainer {
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
         drawDefaultBackground();
 
-        // 面板背景：直接画 1.21.1 的贴图（352×282，取自 512×512 画布的 (0,0)）
-        net.minecraft.client.renderer.GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-        mc.getTextureManager().bindTexture(MENU_TEXTURE);
-        Gui.drawModalRectWithCustomSizedTexture(guiLeft, guiTop, 0, 0, xSize, ySize,
-                MENU_TEX_SIZE, MENU_TEX_SIZE);
+        // 扁平面板：旧版没有 AE2 的 ScreenStyle 贴图，用与基准同尺寸的矩形 + 自绘控件承担。
+        int panelBg = 0xFFC7CCDA;
+        GuiDraw.fillRect(guiLeft, guiTop, PANEL_WIDTH, PANEL_HEIGHT, panelBg);
 
-        // 标题与底部提示
-        fontRenderer.drawString(TranslateHelper.translate(TranslateHelper.Keys.CONFIG_MODE_SCREEN_TITLE),
-                guiLeft + 7, guiTop + 7, TEXT_COLOR);
-        fontRenderer.drawString(TranslateHelper.translate(TranslateHelper.Keys.CONFIG_MODE_SCREEN_INFO),
-                guiLeft + 7, guiTop + INFO_TOP, TEXT_COLOR);
+        // 标题
+        String title = TranslateHelper.translate(TranslateHelper.Keys.CONFIG_MODE_SCREEN_TITLE);
+        fontRenderer.drawString(title, guiLeft + ConfigUiLayout.SEARCH.x, guiTop + 7, TEXT_COLOR);
 
         // 搜索框
         if (searchField != null) searchField.drawTextBox();
 
         // 树
-        if (p2pTree != null) p2pTree.draw(fontRenderer, mouseX, mouseY);
+        if (p2pTree != null) {
+            p2pTree.render(mouseX, mouseY, 0.0F);
+            // 列头画在树矩形上方，必须在树之后画才不会被行背景盖住
+            p2pTree.renderColumnHeader(p2pTree.x, p2pTree.y - ConfigUiLayout.COLUMN_HEADER_OFFSET);
+        }
         // 详情面板
-        if (detailPanel != null) detailPanel.draw(fontRenderer, mouseX, mouseY);
+        if (detailPanel != null) detailPanel.render(mouseX, mouseY, 0);
+
+        // 配对条 + 操作条
+        if (pairBar != null) pairBar.render(mouseX, mouseY, 0.0F);
+        if (actionBar != null) actionBar.render(mouseX, mouseY, 0.0F);
+        // 配对条下拉浮层最后画，盖在一切之上
+        if (pairBar != null) pairBar.renderOverlay(mouseX, mouseY);
 
         drawScrollbar();
     }
@@ -264,25 +473,28 @@ public class ConfigModeScreen extends GuiContainer {
     }
 
     private void drawScrollbar() {
-        int trackX = guiLeft + SCROLLBAR_LEFT;
-        int trackY = p2pTree.getY();
-        int trackH = p2pTree.getHeight();
+        int trackX = guiLeft + ConfigUiLayout.SCROLLBAR.x;
+        int trackY = p2pTree.y;
+        int trackH = p2pTree.height;
         int total = p2pTree.getTotalContentHeight();
-        if (total <= p2pTree.getHeight()) return;
-        int maxScroll = total - p2pTree.getHeight();
-        int thumbH = Math.max(10, (int) ((double) p2pTree.getHeight() / total * trackH));
+        if (total <= p2pTree.height) return;
+        int maxScroll = total - p2pTree.height;
+        int thumbH = Math.max(10, (int) ((double) p2pTree.height / total * trackH));
         if (thumbH > trackH) thumbH = trackH;
         int thumbY = trackY + (int) ((double) p2pTree.getScrollOffset() / maxScroll * (trackH - thumbH));
-        Gui.drawRect(trackX, trackY, trackX + 4, trackY + trackH, 0xFF555555);
-        Gui.drawRect(trackX, thumbY, trackX + 4, thumbY + thumbH, 0xFFAAAAAA);
+        GuiDraw.fillRect(trackX, trackY, ConfigUiLayout.SCROLLBAR.w, trackH, 0xFF555555);
+        GuiDraw.fillRect(trackX, thumbY, ConfigUiLayout.SCROLLBAR.w, thumbH, 0xFFAAAAAA);
     }
 
     @Override
-    public void handleMouseInput() throws java.io.IOException {
+    public void handleMouseInput() throws IOException {
         int wheel = Mouse.getEventDWheel();
         if (wheel != 0) {
             int mx = Mouse.getEventX() * this.width / this.mc.displayWidth;
             int my = this.height - Mouse.getEventY() * this.height / this.mc.displayHeight - 1;
+            if (pairBar != null && pairBar.isDropdownOpen() && pairBar.handleOverlayScroll(wheel > 0 ? 1 : -1)) {
+                return;
+            }
             if (p2pTree != null && p2pTree.mouseScrolled(mx, my, wheel > 0 ? 1 : -1)) {
                 return;
             }
@@ -291,19 +503,30 @@ public class ConfigModeScreen extends GuiContainer {
     }
 
     @Override
-    protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws java.io.IOException {
+    protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws IOException {
         // 搜索框焦点
         if (searchField != null) {
             boolean inSearch = mouseX >= searchField.x && mouseX <= searchField.x + searchField.width
-                    && mouseY >= searchField.y && mouseY <= searchField.y + searchField.height;
+                && mouseY >= searchField.y
+                && mouseY <= searchField.y + searchField.height;
             if (!inSearch) searchField.setFocused(false);
             searchField.mouseClicked(mouseX, mouseY, mouseButton);
         }
 
+        // 配对条下拉浮层优先吃掉点击
+        if (pairBar != null && pairBar.isDropdownOpen() && pairBar.handleOverlayClick(mouseX, mouseY, mouseButton)) {
+            return;
+        }
+        if (pairBar != null && pairBar.mouseClicked(mouseX, mouseY, mouseButton)) {
+            return;
+        }
         if (p2pTree != null && p2pTree.mouseClicked(mouseX, mouseY, mouseButton)) {
             return;
         }
         if (detailPanel != null && detailPanel.mouseClicked(mouseX, mouseY, mouseButton)) {
+            return;
+        }
+        if (actionBar != null && actionBar.mouseClicked(mouseX, mouseY, mouseButton)) {
             return;
         }
         // 滚动条拖动
@@ -315,12 +538,17 @@ public class ConfigModeScreen extends GuiContainer {
 
     @Override
     protected void mouseClickMove(int mouseX, int mouseY, int clickedMouseButton, long timeSinceLastClick) {
+        // 框选优先：指针可能移出树矩形，WidgetContainer 式分发不会再到达树，
+        // 这里先全局转发一次，让选择范围能跟着指针越界延伸
+        if (p2pTree != null && p2pTree.mouseDragged(mouseX, mouseY, clickedMouseButton, 0, 0)) {
+            return;
+        }
         if (scrollDragging) {
-            int trackY = p2pTree.getY();
-            int trackH = p2pTree.getHeight();
+            int trackY = p2pTree.y;
+            int trackH = p2pTree.height;
             int total = p2pTree.getTotalContentHeight();
-            int maxScroll = Math.max(1, total - p2pTree.getHeight());
-            int thumbH = Math.max(10, (int) ((double) p2pTree.getHeight() / total * trackH));
+            int maxScroll = Math.max(1, total - p2pTree.height);
+            int thumbH = Math.max(10, (int) ((double) p2pTree.height / total * trackH));
             int usable = trackH - thumbH;
             if (usable > 0) {
                 int delta = mouseY - scrollDragStartY;
@@ -333,22 +561,32 @@ public class ConfigModeScreen extends GuiContainer {
         super.mouseClickMove(mouseX, mouseY, clickedMouseButton, timeSinceLastClick);
     }
 
+    /**
+     * 1.12.2 有独立的 mouseReleased，1.7.10 那份用 mouseMovedOrUp 兼顾移动与松开的技巧
+     * 在这里不再需要：松开只派发一次，框选的收尾（applyDragSelection 的结果）已经在
+     * mouseClickMove → mouseDragged 期间算好。
+     */
     @Override
     protected void mouseReleased(int mouseX, int mouseY, int mouseButton) {
         if (scrollDragging) {
             scrollDragging = false;
-            return;
         }
+        // 框选在树外松开时没有别的地方会把释放派给树，这里补一次
+        if (pairBar != null) pairBar.mouseReleased(mouseX, mouseY, mouseButton);
+        if (p2pTree != null) p2pTree.mouseReleased(mouseX, mouseY, mouseButton);
         if (detailPanel != null) detailPanel.mouseReleased(mouseX, mouseY, mouseButton);
+        if (actionBar != null) actionBar.mouseReleased(mouseX, mouseY, mouseButton);
         super.mouseReleased(mouseX, mouseY, mouseButton);
     }
 
     private boolean startScrollDrag(int mouseX, int mouseY) {
-        int trackX = guiLeft + SCROLLBAR_LEFT;
-        int trackY = p2pTree.getY();
-        int trackH = p2pTree.getHeight();
-        if (p2pTree.getTotalContentHeight() <= p2pTree.getHeight()) return false;
-        if (mouseX >= trackX && mouseX <= trackX + 4 && mouseY >= trackY && mouseY <= trackY + trackH) {
+        int trackX = guiLeft + ConfigUiLayout.SCROLLBAR.x;
+        int trackY = p2pTree.y;
+        int trackH = p2pTree.height;
+        if (p2pTree.getTotalContentHeight() <= p2pTree.height) return false;
+        if (mouseX >= trackX && mouseX <= trackX + ConfigUiLayout.SCROLLBAR.w
+            && mouseY >= trackY
+            && mouseY <= trackY + trackH) {
             scrollDragging = true;
             scrollDragStartY = mouseY;
             scrollDragStartOffset = p2pTree.getScrollOffset();
@@ -358,7 +596,7 @@ public class ConfigModeScreen extends GuiContainer {
     }
 
     @Override
-    protected void keyTyped(char typedChar, int keyCode) throws java.io.IOException {
+    protected void keyTyped(char typedChar, int keyCode) throws IOException {
         if (searchField != null && searchField.isFocused()) {
             if (searchField.textboxKeyTyped(typedChar, keyCode)) {
                 return;
@@ -368,7 +606,19 @@ public class ConfigModeScreen extends GuiContainer {
             }
             return;
         }
+        // Esc 关掉配对条下拉
+        if (pairBar != null && pairBar.isDropdownOpen()) {
+            if (keyCode == 1) {
+                pairBar.closeDropdown();
+                return;
+            }
+        }
         if (detailPanel != null && detailPanel.keyTyped(typedChar, keyCode)) {
+            return;
+        }
+        // 回车 = 绑定（搜索框/详情改名框聚焦时让位给它们）
+        if ((keyCode == 28 || keyCode == 156) && pairBar != null && pairBar.isReady()) {
+            doBind();
             return;
         }
         super.keyTyped(typedChar, keyCode);

@@ -7,7 +7,7 @@
 | 分支 | `suntide/1.12.2-1.1.0` |
 | 加载器 / Java | Forge 14.23.5.2860 / Java 8 |
 | AE2 | Unofficial Extended Life（rv6 系） |
-| 版本 | `1.1.0-1.12.2` → 目标 `1.2.0-1.12.2` |
+| 版本 | `1.1.0-1.12.2` → 目标 `1.2.0-1.12.2`（已实现，见第八节） |
 | 优先级 | **P2**，1.20.1 完成后实施；本版同时负责冻结两老版共用文件 |
 
 ---
@@ -344,6 +344,19 @@ severity 只有四个取值：`NEUTRAL / OK / WARN / ERROR`，用于状态点与
 | 日期 | 内容 |
 | --- | --- |
 | 初版 | 建立本版移植文档；确定 P2 优先级、阶段 0（三处模型缺陷）/A–G、两老版冻结文件清单 |
+| 2026-11-01 | 阶段 0（`427464f`）、服务端 B 上半（`43d423c`）/下半（`3552cca`）、A（`83f1fc7`）、译名回显修正（`00c8d7a`）完成 |
+| 2026-11-01 | 阶段 C 皮肤 / D 树 / E 配对条 / F 检查器与操作条完成，并发布 `1.2.0-1.12.2`（tag 已推送，触发 release 工作流）。实施记录与偏离见下方「实施备注」 |
+| 2026-11-01 | 全程没有实机视觉验证：进游戏项（批量绑定状态行、框选、滚轮、跨维度传送）只在代码层核对过，CI 通过不等于界面观感通过 |
+
+### 实施备注
+
+1. **实际执行顺序与规划相反**：1.7.10 线先跑到阶段 G，本版的 C/D/E/F 是在 1.7.10 之后按它的实现回补的。控件（`PairBarWidget`、`ActionBarWidget`、重写的 `DetailPanelWidget`）先写好、Screen 后接线，中途工作树一度编译不过（旧 `ConfigModeScreen` 仍在调 `detailPanel.draw(FontRenderer,int,int)` 与 `setPendingBindP2P(...)`，新控件已换成 `render(double,double,float)` 与 `setSelectedNode(...)`）。
+2. **皮肤自绘**：面板走 `GuiDraw.fillRect(guiLeft, guiTop, PANEL_WIDTH, PANEL_HEIGHT, 0xFFC7CCDA)` + 自绘控件，不读贴图；`textures/gui/config_mode_menu.png` 保持旧图（7399 字节），与 1.7.10 的处理一致。440×312 的槽位数值来自 `ConfigUiLayout`，与基准 JSON 对齐。
+3. **平台差异**：频段用 `%04X` 四位十六进制直出，不做 1.7.10 的「`…` + 末 6 位」降级（4 位放得下 40px 列宽）；通道 map 在本版以**纯频段**为键（`client/gui/menu/ConfigModeMenu.java:420` `channelInfoMap.put(frequency, channelInfo)`），因此不存在 1.7.10 那条 `ChannelInfo.find(freq, type)` 的键不匹配问题；`mouseReleased(int,int,int)` 取代 `mouseMovedOrUp`；Java 8 语法（无 var / record / 箭头 switch）。
+4. **主动偏离**：树新增 `mouseScrolled` 覆写（滚轮一格三行）——1.7.10 那份实现里滚轮在树上是失效的，只能拖滚动条；本版把两条路径都留了。
+5. **语言文件是小写** `en_us.lang` / `zh_cn.lang`（不是 1.7.10 的 `en_US` / `zh_CN`），各 113 键、键集合与 1.7.10 对拍零缺失；`ru_ru.lang` 未补（本就缺这些键且编码异常），按「只保证 en/zh」处理。
+6. **本仓没有 spotless**：`build.gradle` 只有 `net.minecraftforge.gradle` / `eclipse` / `idea` / `maven-publish` 四个插件，格式门禁实际只有 javac 一道；验收以 `clean compileJava` 通过为准。
+7. **无实机视觉验证**：全程只做编译级验证，未启动客户端；`build`（reobf / 资源打包）与 `runClient` 未跑，§7.3 的 V-1/V-2 仍未实测。
 
 ---
 

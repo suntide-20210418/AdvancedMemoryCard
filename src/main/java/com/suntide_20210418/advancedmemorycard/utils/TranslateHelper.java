@@ -52,6 +52,20 @@ public class TranslateHelper {
         public static final String P2P_TREE_SEARCH_RESULTS = P2P_TREE_PREFIX + "search_results";
         public static final String P2P_TREE_SEARCH_RESULT_COUNT = P2P_TREE_PREFIX + "search_result_count";
 
+        // 树列头与汇总列
+        public static final String TREE_COL_PREFIX = GUI_PREFIX + "advanced_memory_card.tree_col.";
+        public static final String TREE_COL_NAME = TREE_COL_PREFIX + "name";
+        public static final String TREE_COL_FREQ = TREE_COL_PREFIX + "frequency";
+        public static final String TREE_COL_SUMMARY = TREE_COL_PREFIX + "summary";
+        public static final String TREE_SUMMARY_CHANNEL = GUI_PREFIX + "advanced_memory_card.tree.summary_channel";
+        public static final String TREE_SUMMARY_CHANNEL_PLAIN = GUI_PREFIX
+            + "advanced_memory_card.tree.summary_channel_plain";
+        public static final String TREE_SUMMARY_TYPE = GUI_PREFIX + "advanced_memory_card.tree.summary_type";
+        public static final String TREE_ROLE_INPUT = GUI_PREFIX + "advanced_memory_card.tree.role_input";
+        public static final String TREE_ROLE_OUTPUT = GUI_PREFIX + "advanced_memory_card.tree.role_output";
+        public static final String TREE_PREFIX_INPUT = GUI_PREFIX + "advanced_memory_card.tree.prefix_input";
+        public static final String TREE_PREFIX_OUTPUT = GUI_PREFIX + "advanced_memory_card.tree.prefix_output";
+
         public static final String DETAIL_PANEL_PREFIX = GUI_PREFIX + "advanced_memory_card.detail_panel.";
         public static final String DETAIL_PANEL_PLACEHOLDER = DETAIL_PANEL_PREFIX + "placeholder";
         public static final String DETAIL_PANEL_NAME_LABEL = DETAIL_PANEL_PREFIX + "name";
@@ -80,6 +94,8 @@ public class TranslateHelper {
         public static final String BUTTON_LOCATE = BUTTON_PREFIX + "locate";
         public static final String BUTTON_INIT_P2P = BUTTON_PREFIX + "init_p2p";
         public static final String BUTTON_ASSIGN_FREQ = BUTTON_PREFIX + "assign_freq";
+        public static final String BUTTON_SWITCH_TO_INPUT = BUTTON_PREFIX + "switch_to_input";
+        public static final String BUTTON_TELEPORT = BUTTON_PREFIX + "teleport";
 
         public static final String STATUS_PREFIX = GUI_PREFIX + "advanced_memory_card.status.";
         public static final String STATUS_NOT_ACTIVE = STATUS_PREFIX + "not_active";
@@ -118,6 +134,26 @@ public class TranslateHelper {
         public static final String CHAT_TELEPORT_ONLY_PLAYER = CHAT_PREFIX + "teleport_only_player";
         public static final String CHAT_TELEPORT_DIM_FAILED = CHAT_PREFIX + "teleport_dim_failed";
         public static final String CHAT_TELEPORT_SUCCESS = CHAT_PREFIX + "teleport_success";
+        public static final String CHAT_NO_P2P = CHAT_PREFIX + "no_p2p";
+
+        // 配对条（源 → 目标）。与 1.20.1 / 1.21.1 同 key
+        public static final String PAIR_PREFIX = GUI_PREFIX + "advanced_memory_card.pair.";
+        public static final String PAIR_SOURCE = PAIR_PREFIX + "source";
+        public static final String PAIR_TARGET = PAIR_PREFIX + "target";
+        public static final String PAIR_SOURCE_PLACEHOLDER = PAIR_PREFIX + "source_placeholder";
+        public static final String PAIR_TARGET_PLACEHOLDER = PAIR_PREFIX + "target_placeholder";
+        public static final String PAIR_SOURCE_MULTI = PAIR_PREFIX + "source_multi";
+        public static final String PAIR_NEW_FREQ = PAIR_PREFIX + "new_freq";
+        public static final String PAIR_NO_CHANNEL = PAIR_PREFIX + "no_channel";
+
+        // 底部操作条
+        public static final String ACTION_BAR_PREFIX = GUI_PREFIX + "advanced_memory_card.action_bar.";
+        public static final String ACTION_BAR_HINT = ACTION_BAR_PREFIX + "hint";
+        public static final String ACTION_BAR_BIND = ACTION_BAR_PREFIX + "bind";
+        public static final String ACTION_BAR_BATCH = ACTION_BAR_PREFIX + "batch";
+        public static final String ACTION_BAR_EXIT_BATCH = ACTION_BAR_PREFIX + "exit_batch";
+        public static final String ACTION_BAR_HINT_READY = ACTION_BAR_PREFIX + "hint_ready";
+        public static final String ACTION_BAR_HINT_READY_MULTI = ACTION_BAR_PREFIX + "hint_ready_multi";
 
         public static final String CONFIG_MODE_PREFIX = GUI_PREFIX + "advanced_memory_card.player.config.";
         public static final String CONFIG_MODE_SHOW = CONFIG_MODE_PREFIX + "show";
@@ -225,6 +261,8 @@ public class TranslateHelper {
         public static String locate() { return translate(Keys.BUTTON_LOCATE); }
         public static String initP2P() { return translate(Keys.BUTTON_INIT_P2P); }
         public static String assignFreq() { return translate(Keys.BUTTON_ASSIGN_FREQ); }
+        public static String switchToInput() { return translate(Keys.BUTTON_SWITCH_TO_INPUT); }
+        public static String teleport() { return translate(Keys.BUTTON_TELEPORT); }
     }
 
     public static class Status {
@@ -246,5 +284,35 @@ public class TranslateHelper {
         public static String teleportOnlyPlayer() { return translate(Keys.CHAT_TELEPORT_ONLY_PLAYER); }
         public static String teleportDimFailed() { return translate(Keys.CHAT_TELEPORT_DIM_FAILED); }
         public static String teleportSuccess(Object... args) { return translate(Keys.CHAT_TELEPORT_SUCCESS, args); }
+        public static String noP2PFound() { return translate(Keys.CHAT_NO_P2P); }
+    }
+
+    public static class TreeColumn {
+        public static String name() { return translate(Keys.TREE_COL_NAME); }
+        public static String frequency() { return translate(Keys.TREE_COL_FREQ); }
+        public static String summary() { return translate(Keys.TREE_COL_SUMMARY); }
+    }
+
+    public static class Pair {
+        public static String source() { return translate(Keys.PAIR_SOURCE); }
+        public static String target() { return translate(Keys.PAIR_TARGET); }
+        public static String sourcePlaceholder() { return translate(Keys.PAIR_SOURCE_PLACEHOLDER); }
+        public static String targetPlaceholder() { return translate(Keys.PAIR_TARGET_PLACEHOLDER); }
+        public static String sourceMulti(String count) { return translate(Keys.PAIR_SOURCE_MULTI, count); }
+        public static String newFrequency() { return translate(Keys.PAIR_NEW_FREQ); }
+        public static String noChannel() { return translate(Keys.PAIR_NO_CHANNEL); }
+    }
+
+    public static class ActionBar {
+        public static String hint() { return translate(Keys.ACTION_BAR_HINT); }
+        public static String bind() { return translate(Keys.ACTION_BAR_BIND); }
+        public static String batch() { return translate(Keys.ACTION_BAR_BATCH); }
+        public static String exitBatch() { return translate(Keys.ACTION_BAR_EXIT_BATCH); }
+        public static String hintReady(String sourceName, String frequency) {
+            return translate(Keys.ACTION_BAR_HINT_READY, sourceName, frequency);
+        }
+        public static String hintReadyMulti(String count, String frequency) {
+            return translate(Keys.ACTION_BAR_HINT_READY_MULTI, count, frequency);
+        }
     }
 }

@@ -56,4 +56,18 @@ public class TreeNode {
                 return "search_header";
         }
     }
+
+    /**
+     * 由 P2PInfo 直接构造节点 id，必须与 {@link #getNodeId()} 的 P2P 分支完全一致。
+     * 重建树后用它把“待定位的 P2P”对回 flat 列表里的那一行，从而对上选中态。
+     * 绝对不能再用 dimension()/省掉 :frequency 的旧写法 —— 那样 id 拼出来和
+     * getNodeId() 对不上，选中行会丢失。
+     */
+    public static String p2pNodeId(P2PInfo info) {
+        if (info == null) return null;
+        return "p2p:" + info.dimensionId() + "@" + info.position().getX() + ","
+                + info.position().getY() + "," + info.position().getZ()
+                + ":" + info.direction().ordinal()
+                + ":" + info.frequency();
+    }
 }
