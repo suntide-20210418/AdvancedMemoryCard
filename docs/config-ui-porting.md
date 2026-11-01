@@ -347,6 +347,7 @@ severity 只有四个取值：`NEUTRAL / OK / WARN / ERROR`，用于状态点与
 | 2026-11-01 | 阶段 0（`427464f`）、服务端 B 上半（`43d423c`）/下半（`3552cca`）、A（`83f1fc7`）、译名回显修正（`00c8d7a`）完成 |
 | 2026-11-01 | 阶段 C 皮肤 / D 树 / E 配对条 / F 检查器与操作条完成，并发布 `1.2.0-1.12.2`（tag 已推送，触发 release 工作流）。实施记录与偏离见下方「实施备注」 |
 | 2026-11-01 | 全程没有实机视觉验证：进游戏项（批量绑定状态行、框选、滚轮、跨维度传送）只在代码层核对过，CI 通过不等于界面观感通过 |
+| 2026-11-01 | 未发版（待批准）：树整块不可点击。`P2PTreeWidget.onClick` 没有调用者（基准靠 AE2 `AbstractWidget#mouseClicked` 派发，旧版 `Widget` 基类直接返回 false），现由树的 `mouseClicked` 自己派发；滚动条判定同时挪到树之前，避免滑块拖动被树的命中吃掉（见实施备注 8） |
 
 ### 实施备注
 
@@ -357,6 +358,7 @@ severity 只有四个取值：`NEUTRAL / OK / WARN / ERROR`，用于状态点与
 5. **语言文件是小写** `en_us.lang` / `zh_cn.lang`（不是 1.7.10 的 `en_US` / `zh_CN`），各 113 键、键集合与 1.7.10 对拍零缺失；`ru_ru.lang` 未补（本就缺这些键且编码异常），按「只保证 en/zh」处理。
 6. **本仓没有 spotless**：`build.gradle` 只有 `net.minecraftforge.gradle` / `eclipse` / `idea` / `maven-publish` 四个插件，格式门禁实际只有 javac 一道；验收以 `clean compileJava` 通过为准。
 7. **无实机视觉验证**：全程只做编译级验证，未启动客户端；`build`（reobf / 资源打包）与 `runClient` 未跑，§7.3 的 V-1/V-2 仍未实测。
+8. **控件的输入要靠 Screen 自己派发（树点不动的根因）**：基准的控件继承 AE2 `AbstractWidget`，`mouseClicked` 里先判命中、再调 `onClick`，由 `WidgetContainer` 统一分发；本版 `Widget.mouseClicked` 只 `return false`，`P2PTreeWidget.onClick(double,double)` 因此没有任何调用者，整棵树（设备行、频段行、Ctrl 多选、框选起手）全是死区。现在 `P2PTreeWidget.mouseClicked` 自己派发（左键命中矩形就调 `onClick` 并返回 `true`）。另外滚动条的矩形与树右缘的 14px 留白重叠，派发顺序必须是「滚动条 → 树」。**以后给旧版控件加交互，先确认这条路径上到底有没有调用者。**
 
 ---
 

@@ -520,6 +520,11 @@ public class ConfigModeScreen extends GuiContainer {
         if (pairBar != null && pairBar.mouseClicked(mouseX, mouseY, mouseButton)) {
             return;
         }
+        // 滚动条压在树右缘的留白上（两者矩形有重叠），基准里它是独立控件、先于树拿到点击，
+        // 所以这里必须先判滚动条，否则拖动滑块会被树的命中判定吃掉。
+        if (startScrollDrag(mouseX, mouseY)) {
+            return;
+        }
         if (p2pTree != null && p2pTree.mouseClicked(mouseX, mouseY, mouseButton)) {
             return;
         }
@@ -527,10 +532,6 @@ public class ConfigModeScreen extends GuiContainer {
             return;
         }
         if (actionBar != null && actionBar.mouseClicked(mouseX, mouseY, mouseButton)) {
-            return;
-        }
-        // 滚动条拖动
-        if (startScrollDrag(mouseX, mouseY)) {
             return;
         }
         super.mouseClicked(mouseX, mouseY, mouseButton);
