@@ -161,6 +161,18 @@ public class ModEnusLangProvider extends LanguageProvider {
         add(Keys.PAIR_UNNAMED, "Unnamed");
         add(Keys.PAIR_SOURCE_MULTI, "%s selected");
 
+        // 底部操作条
+        add(Keys.ACTION_BAR_HINT, "Pick device → pick channel → bind");
+        add(Keys.ACTION_BAR_HINT_READY, "Bind %s to %s, press Enter");
+        add(Keys.ACTION_BAR_HINT_READY_MULTI, "Bind %s devices to %s, press Enter");
+        add(Keys.ACTION_BAR_BIND, "Bind");
+        add(Keys.ACTION_BAR_BATCH, "Batch select");
+        add(Keys.ACTION_BAR_EXIT_BATCH, "Exit batch");
+
+        // 新增按钮
+        add(Keys.BUTTON_TELEPORT, "Teleport");
+        add(Keys.BUTTON_SWITCH_INPUT, "Make Input");
+
         // 聊天消息
         add(Keys.CHAT_LOCATION_INFO, "%s at %s - (%s) ");
         add(Keys.CHAT_CLICK_TO_TELEPORT, "[Click to Teleport]");

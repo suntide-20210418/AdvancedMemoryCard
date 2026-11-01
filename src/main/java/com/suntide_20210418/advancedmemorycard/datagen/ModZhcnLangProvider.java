@@ -155,6 +155,18 @@ public class ModZhcnLangProvider extends LanguageProvider {
         add(Keys.PAIR_UNNAMED, "未命名");
         add(Keys.PAIR_SOURCE_MULTI, "已选 %s 台");
 
+        // 底部操作条
+        add(Keys.ACTION_BAR_HINT, "选中设备 → 选中频段 → 绑定");
+        add(Keys.ACTION_BAR_HINT_READY, "将 %s 绑定到 %s，回车确认");
+        add(Keys.ACTION_BAR_HINT_READY_MULTI, "把 %s 台设备绑定到 %s，回车确认");
+        add(Keys.ACTION_BAR_BIND, "绑定");
+        add(Keys.ACTION_BAR_BATCH, "批量操作");
+        add(Keys.ACTION_BAR_EXIT_BATCH, "退出批量操作");
+
+        // 新增按钮
+        add(Keys.BUTTON_TELEPORT, "传送");
+        add(Keys.BUTTON_SWITCH_INPUT, "设为输入端");
+
         // 聊天消息
         add(Keys.CHAT_LOCATION_INFO, "%s 在 %s - (%s) ");
         add(Keys.CHAT_CLICK_TO_TELEPORT, "【点击此处来传送】");

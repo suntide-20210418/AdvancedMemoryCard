@@ -6,12 +6,15 @@ import appeng.client.gui.style.ScreenStyle;
 import appeng.client.gui.widgets.AETextField;
 import appeng.client.gui.widgets.ConfirmableTextField;
 import appeng.client.gui.widgets.Scrollbar;
+import com.suntide_20210418.advancedmemorycard.client.ClientTickTasks;
 import com.suntide_20210418.advancedmemorycard.client.P2PRenderHelper;
 import com.suntide_20210418.advancedmemorycard.menu.ConfigModeMenu;
+import com.suntide_20210418.advancedmemorycard.client.gui.widgets.ActionBarWidget;
 import com.suntide_20210418.advancedmemorycard.client.gui.widgets.DetailPanelWidget;
 import com.suntide_20210418.advancedmemorycard.client.gui.widgets.P2PTreeWidget;
 import com.suntide_20210418.advancedmemorycard.client.gui.widgets.PairBarWidget;
 import com.suntide_20210418.advancedmemorycard.config.ModConfigs;
+import com.suntide_20210418.advancedmemorycard.p2p.ChannelInfo;
 import com.suntide_20210418.advancedmemorycard.p2p.NodeType;
 import com.suntide_20210418.advancedmemorycard.p2p.P2PInfo;
 import com.suntide_20210418.advancedmemorycard.p2p.TreeNode;
@@ -32,6 +35,7 @@ public class ConfigModeScreen extends AEBaseScreen<ConfigModeMenu> {
     private P2PTreeWidget p2pTree;
     private Scrollbar scrollbar;
     private PairBarWidget pairBar;
+    private ActionBarWidget actionBar;
     private static final int UPDATE_ITEM_INFO_INTERVAL = 10; // 每 10 tick 发送一次
     private AETextField searchField;
     private DetailPanelWidget detailPanel;
@@ -121,79 +125,66 @@ public class ConfigModeScreen extends AEBaseScreen<ConfigModeMenu> {
         });
         this.widgets.add("search_field", searchField);
 
-        // 创建并注册右侧详情面板
+        // 创建并注册右侧检查器
         detailPanel = new DetailPanelWidget(this.style, 0, 0, 0, 0);
         detailPanel.setActionCallback(new DetailPanelWidget.ActionCallback() {
             @Override
-            public void onRename(P2PInfo p2pInfo, String newName) {
-                if (!newName.isEmpty()) {
-                    actionSetP2PAlias(p2pInfo, newName);
-                    // 立即触发一次数据刷新以获取服务端确认
-                    resetUpdateCooldown();
+            public void onHighlightP2P(P2PInfo info) {
+                doHighlightP2P(info);
+            }
+
+            @Override
+            public void onHighlightChannel(String frequency) {
+                doHighlightChannel(frequency);
+            }
+
+            @Override
+            public void onTeleportP2P(P2PInfo info) {
+                doTeleport(info);
+            }
+
+            @Override
+            public void onUseAsTarget(String frequency) {
+                ChannelInfo info = menu.getClientChannelInfoMap().get(frequency);
+                if (info != null) {
+                    pairBar.pickChannel(info);
+                    updateActionBar();
                 }
             }
 
             @Override
-            public void onBind(P2PInfo p2pInfo) {
-                actionBindFrequency(p2pInfo.frequency());
-            }
-
-            @Override
-            public void onSelect(P2PInfo p2pInfo) {
-                actionSetPendingBind(p2pInfo);
-            }
-
-            @Override
-            public void onHighlight(P2PInfo p2pInfo) {
-                // 在客户端旋转玩家视角使其面向目标 P2P 设备
-                actionHighlightP2P(p2pInfo);
-                if (ModConfigs.getClientConfig().rotateHeadOnHighlight.get()) {
-                    rotatePlayerTowardsP2P(p2pInfo);
-                }
-            }
-
-            @Override
-            public void onLocate(P2PInfo p2pInfo) {
-                navigateToP2P(p2pInfo);
-            }
-
-            @Override
-            public void onAutoAssign() {
-                actionAutoConfigIO();
-            }
-
-            @Override
-            public void onAssignFreq(P2PInfo p2pInfo) {
-                actionAssignFreq();
-            }
-
-            // ========== 频段模式回调 ==========
-
-            @Override
-            public void onChannelRename(String frequency, String newAlias) {
-                // 将频段中输入端 P2P 的名称设置为新名称
-                actionSetChannelAlias(frequency, newAlias);
-                // 立即触发一次数据刷新以获取服务端确认
+            public void onAssignFreq() {
+                menu.dispatchClientAction("assign_freq");
                 resetUpdateCooldown();
             }
 
             @Override
-            public void onChannelBind(String frequency) {
-                actionBindFrequency(frequency);
+            public void onSwitchToInput(P2PInfo info) {
+                menu.dispatchClientAction("switch_to_input", encodeP2PPosition(info));
+                resetUpdateCooldown();
             }
 
             @Override
-            public void onChannelHighlight(String frequency) {
-                // 关闭界面，高亮整个频段的 P2P 通道
-                actionHighlightP2PTunnel(frequency);
+            public void onInitP2P() {
+                menu.dispatchClientAction("auto_config_io");
+                resetUpdateCooldown();
             }
 
-            // ========== 通用刷新回调 ==========
+            @Override
+            public void onRenameP2P(P2PInfo info, String name) {
+                menu.dispatchClientAction("set_p2p_alias", encodeP2PPosition(info) + "::" + name);
+                resetUpdateCooldown();
+            }
+
+            @Override
+            public void onRenameChannel(String frequency, String alias) {
+                menu.dispatchClientAction("set_channel_alias", frequency + "|" + alias);
+                resetUpdateCooldown();
+            }
 
             @Override
             public void onRefresh() {
-                actionRefreshP2P();
-                // 手动刷新后立即请求同步数据
+                menu.dispatchClientAction("refresh_p2p");
                 resetUpdateCooldown();
             }
         });
@@ -204,20 +195,14 @@ public class ConfigModeScreen extends AEBaseScreen<ConfigModeMenu> {
             addRenderableWidget(field);
         }
 
-        // 树节点选择监听：当用户在树中选中任意节点时触发
-        p2pTree.setNodeSelectionListener(node -> {
-            if (node != null) {
-                // 非搜索头节点：自动定位并展开祖先节点
-                if (node.type != NodeType.SEARCH_HEADER) {
-                    if (node.p2pInfo != null) {
-                        p2pTree.navigateToP2P(node.p2pInfo);
-                    }
-                    updateScrollbar();
-                    syncScrollbarToTree();
-                }
-            }
-            updateDetailPanelNode(node);
-        });
+        actionBar = new ActionBarWidget(0, 0, 0, 0);
+        actionBar.setOnBind(this::doBind);
+        actionBar.setOnBatchToggle(this::toggleBatchMode);
+        this.widgets.add("action_bar", actionBar);
+
+        p2pTree.setNodeSelectionListener(this::onNodeSelected);
+        p2pTree.setMultiSelectionChangedListener(this::onTreeMultiSelectionChanged);
+        p2pTree.setBatchModeChangedListener(this::onBatchModeChanged);
         // 注册 widget（键名必须和 JSON 中一致）
         this.widgets.add("p2p_tree", p2pTree);
 
@@ -298,6 +283,171 @@ public class ConfigModeScreen extends AEBaseScreen<ConfigModeMenu> {
                 menu.getClientP2PTypeInfoMap());
 
         updateScrollbar();
+    }
+
+    /**
+     * 树里的 Ctrl 多选变了（拖动框选时每个拖动事件都会调一次）。
+     *
+     * <p>配对条必须跟着变，否则拖动过程中「已选 N 台」要等下一次同步包才更新，
+     * 松手时会看到数字慢半拍再跳一下。
+     */
+    private void onTreeMultiSelectionChanged() {
+        if (pairBar == null || p2pTree == null) return;
+        List<P2PInfo> candidates = p2pTree.getSourceCandidates();
+        if (candidates.isEmpty()) {
+            P2PInfo serverSource = menu.getClientPendingBindP2PInfo();
+            pairBar.setSources(serverSource == null ? List.of() : List.of(serverSource));
+        } else {
+            pairBar.setSources(candidates);
+        }
+        updateActionBar();
+    }
+
+    /**
+     * 底部「批量操作」按钮：进 / 出批量模式。
+     *
+     * <p>退出时**不**清掉多选集 —— 批量选完正好接着挑目标频段绑定，
+     * 模式只决定「单击算不算加选」，与选中的内容无关。
+     */
+    private void toggleBatchMode() {
+        if (p2pTree == null) return;
+        p2pTree.setBatchMode(!p2pTree.isBatchMode());
+    }
+
+    /** 树的批量模式变了（可能是按钮点的，也可能是 Ctrl 点了非设备行）：按钮文字跟着改。 */
+    private void onBatchModeChanged(boolean active) {
+        if (actionBar != null) {
+            actionBar.setBatchActive(active);
+        }
+    }
+
+    private void onNodeSelected(TreeNode node) {
+        detailPanel.setSelectedNode(node,
+                menu.getClientChannelInfoMap(),
+                menu.getClientP2PTypeInfoMap());
+
+        if (node == null) return;
+
+        if (node.type == NodeType.CHANNEL && node.data instanceof ChannelInfo info) {
+            // 选中频段行 = 把它填进目标槽，这是配对的主路径。
+            // 类型取“它在树里挂的那个分组”，而不是 ChannelInfo 里的第一台设备类型。
+            String groupType = node.parent != null ? node.parent.typeName : null;
+            pairBar.pickChannel(info, groupType);
+            updateActionBar();
+        } else if (node.type == NodeType.P2P && node.p2pInfo != null) {
+            // 换配对源时保留已选目标频段 —— 前提是类型没变。
+            String targetType = pairBar.getTargetType();
+            if (targetType != null && !targetType.equals(node.p2pInfo.p2pType())) {
+                pairBar.clearTarget();
+                updateActionBar();
+            }
+            // 选中设备 = 它成为配对源。只改配对目标，不动扫描锚点。
+            menu.dispatchClientAction("set_pending_bind", encodeP2PPosition(node.p2pInfo));
+        }
+    }
+
+    private void updateActionBar() {
+        if (actionBar == null || pairBar == null || p2pTree == null) return;
+        List<P2PInfo> candidates = p2pTree.getSourceCandidates();
+        P2PInfo source = candidates.isEmpty() ? pairBar.getSource() : candidates.get(0);
+        String name = source == null ? "" : (source.name() == null || source.name().isEmpty()
+                ? source.toShortString() : source.name());
+        actionBar.setReady(pairBar.isReady(), name, pairBar.getTargetFrequency(), candidates.size());
+    }
+
+    private void doBind() {
+        if (pairBar == null || p2pTree == null || !pairBar.isReady()) return;
+        String frequency = pairBar.getTargetFrequency();
+        List<P2PInfo> candidates = p2pTree.getSourceCandidates();
+        if (candidates.size() > 1) {
+            // 多选批量绑定：payload = "频段;位置1;位置2;…"
+            StringBuilder payload = new StringBuilder(frequency);
+            for (P2PInfo info : candidates) {
+                payload.append(';').append(encodeP2PPosition(info));
+            }
+            menu.dispatchClientAction("bind_frequency_batch", payload.toString());
+        } else {
+            menu.dispatchClientAction("bind_frequency", frequency);
+        }
+        // 绑定后刻意不清空目标：连续把几台设备绑到同一个频段是常见操作
+        updateActionBar();
+        resetUpdateCooldown();
+        // 设备换到目标频段那一组后行会“跳走”，清掉跟随记录让下一次同步重新展开到它
+        lastRevealedSourceId = null;
+    }
+
+    // ==================== 高亮 / 定位 / 传送 ====================
+
+    /**
+     * 高亮 + 定位（合并后的单一动作）。
+     *
+     * <p>顺序刻意固定为「发包并点亮 → 关界面 → 转头」：发包必须在关界面之前，
+     * 否则服务端不再接受该 menu 的动作包，聊天栏位置信息会丢；关界面要在下一帧前完成；
+     * 转头放最后，因为它改的是玩家朝向，界面没关时会被 GUI 的鼠标捕获抵消。
+     */
+    private void doHighlightP2P(P2PInfo info) {
+        if (info == null) return;
+        actionHighlightP2P(info);
+        Minecraft.getInstance().setScreen(null);
+        rotatePlayerTowardsP2P(info);
+    }
+
+    private void doHighlightChannel(String frequency) {
+        if (frequency == null) return;
+        actionHighlightP2PTunnel(frequency);
+        Minecraft.getInstance().setScreen(null);
+        P2PInfo firstInput = firstInputOfChannel(frequency);
+        if (firstInput != null) {
+            rotatePlayerTowardsP2P(firstInput);
+        }
+    }
+
+    /** 传送后等落点同步的最长 tick 数（5 秒）。 */
+    private static final int TELEPORT_ARRIVAL_TIMEOUT_TICKS = 100;
+
+    /** 落点判定半径的平方：玩家与设备的方块中心在 2 格内即认为已经站到了目标处。 */
+    private static final double TELEPORT_ARRIVAL_DIST_SQR = 4.0;
+
+    /**
+     * 传送到目标设备。
+     *
+     * <p>真正的位移由服务端执行：客户端不可信，而且跨维度传送必须走服务端。
+     * 这里只发位置键，然后关掉界面；点头与高亮要等「真的落地」再做 ——
+     * 否则坐标还是旧的，跨维度时新维度的方块实体也还没加载。
+     */
+    private void doTeleport(P2PInfo info) {
+        if (info == null) return;
+        // 界关掉之后就取不到 menu 的镜像数据了，频段信息先抓在手里
+        ChannelInfo channelInfo = menu.getClientChannelInfoMap().get(info.frequency());
+        menu.dispatchClientAction("teleport_p2p", encodeP2PPosition(info));
+        Minecraft.getInstance().setScreen(null);
+
+        ClientTickTasks.when(mc -> hasArrivedAt(mc, info), () -> {
+            P2PRenderHelper.renderP2P(info, channelInfo);
+            faceP2P(info);
+        }, TELEPORT_ARRIVAL_TIMEOUT_TICKS);
+    }
+
+    private static boolean hasArrivedAt(Minecraft mc, P2PInfo info) {
+        if (mc.player == null || mc.level == null) {
+            return false;
+        }
+        // 跨维度传送时新维度还在加载，此时 level 仍是旧维度，不能拿旧世界的方块实体去点亮
+        if (info.dimension() != null && !mc.level.dimension().equals(info.dimension())) {
+            return false;
+        }
+        return mc.player.blockPosition().distSqr(info.position()) <= TELEPORT_ARRIVAL_DIST_SQR;
+    }
+
+    /** 频段节点没有“自己”的位置：取其第一台输入端设备。 */
+    private P2PInfo firstInputOfChannel(String frequency) {
+        if (frequency == null) return null;
+        ChannelInfo info = menu.getClientChannelInfoMap().get(frequency);
+        if (info == null || info.p2pInfoList() == null) return null;
+        for (P2PInfo p : info.p2pInfoList()) {
+            if (!p.isOutput()) return p;
+        }
+        return null;
     }
 
     // 修改 init 方法
@@ -438,7 +588,22 @@ public class ConfigModeScreen extends AEBaseScreen<ConfigModeMenu> {
     /**
      * 在客户端旋转玩家视角，使其面向目标 P2P 设备。
      */
+    /**
+     * 高亮后的转头：受 {@code rotateHeadOnHighlight} 约束 —— 关掉它的玩家只想看高亮，不想被强行掰头。
+     */
     private void rotatePlayerTowardsP2P(P2PInfo p2pInfo) {
+        if (!ModConfigs.getClientConfig().rotateHeadOnHighlight.get()) return;
+        faceP2P(p2pInfo);
+    }
+
+    /**
+     * 把视角转向目标设备，不看配置。
+     *
+     * <p>传送必须用它：玩家是被服务端挪过去的，落点贴到设备身上时如果还保持原来的朝向，
+     * 就完全不知道自己到了哪。而 {@code rotateHeadOnHighlight} 语义上是「高亮时别掰我的头」，
+     * 不覆盖传送这种玩家主动发起的位移。
+     */
+    private void faceP2P(P2PInfo p2pInfo) {
         Player player = Minecraft.getInstance().player;
         if (player == null) return;
 
@@ -476,14 +641,6 @@ public class ConfigModeScreen extends AEBaseScreen<ConfigModeMenu> {
 
         // 数据刷新后，检查是否有待绑定的 P2P 需要自动导航定位
         tryAutoNavigateToPendingBind();
-        // 每 tick 同步详情面板到树中当前选中的节点（rebuildTree 不会触发 listener）
-        if (p2pTree != null) {
-            updateDetailPanelNode(p2pTree.getSelectedNode());
-        }
-        // 同步待绑定 P2P 到详情面板，供"定位"按钮使用
-        if (detailPanel != null) {
-            detailPanel.setPendingBindP2P(lastNavigatedP2P);
-        }
     }
 
     /**
@@ -526,7 +683,6 @@ public class ConfigModeScreen extends AEBaseScreen<ConfigModeMenu> {
         }
 
         setTextContent("title", Component.translatable(TranslateHelper.Keys.CONFIG_MODE_SCREEN_TITLE));
-        setTextContent("info",  Component.translatable(TranslateHelper.Keys.CONFIG_MODE_SCREEN_INFO));
     }
 
     // 判断鼠标是否在树控件可见区域内（基于屏幕绝对坐标）
@@ -644,6 +800,13 @@ public class ConfigModeScreen extends AEBaseScreen<ConfigModeMenu> {
         }
         // 优先转发到详情面板的 text field（编辑模式下）
         if (detailPanel != null && detailPanel.keyPressed(keyCode, scanCode, modifiers)) {
+            return true;
+        }
+        // 回车 = 提交配对。但搜索框有焦点时不能抢：否则打字回车会误触发绑定。
+        boolean typing = (searchField != null && searchField.isFocused())
+                || (detailPanel != null && detailPanel.isEditing());
+        if (!typing && (keyCode == 257 || keyCode == 335) && pairBar != null && pairBar.isReady()) {
+            doBind();
             return true;
         }
         return super.keyPressed(keyCode, scanCode, modifiers);

@@ -162,6 +162,19 @@ public class TranslateHelper {
         public static final String PAIR_UNNAMED = PAIR_PREFIX + "unnamed";
         public static final String PAIR_SOURCE_MULTI = PAIR_PREFIX + "source_multi";
 
+        // 底部操作条
+        public static final String ACTION_BAR_PREFIX = GUI_PREFIX + "advanced_memory_card.action_bar.";
+        public static final String ACTION_BAR_BATCH = ACTION_BAR_PREFIX + "batch";
+        public static final String ACTION_BAR_EXIT_BATCH = ACTION_BAR_PREFIX + "exit_batch";
+        public static final String ACTION_BAR_HINT = ACTION_BAR_PREFIX + "hint";
+        public static final String ACTION_BAR_HINT_READY = ACTION_BAR_PREFIX + "hint_ready";
+        public static final String ACTION_BAR_BIND = ACTION_BAR_PREFIX + "bind";
+        public static final String ACTION_BAR_HINT_READY_MULTI = ACTION_BAR_PREFIX + "hint_ready_multi";
+
+        // 新增按钮
+        public static final String BUTTON_TELEPORT = BUTTON_PREFIX + "teleport";
+        public static final String BUTTON_SWITCH_INPUT = BUTTON_PREFIX + "switch_to_input";
+
         // 聊天消息（高亮/传送相关）
         public static final String CHAT_PREFIX = GUI_PREFIX + "advanced_memory_card.chat.";
         public static final String CHAT_LOCATION_INFO = CHAT_PREFIX + "location_info";
@@ -473,6 +486,35 @@ public class TranslateHelper {
         }
     }
 
+    /** 底部操作条 */
+    public static class ActionBar {
+        public static MutableComponent hint() {
+            return translate(Keys.ACTION_BAR_HINT);
+        }
+
+        public static MutableComponent hintReady(String source, String freq) {
+            return translate(Keys.ACTION_BAR_HINT_READY, source, freq);
+        }
+
+        public static MutableComponent hintReadyMulti(String count, String freq) {
+            return translate(Keys.ACTION_BAR_HINT_READY_MULTI, count, freq);
+        }
+
+        public static MutableComponent bind() {
+            return translate(Keys.ACTION_BAR_BIND);
+        }
+
+        /** 「批量操作」按钮：点一下进批量模式。 */
+        public static MutableComponent batch() {
+            return translate(Keys.ACTION_BAR_BATCH);
+        }
+
+        /** 已经在批量模式里时按钮改叫「退出批量操作」。 */
+        public static MutableComponent exitBatch() {
+            return translate(Keys.ACTION_BAR_EXIT_BATCH);
+        }
+    }
+
     /** 配对条（源 → 目标）*/
     public static class Pair {
         public static MutableComponent source() {
@@ -649,6 +691,14 @@ public class TranslateHelper {
 
         public static MutableComponent assignFreq() {
             return translate(Keys.BUTTON_ASSIGN_FREQ);
+        }
+
+        public static MutableComponent teleport() {
+            return translate(Keys.BUTTON_TELEPORT);
+        }
+
+        public static MutableComponent switchToInput() {
+            return translate(Keys.BUTTON_SWITCH_INPUT);
         }
     }
 
