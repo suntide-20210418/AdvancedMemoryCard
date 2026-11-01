@@ -36,6 +36,15 @@ public final class P2PChannelUsage {
         return max > 0;
     }
 
+    /** 访问器：基准 record 的 used()/max() 语义，控件代码可以原样移植。 */
+    public int used() {
+        return used;
+    }
+
+    public int max() {
+        return max;
+    }
+
     public int remaining() {
         return Math.max(0, max - used);
     }

@@ -16,6 +16,8 @@ public abstract class Widget {
     public int width;
     public int height;
     public boolean visible = true;
+    /** 本帧指针是否悬停（由 render 自己更新，语义同 AbstractWidget#isHovered）。 */
+    public boolean hovered;
 
     protected Widget(int x, int y, int width, int height) {
         this.x = x;

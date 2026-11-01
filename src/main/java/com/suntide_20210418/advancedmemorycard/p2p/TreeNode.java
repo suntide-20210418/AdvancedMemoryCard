@@ -64,4 +64,27 @@ public class TreeNode {
                 return "search_header";
         }
     }
+
+    /**
+     * 生成 P2P 节点的稳定标识：维度 + 坐标 + 朝向。与名字 / 频段 / 连接状态无关。
+     * 1.7.10 的 dimension 是维度 id 字符串。
+     */
+    public static String p2pNodeId(P2PInfo info) {
+        if (info == null) {
+            return "p2p:null";
+        }
+        return "p2p:" + info.dimension()
+            + "@"
+            + info.position()
+                .getX()
+            + ","
+            + info.position()
+                .getY()
+            + ","
+            + info.position()
+                .getZ()
+            + ":"
+            + info.direction()
+                .ordinal();
+    }
 }

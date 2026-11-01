@@ -30,6 +30,10 @@ public final class GuiDraw {
         Minecraft.getMinecraft().fontRenderer.drawString(text, x, y, color);
     }
 
+    public static void drawString(String text, int x, int y, int color, boolean shadow) {
+        Minecraft.getMinecraft().fontRenderer.drawString(text, x, y, color, shadow);
+    }
+
     public static void drawStringWithShadow(String text, int x, int y, int color) {
         Minecraft.getMinecraft().fontRenderer.drawStringWithShadow(text, x, y, color);
     }

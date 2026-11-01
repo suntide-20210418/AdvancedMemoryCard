@@ -10,6 +10,7 @@ import net.minecraft.util.ResourceLocation;
 import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.GL11;
 
+import com.suntide_20210418.advancedmemorycard.client.gui.ConfigUiLayout;
 import com.suntide_20210418.advancedmemorycard.client.gui.widgets.DetailPanelWidget;
 import com.suntide_20210418.advancedmemorycard.client.gui.widgets.P2PTreeWidget;
 import com.suntide_20210418.advancedmemorycard.config.ModConfigs;
@@ -334,7 +335,11 @@ public class ConfigModeScreen extends GuiContainer {
         if (searchField != null) searchField.drawTextBox();
 
         // 树
-        if (p2pTree != null) p2pTree.draw(fontRendererObj, mouseX, mouseY);
+        if (p2pTree != null) {
+            p2pTree.render(mouseX, mouseY, 0.0F);
+            // 列头画在树矩形上方，必须在树之后画才不会被行背景盖住
+            p2pTree.renderColumnHeader(p2pTree.x, p2pTree.y - ConfigUiLayout.COLUMN_HEADER_OFFSET);
+        }
         // 详情面板
         if (detailPanel != null) detailPanel.draw(fontRendererObj, mouseX, mouseY);
 
@@ -355,12 +360,12 @@ public class ConfigModeScreen extends GuiContainer {
 
     private void drawScrollbar() {
         int trackX = guiLeft + SCROLLBAR_LEFT;
-        int trackY = p2pTree.getY();
-        int trackH = p2pTree.getHeight();
+        int trackY = p2pTree.y;
+        int trackH = p2pTree.height;
         int total = p2pTree.getTotalContentHeight();
-        if (total <= p2pTree.getHeight()) return;
-        int maxScroll = total - p2pTree.getHeight();
-        int thumbH = Math.max(10, (int) ((double) p2pTree.getHeight() / total * trackH));
+        if (total <= p2pTree.height) return;
+        int maxScroll = total - p2pTree.height;
+        int thumbH = Math.max(10, (int) ((double) p2pTree.height / total * trackH));
         if (thumbH > trackH) thumbH = trackH;
         int thumbY = trackY + (int) ((double) p2pTree.getScrollOffset() / maxScroll * (trackH - thumbH));
         Gui.drawRect(trackX, trackY, trackX + 4, trackY + trackH, 0xFF555555);
@@ -406,12 +411,17 @@ public class ConfigModeScreen extends GuiContainer {
 
     @Override
     protected void mouseClickMove(int mouseX, int mouseY, int clickedMouseButton, long timeSinceLastClick) {
+        // 框选优先：指针可能移出树矩形，WidgetContainer 式分发不会再到达树，
+        // 这里先全局转发一次，让选择范围能跟着指针越界延伸
+        if (p2pTree != null && p2pTree.mouseDragged(mouseX, mouseY, clickedMouseButton, 0, 0)) {
+            return;
+        }
         if (scrollDragging) {
-            int trackY = p2pTree.getY();
-            int trackH = p2pTree.getHeight();
+            int trackY = p2pTree.y;
+            int trackH = p2pTree.height;
             int total = p2pTree.getTotalContentHeight();
-            int maxScroll = Math.max(1, total - p2pTree.getHeight());
-            int thumbH = Math.max(10, (int) ((double) p2pTree.getHeight() / total * trackH));
+            int maxScroll = Math.max(1, total - p2pTree.height);
+            int thumbH = Math.max(10, (int) ((double) p2pTree.height / total * trackH));
             int usable = trackH - thumbH;
             if (usable > 0) {
                 int delta = mouseY - scrollDragStartY;
@@ -435,6 +445,8 @@ public class ConfigModeScreen extends GuiContainer {
         // 划开再移动一下就会触发该按钮的动作 —— 因为 FlatButton 只看 pressed 和
         // 指针是否在矩形内，不看是哪个键松开的。
         if (mouseButton >= 0) {
+            // 框选在树外松开时没有别的地方会把释放派给树，这里补一次
+            if (p2pTree != null) p2pTree.mouseReleased(mouseX, mouseY, mouseButton);
             if (detailPanel != null) detailPanel.mouseReleased(mouseX, mouseY, mouseButton);
         }
         super.mouseMovedOrUp(mouseX, mouseY, mouseButton);
@@ -442,9 +454,9 @@ public class ConfigModeScreen extends GuiContainer {
 
     private boolean startScrollDrag(int mouseX, int mouseY) {
         int trackX = guiLeft + SCROLLBAR_LEFT;
-        int trackY = p2pTree.getY();
-        int trackH = p2pTree.getHeight();
-        if (p2pTree.getTotalContentHeight() <= p2pTree.getHeight()) return false;
+        int trackY = p2pTree.y;
+        int trackH = p2pTree.height;
+        if (p2pTree.getTotalContentHeight() <= p2pTree.height) return false;
         if (mouseX >= trackX && mouseX <= trackX + 4 && mouseY >= trackY && mouseY <= trackY + trackH) {
             scrollDragging = true;
             scrollDragStartY = mouseY;
