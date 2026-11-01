@@ -83,6 +83,25 @@ public class TranslateHelper {
         public static final String STATUS_INPUT = STATUS_PREFIX + "input";
         public static final String STATUS_CURRENT_SELECTED = STATUS_PREFIX + "current_selected";
 
+        // 状态行回执（与 ActionStatus 的 16 个码一一对应；文案在阶段 G 补进 .lang）
+        public static final String STATUS_LINE_PREFIX = GUI_PREFIX + "advanced_memory_card.status_line.";
+        public static final String STATUS_LINE_IDLE = STATUS_LINE_PREFIX + "idle";
+        public static final String STATUS_LINE_BIND_OK = STATUS_LINE_PREFIX + "bind_ok";
+        public static final String STATUS_LINE_BIND_NO_TARGET = STATUS_LINE_PREFIX + "bind_no_target";
+        public static final String STATUS_LINE_BIND_INVALID_FREQ = STATUS_LINE_PREFIX + "bind_invalid_freq";
+        public static final String STATUS_LINE_BIND_NO_GRID = STATUS_LINE_PREFIX + "bind_no_grid";
+        public static final String STATUS_LINE_SOURCE_SELECTED = STATUS_LINE_PREFIX + "source_selected";
+        public static final String STATUS_LINE_ASSIGNED = STATUS_LINE_PREFIX + "assigned";
+        public static final String STATUS_LINE_RENAMED = STATUS_LINE_PREFIX + "renamed";
+        public static final String STATUS_LINE_REFRESHED = STATUS_LINE_PREFIX + "refreshed";
+        public static final String STATUS_LINE_RENAME_FAILED = STATUS_LINE_PREFIX + "rename_failed";
+        public static final String STATUS_LINE_BIND_BATCH_OK = STATUS_LINE_PREFIX + "bind_batch_ok";
+        public static final String STATUS_LINE_BIND_BATCH_PARTIAL = STATUS_LINE_PREFIX + "bind_batch_partial";
+        public static final String STATUS_LINE_SWITCHED_TO_INPUT = STATUS_LINE_PREFIX + "switched_to_input";
+        public static final String STATUS_LINE_SWITCH_NO_CHANNEL = STATUS_LINE_PREFIX + "switch_no_channel";
+        public static final String STATUS_LINE_SWITCH_ALREADY_INPUT = STATUS_LINE_PREFIX + "switch_already_input";
+        public static final String STATUS_LINE_SWITCH_FAILED = STATUS_LINE_PREFIX + "switch_failed";
+
         public static final String CHAT_PREFIX = GUI_PREFIX + "advanced_memory_card.chat.";
         public static final String CHAT_NO_P2P = CHAT_PREFIX + "no_p2p";
         public static final String CHAT_LOCATION_INFO = CHAT_PREFIX + "location_info";

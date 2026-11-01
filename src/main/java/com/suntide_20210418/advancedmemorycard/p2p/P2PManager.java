@@ -35,8 +35,40 @@ public class P2PManager {
     private final HashMap<PartP2PTunnel, String> p2pDevicesMap;
     private P2PCache p2pService;
 
+    /**
+     * 配对的源设备（“把哪一台绑走”）。
+     *
+     * <p>
+     * 刻意与 {@link #p2pTunnelPartBinding} 分开：后者是 {@link #analysisP2P()} 的扫描锚点，
+     * 决定界面看到的是哪一个 grid。以前两者是同一个字段，于是“在树里选一台设备”会顺带把
+     * 整个界面切到另一张网络的扫描结果。现在 UI 改配对源只动这里，扫描范围保持不变。
+     */
+    private PartP2PTunnel pendingBindTarget;
+
+    /** bind() 的结果码：UI 需要知道“为什么没成功”，而不是只看一个静默的 return。 */
+    public enum BindResult {
+        OK,
+        NO_TARGET,
+        INVALID_FREQUENCY,
+        NO_GRID,
+        NO_SERVICE
+    }
+
+    /** {@link #switchToInput(PartP2PTunnel)} 的结果码。 */
+    public enum RoleResult {
+        OK,
+        NO_TARGET,
+        /** 设备没绑定频段（0000）：没有通道可以接管。 */
+        NO_CHANNEL,
+        /** 已经是输入端。界面上不该出现这个按钮，这里只做防御。 */
+        ALREADY_INPUT,
+        NO_GRID,
+        NO_SERVICE
+    }
+
     public P2PManager(PartP2PTunnel p2pTunnelPartBinding, EntityPlayer player) {
         this.p2pTunnelPartBinding = p2pTunnelPartBinding;
+        this.pendingBindTarget = p2pTunnelPartBinding;
         this.p2pDevicesMap = new HashMap<>();
         this.p2pFrequencyAndAlias = new HashMap<>();
         this.player = player;
@@ -78,21 +110,34 @@ public class P2PManager {
         }
     }
 
-    public void bind(String frequencyHex) {
-        if (p2pTunnelPartBinding == null) {
-            return;
+    public BindResult bind(String frequencyHex) {
+        return bindTo(getBindTarget(), frequencyHex);
+    }
+
+    /**
+     * 把指定设备绑到指定频段。
+     *
+     * <p>
+     * 批量绑定用它：逐台调用即可，角色仲裁（谁当输入端谁当输出端）在
+     * {@code P2PCache} 层面自然完成 —— 第一台注册成输入端后，后面的都会被判成输出端。
+     *
+     * @param target 要绑定的设备；为 null 时返回 {@link BindResult#NO_TARGET}
+     */
+    public BindResult bindTo(PartP2PTunnel target, String frequencyHex) {
+        if (target == null) {
+            return BindResult.NO_TARGET;
         }
 
         analysisP2P();
 
         IGrid currentGrid = getCurrentGrid();
         if (currentGrid == null) {
-            return;
+            return BindResult.NO_GRID;
         }
 
         P2PCache currentP2PService = getP2PService();
         if (currentP2PService == null) {
-            return;
+            return BindResult.NO_SERVICE;
         }
 
         long freq = parseFrequency(frequencyHex);
@@ -100,7 +145,7 @@ public class P2PManager {
         // inputs[0]/outputs[0]，让一堆未绑定设备在界面里互相"连通"。
         // 把它当绑定目标等于静默解绑。
         if (freq == 0) {
-            return;
+            return BindResult.INVALID_FREQUENCY;
         }
 
         // 角色仲裁对所有隧道类型统一，不豁免 ME：
@@ -108,20 +153,102 @@ public class P2PManager {
         // 若让第二台 ME 也当输入端，outputs 永远为空，而 isConnected 对输入端要求
         // "至少一个同频输出端"，整条通道会永久显示未连接，并随 markForSave 写进存档。
         PartP2PTunnel existingInput = getInput(freq);
-        boolean shouldBeOutput = existingInput != null && existingInput != p2pTunnelPartBinding;
-        if (shouldBeOutput != p2pTunnelPartBinding.isOutput()) {
-            setP2POutput(p2pTunnelPartBinding, shouldBeOutput);
+        boolean shouldBeOutput = existingInput != null && existingInput != target;
+        if (shouldBeOutput != target.isOutput()) {
+            setP2POutput(target, shouldBeOutput);
         }
 
-        currentP2PService.updateFreq(p2pTunnelPartBinding, freq);
+        currentP2PService.updateFreq(target, freq);
         // 频段没变时 updateFreq 不落盘，但角色可能变了，显式补一次。
-        if (p2pTunnelPartBinding.getHost() != null) {
-            p2pTunnelPartBinding.getHost()
+        if (target.getHost() != null) {
+            target.getHost()
                 .markForSave();
         }
 
         this.grid = currentGrid;
         this.p2pService = currentP2PService;
+        return BindResult.OK;
+    }
+
+    /**
+     * 把一台输出端设备改成它所在频段的输入端，原来那台输入端降级为输出端。
+     *
+     * <p>
+     * 为什么必须成对做：一个频段只留一个输入端，而 {@code updateFreq} 会直接覆盖旧条目。
+     * 若先把当前设备提升为输入端，旧输入端不会被删除，只是从映射里消失：它的
+     * {@code isOutput()} 仍是 false，却再也不在输入端表里，也就永远等不到输出端。
+     * 所以顺序固定为：先把该频段上所有「非输出端」降级为输出端，再提升目标。
+     */
+    public RoleResult switchToInput(PartP2PTunnel target) {
+        if (target == null) {
+            return RoleResult.NO_TARGET;
+        }
+
+        long freq = target.freq;
+        if (freq == 0) {
+            return RoleResult.NO_CHANNEL;
+        }
+        if (!target.isOutput()) {
+            return RoleResult.ALREADY_INPUT;
+        }
+
+        IGrid currentGrid = getCurrentGrid();
+        if (currentGrid == null) {
+            return RoleResult.NO_GRID;
+        }
+        P2PCache currentP2PService = getP2PService();
+        if (currentP2PService == null) {
+            return RoleResult.NO_SERVICE;
+        }
+
+        demoteInputsAt(currentP2PService, freq, target);
+
+        setP2POutput(target, false);
+        currentP2PService.updateFreq(target, freq);
+        // 频段没变 → updateFreq 既不落盘也不通知邻居，两件事都显式补一次
+        if (target.getHost() != null) {
+            target.getHost()
+                .markForSave();
+        }
+        target.onTunnelNetworkChange();
+
+        this.grid = currentGrid;
+        this.p2pService = currentP2PService;
+        return RoleResult.OK;
+    }
+
+    /**
+     * 把指定频段上所有「非输出端」改成输出端并重登记。
+     *
+     * <p>
+     * 遍历设备表而不是只取 {@code getInput(freq)}：旧版本写坏的存档里可能有多台
+     * 非输出端部件，其中只有一台在映射里。只处理映射里那台，剩下的会在目标提升之后变成孤儿。
+     */
+    private void demoteInputsAt(P2PCache service, long freq, PartP2PTunnel promoteTarget) {
+        List<PartP2PTunnel> snapshot = new ArrayList<>(p2pDevicesMap.keySet());
+        for (PartP2PTunnel part : snapshot) {
+            if (part == null || part == promoteTarget) continue;
+            if (part.freq != freq || part.isOutput()) continue;
+            setP2POutput(part, true);
+            service.updateFreq(part, freq);
+            if (part.getHost() != null) {
+                part.getHost()
+                    .markForSave();
+            }
+            part.onTunnelNetworkChange();
+        }
+
+        // 兜底：映射里那个输入端若不在设备表（例如扫描时它所在节点离线），上面那轮会漏掉它
+        PartP2PTunnel stillInput = getInput(freq);
+        if (stillInput != null && stillInput != promoteTarget) {
+            setP2POutput(stillInput, true);
+            service.updateFreq(stillInput, freq);
+            if (stillInput.getHost() != null) {
+                stillInput.getHost()
+                    .markForSave();
+            }
+            stillInput.onTunnelNetworkChange();
+        }
     }
 
     /** 解析 16 位十六进制频段；非法输入返回 0（即"未绑定"），由调用方拒绝。 */
@@ -397,7 +524,8 @@ public class P2PManager {
     }
 
     public void assignNewFrequency() {
-        if (p2pTunnelPartBinding == null) {
+        PartP2PTunnel target = getBindTarget();
+        if (target == null) {
             return;
         }
 
@@ -410,15 +538,14 @@ public class P2PManager {
             return;
         }
 
-        currentP2PService.updateFreq(p2pTunnelPartBinding, 0L);
-
-        if (p2pTunnelPartBinding.isOutput()) {
-            setP2POutput(p2pTunnelPartBinding, false);
-            currentP2PService.updateFreq(p2pTunnelPartBinding, 0L);
+        // 不再先把频段写成 0 再分配：两次 updateFreq 之间如果被区块卸载/退出存档打断，
+        // 存档里会留下「已绑定设备变成未绑定」。直接一次性换到新频段。
+        if (target.isOutput()) {
+            setP2POutput(target, false);
         }
 
         long newFreq = generateUniqueFrequency();
-        currentP2PService.updateFreq(p2pTunnelPartBinding, newFreq);
+        currentP2PService.updateFreq(target, newFreq);
 
         analysisP2P();
     }
@@ -649,6 +776,27 @@ public class P2PManager {
 
     public void setP2PTunnelPart(PartP2PTunnel p2pPart) {
         this.p2pTunnelPartBinding = p2pPart;
+    }
+
+    /**
+     * 当前配对源设备（会被 bind / 分配新频段操作的那一台）。
+     *
+     * <p>
+     * 取值回退顺序：显式选中的 pendingBindTarget → 打开界面时右键的那一台。
+     * 若显式目标已经不在本次扫描结果里（被拆掉 / 换了网络），同样回退。
+     */
+    public PartP2PTunnel getBindTarget() {
+        if (pendingBindTarget != null && p2pDevicesMap.containsKey(pendingBindTarget)) {
+            return pendingBindTarget;
+        }
+        return p2pTunnelPartBinding;
+    }
+
+    /** 设置配对源设备。只影响绑定目标，不影响扫描锚点。 */
+    public void setPendingBindTarget(PartP2PTunnel p2pPart) {
+        if (p2pPart != null) {
+            this.pendingBindTarget = p2pPart;
+        }
     }
 
     public void setFrequencyAlias(String newName, String frequency) {

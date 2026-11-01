@@ -61,12 +61,22 @@ public class ConfigModeActionPacket implements IMessage {
     public static class Handler implements IMessageHandler<ConfigModeActionPacket, IMessage> {
 
         @Override
-        public IMessage onMessage(ConfigModeActionPacket msg, MessageContext ctx) {
-            EntityPlayerMP player = ctx.getServerHandler().playerEntity;
-            Container c = player.openContainer;
-            if (c instanceof IActionMenu) {
-                ((IActionMenu) c).handleAction(msg.getAction(), msg.getParam());
-            }
+        public IMessage onMessage(final ConfigModeActionPacket msg, final MessageContext ctx) {
+            // 1.7.10 的 SimpleNetworkWrapper 处理器跑在 Netty 线程上，且 MinecraftServer
+            // 没有任务调度 API（已核对 srg 映射，func_152344_a 只在客户端 Minecraft 上）。
+            // 批量绑定一次会改多台设备的网格状态并落盘，先入队，服务器 tick 末尾再执行。
+            // 执行时重新取 openContainer 并校验类型 —— 玩家可能已经关掉界面换了容器。
+            final EntityPlayerMP player = ctx.getServerHandler().playerEntity;
+            ServerTaskQueue.enqueue(new Runnable() {
+
+                @Override
+                public void run() {
+                    Container c = player.openContainer;
+                    if (c instanceof IActionMenu) {
+                        ((IActionMenu) c).handleAction(msg.getAction(), msg.getParam());
+                    }
+                }
+            });
             return null;
         }
     }

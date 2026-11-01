@@ -44,6 +44,8 @@ public class AdvancedMemoryCardMod {
         INSTANCE = this;
         logger = event.getModLog();
         ModConfigs.init(event);
+        // 1.7.10 没有 MinecraftServer#addScheduledTask，动作包的跨线程交接走自建队列
+        com.suntide_20210418.advancedmemorycard.network.ServerTaskQueue.register();
         NetworkHandler.register();
         NetworkRegistry.INSTANCE.registerGuiHandler(this, new GuiHandler());
         CardMode.initializeModes();

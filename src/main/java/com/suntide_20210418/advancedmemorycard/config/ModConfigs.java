@@ -36,4 +36,12 @@ public class ModConfigs {
     public static ServerConfig getServerConfig() {
         return serverConfig;
     }
+
+    /**
+     * 是否允许传送至 P2P 设备（{@code server.allowTeleport}）。
+     * 配置尚未加载时按「不允许」处理；服务端处理传送 action 时以这里的值为准（包可以伪造）。
+     */
+    public static boolean isTeleportAllowed() {
+        return serverConfig != null && serverConfig.allowTeleport;
+    }
 }
