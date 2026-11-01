@@ -67,4 +67,30 @@ public class ChannelInfo {
         }
         return map.get(frequency);
     }
+
+    /**
+     * 按频段数值排序。1.7.10 的频段是 64 位，服务端下发的字符串最长 16 位十六进制
+     * （例如 {@code 000001A13FF44AA4}），用 {@code Integer.parseInt} 解析会溢出并抛
+     * {@link NumberFormatException}，把客户端的界面 tick 整个打崩。
+     *
+     * <p>
+     * 这里统一按无符号 64 位比较；遇到解析不了的脏数据就退化成「先比长度、再比字典序」，
+     * 让排序永远返回一个确定的顺序，而不是把异常抛到渲染循环里。
+     */
+    public static int compareFrequency(String left, String right) {
+        if (left == null && right == null) return 0;
+        if (left == null) return -1;
+        if (right == null) return 1;
+        try {
+            long leftValue = Long.parseUnsignedLong(left.trim(), 16);
+            long rightValue = Long.parseUnsignedLong(right.trim(), 16);
+            return Long.compareUnsigned(leftValue, rightValue);
+        } catch (NumberFormatException ignored) {
+            // 脏数据：退化成字符串比较，排序结果稳定即可
+        }
+        if (left.length() != right.length()) {
+            return left.length() < right.length() ? -1 : 1;
+        }
+        return left.compareTo(right);
+    }
 }

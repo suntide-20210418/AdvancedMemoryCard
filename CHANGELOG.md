@@ -4,6 +4,19 @@
 
 ---
 
+## 1.2.1-1.7.10-GTNH — 2026-11-01
+
+**Minecraft** 1.7.10 · **Forge** 10.13.4.1614 · **AE2** GTNH Applied-Energistics-2-Unofficial rv3
+
+修复 1.2.0 里打开配置模式界面、自动跳到待绑定设备时客户端直接崩溃的问题；并把 64 位频段的比较统一到无符号语义。
+
+### 修复
+
+- **配置模式界面崩溃（`NumberFormatException`）**：1.7.10 的频段是 64 位，服务端下发的是 16 位十六进制（如 `000001A13FF44AA4`）。树在排序频道时用 `Integer.parseInt(frequency, 16)` 解析，必然溢出并抛出异常，而这个排序发生在界面 tick 的 `updateScreen` → `tryAutoNavigateToPendingBind` → `navigateToP2P` → `rebuildTree` 调用链里，于是直接 `Ticking screen` 崩溃。现在统一改用 64 位无符号比较（`ChannelInfo.compareFrequency`），遇到脏数据退化为长度 + 字典序，不再有异常逃逸到渲染循环。
+- **批量搜索结果排序**：搜索模式下频道结果的频段排序有同样的问题，一并改掉。
+- **配对条频段下拉顺序错乱**：下拉列表的排序把解析失败的值全部塞成 `Integer.MAX_VALUE`，所有 64 位频段排序值相同，顺序实际上是随机的；现在按真实数值从小到大。
+- **最高位为 1 的频段被当成「未绑定」**：服务端解析频段用的是有符号 `Long.parseLong`，`F000000000000001` 这类频段会解析失败并被当作 0，导致渲染、高亮与频段改名静默失效；现在改用 `Long.parseUnsignedLong`。
+
 ## 1.2.0-1.7.10-GTNH — 2026-11-01
 
 **Minecraft** 1.7.10 · **Forge** 10.13.4.1614 · **AE2** GTNH Applied-Energistics-2-Unofficial rv3

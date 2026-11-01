@@ -7,7 +7,7 @@
 | 分支 | `suntide/1.7.10-GTNH` |
 | 加载器 / Java | GTNH Forge 10.13.4.1614 / JDK 25 + jabel（编译到 Java 8 字节码） |
 | AE2 | GTNH rv3 fork |
-| 版本 | `1.1.0-1.7.10-GTNH` → `1.2.0-1.7.10-GTNH`（已实现，见第七节） |
+| 版本 | `1.1.0-1.7.10-GTNH` → `1.2.1-1.7.10-GTNH`（已实现，见第七节） |
 | 优先级 | **P3**，1.12.2 的契约层与树完成后实施（实际执行顺序与文档规划相反，见第七节第 2 条） |
 
 ---
@@ -72,7 +72,7 @@
 3. **完整值**只出现在检查器的「频段」行与 tooltip；
 4. **搜索始终匹配完整 hex**，不匹配显示后的短串。
 
-这样处理的代价是：列表里两个都未命名、末 6 位又恰好相同的频段无法区分。概率约为 1/16^6，可接受；若真的撞上，检查器与 tooltip 仍能给出完整值。
+这样处理的代价是：列表里两个都未命名、末 6 位又恰好相同的频段无法区分。概率约为 1/16^6，可接受；若真的撞上，右侧检查器仍能给出完整值。
 
 排序必须在 `long` 域内进行（`Long.parseLong(hex, 16)`），不能用 `int`，否则高位溢出导致排序错乱 —— 本版现有代码已有此处理，不要改回。
 
@@ -207,7 +207,7 @@ severity 只有四个取值：`NEUTRAL / OK / WARN / ERROR`，用于状态点与
 
 ### C6 数据与格式
 
-1. **频段展示格式**：`%04X`（1.21.1 / 1.20.1 / 1.12.2），`%016X`（1.7.10）。频段宽度为 64 位的版本，列表列内按「别名优先；无别名则画 `…` + 末 6 位」显示，完整值只出现在检查器与 tooltip；搜索始终匹配完整 hex。
+1. **频段展示格式**：`%04X`（1.21.1 / 1.20.1 / 1.12.2），`%016X`（1.7.10）。频段宽度为 64 位的版本，列表列内按「别名优先；无别名则画 `…` + 末 6 位」显示，完整值只出现在右侧检查器；搜索始终匹配完整 hex。
 2. **通道分组键**：`freq`（1.21.1 / 1.20.1 / 1.12.2），`freq + "|" + p2pType`（1.7.10，允许同频段跨类型）。
 3. **角色仲裁对所有权类型一视同仁**，不得对 ME 隧道开例外。
 4. **`freq == 0` 不参与任何角色判定、服务映射对齐或通道修复。**
@@ -307,6 +307,7 @@ GTNH 约定会强制重排从 1.12.2 复制来的文件（import 顺序为 `java
 | 初版 | 建立本版移植文档；确定 P3 优先级、频段显示规则、阶段 0（四处缺陷）/A–G、spotless 提交策略 |
 | 2026-11-01 | 阶段 0（`8619b75`）、自绘脚手架（`38b1d60`）、服务端语义与协议（`8ca5770`）、四列树（`a061228`）、界面总装（`2bd55ab`）全部完成。`2bd55ab` 把业务改动与 `spotlessApply` 放在同一提交，没有按 §4.1 拆成 `style:` + 业务两个提交 |
 | 2026-11-01 | 阶段 G 收尾：`README.md` / `README_en.md` 重写为 1.7.10 真实内容（原来是从 1.20.1 复制的错误版本）、新建 `CHANGELOG.md`、补 `shortFrequency()` 与频道键查找修复（见实施备注 3、4）、两语键集合一致（各 109 键）、`spotlessCheck` 通过、发版 `1.2.0-1.7.10-GTNH` |
+| 2026-11-01 | `1.2.1-1.7.10-GTNH`：实机打开配置模式界面即崩（`Ticking screen` / `NumberFormatException: For input string: "000001A13FF44AA4" under radix 16`，`P2PTreeWidget.buildDefaultTree` 的频道排序）。全部频段比较改为 64 位无符号（`ChannelInfo.compareFrequency`），服务端频段解析改 `Long.parseUnsignedLong`（见实施备注 7） |
 
 ### 实施备注
 
@@ -316,6 +317,7 @@ GTNH 约定会强制重排从 1.12.2 复制来的文件（import 顺序为 `java
 4. **频道键查找缺失（本次修复）**：`ConfigModeMenu` 的 `channelInfoMap` 以 `frequency|p2pType` 为键（`menu/ConfigModeMenu.java:474`），但树与检查器原先按纯频段查（`channelInfoMap.get(freq)`），永远命中不了 —— 设备行的频道占用数字、搜索树里的频道节点、检查器的频道别名全部取不到数据。新增 `ChannelInfo.find(map, frequency, p2pType)`（先查 `freq|type`、再退回纯频段），替换 `P2PTreeWidget`（搜索树频道节点、设备行汇总）与 `DetailPanelWidget`（`channelAlias`、就地改名回显）的四处查找。
 5. 36 个离屏背包槽位未动（禁改区）。
 6. **全程没有实机视觉验证**：`compileJava` 与 `spotlessCheck` 通过、CI 绿，但批量绑定后的状态点颜色、右键折叠（只在批量模式 + 频道行生效）、Ctrl 框选、跨维度传送、静止时 `syncVersion` 节流都只在代码层核对过。§6.3 的 V-5（零槽位容器是否真的触发空指针）与 V-6（`MinecraftServer` 任务调度入口）仍未实测。
+7. **频段比较必须按 64 位无符号（`1.2.1` 崩溃根因）**：1.7.10 的频段是 `long`，服务端以 `String.format("%016X", freq)` 下发，最长 16 位十六进制。树里原先用 `Integer.parseInt(frequency, 16)` 排序频道，遇到 `000001A13FF44AA4` 直接抛 `NumberFormatException`，而这条排序正好在界面 tick 的 `updateScreen` → `tryAutoNavigateToPendingBind` → `navigateToP2P` → `rebuildTree` 链上，于是客户端 `Ticking screen` 崩溃。现在统一走 `ChannelInfo.compareFrequency`（`Long.parseUnsignedLong` + `Long.compareUnsigned`，脏数据退化为长度 + 字典序）；`P2PManager.parseFrequency` 也改成 `Long.parseUnsignedLong`，最高位为 1 的频段不再被误判为「未绑定」。**后续任何按频段数值排序/解析的地方都必须用无符号 64 位**，不能用 `int`。
 
 ---
 

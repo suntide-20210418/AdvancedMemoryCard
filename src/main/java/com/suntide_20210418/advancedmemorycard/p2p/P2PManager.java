@@ -257,7 +257,9 @@ public class P2PManager {
             return 0L;
         }
         try {
-            return Long.parseLong(frequencyHex, 16);
+            // 频段是 long，最高位可能为 1（例如 F000000000000001），必须按无符号解析，
+            // 用 Long.parseLong 会抛 NumberFormatException 并被当成"未绑定"。
+            return Long.parseUnsignedLong(frequencyHex.trim(), 16);
         } catch (NumberFormatException e) {
             return 0L;
         }
@@ -614,7 +616,10 @@ public class P2PManager {
 
         ArrayList<P2PPosition> positions = new ArrayList<>();
         ArrayList<Integer> types = new ArrayList<>();
-        long freq = Long.parseLong(frequencyHex, 16);
+        long freq = parseFrequency(frequencyHex);
+        if (freq == 0L) {
+            return;
+        }
         PartP2PTunnel input = getInput(freq);
         if (input == null) {
             return;
@@ -802,7 +807,10 @@ public class P2PManager {
     public void setFrequencyAlias(String newName, String frequency) {
         analysisP2P();
 
-        long freq = Long.parseLong(frequency, 16);
+        long freq = parseFrequency(frequency);
+        if (freq == 0L) {
+            return;
+        }
         PartP2PTunnel input = getInput(freq);
         if (input != null) {
             renameP2P(input, newName);
@@ -821,7 +829,10 @@ public class P2PManager {
     public String getFrequencyAlias(String frequency) {
         analysisP2P();
 
-        long freq = Long.parseLong(frequency, 16);
+        long freq = parseFrequency(frequency);
+        if (freq == 0L) {
+            return frequency;
+        }
         PartP2PTunnel input = getInput(freq);
         if (input != null && input.hasCustomName()) {
             String name = input.getCustomName();

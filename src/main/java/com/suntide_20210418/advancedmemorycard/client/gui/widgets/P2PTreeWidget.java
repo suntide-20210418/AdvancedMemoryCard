@@ -1,7 +1,6 @@
 package com.suntide_20210418.advancedmemorycard.client.gui.widgets;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -307,7 +306,7 @@ public class P2PTreeWidget extends Widget {
             List<ChannelInfo> channels = typeInfo.channelInfoList();
             if (channels == null) continue;
             List<ChannelInfo> sorted = new ArrayList<>(channels);
-            sorted.sort(Comparator.comparingInt(ch -> Integer.parseInt(ch.frequency(), 16)));
+            sorted.sort((a, b) -> ChannelInfo.compareFrequency(a.frequency(), b.frequency()));
 
             for (ChannelInfo channelInfo : sorted) {
                 TreeNode channelNode = new TreeNode();
@@ -421,7 +420,7 @@ public class P2PTreeWidget extends Widget {
             List<String> freqs = new ArrayList<>(
                 entry.getValue()
                     .keySet());
-            freqs.sort(Comparator.comparingInt(f -> Integer.parseInt(f, 16)));
+            freqs.sort(ChannelInfo::compareFrequency);
             for (String freq : freqs) {
                 TreeNode channelNode = new TreeNode();
                 channelNode.type = NodeType.CHANNEL;

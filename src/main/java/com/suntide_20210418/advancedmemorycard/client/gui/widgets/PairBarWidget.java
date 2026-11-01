@@ -2,7 +2,6 @@ package com.suntide_20210418.advancedmemorycard.client.gui.widgets;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
 import com.suntide_20210418.advancedmemorycard.client.gui.GuiDraw;
@@ -99,13 +98,8 @@ public class PairBarWidget extends Widget {
 
     public void setChannels(List<ChannelInfo> channels) {
         List<ChannelInfo> sorted = new ArrayList<>(channels == null ? Collections.emptyList() : channels);
-        sorted.sort(Comparator.comparingInt(c -> {
-            try {
-                return Integer.parseInt(c.frequency(), 16);
-            } catch (NumberFormatException e) {
-                return Integer.MAX_VALUE;
-            }
-        }));
+        // 1.7.10 的频段是 64 位十六进制，按 unsigned long 排；Integer.parseInt 会溢出。
+        sorted.sort((a, b) -> ChannelInfo.compareFrequency(a.frequency(), b.frequency()));
         this.channels = sorted;
     }
 
