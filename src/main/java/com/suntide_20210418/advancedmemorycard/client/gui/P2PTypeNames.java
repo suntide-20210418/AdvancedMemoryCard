@@ -18,10 +18,14 @@ import net.minecraftforge.fml.common.registry.ForgeRegistries;
  * <p>用物品的 translation key 而不是把中文写死，这样语言切换、以及 AE2 自己改译名
  * 都能自动跟上。查不到的（第三方模组的 P2P 部件只给了 path，没有 namespace）
  * 退回原始字符串 —— 至少不会显示成空白。
+ *
+ * <p>1.12.2 的 {@code I18n} 没有 canTranslate/exists：未注册的 key 经 {@code format}
+ * 会原样返回，所以用「翻译结果等于 key 本身」判定译名是否存在，缓存里直接存译文。
  */
 public final class P2PTypeNames {
 
-    private static final Map<String, String> LANG_KEY_CACHE = new HashMap<>();
+    /** typePath → 已解析的显示文本；空串表示解析失败（显示原始 path）。 */
+    private static final Map<String, String> CACHE = new HashMap<>();
 
     private P2PTypeNames() {}
 
@@ -29,23 +33,25 @@ public final class P2PTypeNames {
         if (typePath == null || typePath.isEmpty()) {
             return "—";
         }
-        String key = LANG_KEY_CACHE.get(typePath);
-        if (key == null) {
-            key = resolveLangKey(typePath);
-            LANG_KEY_CACHE.put(typePath, key);
+        String resolved = CACHE.get(typePath);
+        if (resolved == null) {
+            resolved = resolve(typePath);
+            CACHE.put(typePath, resolved);
         }
-        return key.isEmpty() ? typePath : I18n.format(key);
+        return resolved.isEmpty() ? typePath : resolved;
     }
 
-    /** 返回可翻译的 key；不可翻译返回空串（调用方退回原始 path）。 */
-    private static String resolveLangKey(String typePath) {
+    /** 解析显示文本；查不到物品或译名时返回空串。 */
+    private static String resolve(String typePath) {
         ResourceLocation id = new ResourceLocation("ae2", typePath);
         Item item = ForgeRegistries.ITEMS.getValue(id);
         if (item == null) {
             return "";
         }
         String key = item.getUnlocalizedName() + ".name";
-        // 有物品但没译名时，宁可显示原始 path，也不要把 "item.ae2.xxx" 这种键名画上去
-        return I18n.canTranslate(key) ? key : "";
+        String translated = I18n.format(key);
+        // 有物品但没译名时，I18n 会把 key 原样返回 —— 那宁可显示原始 path，
+        // 也不要把 "item.ae2.xxx" 这种键名画上去
+        return translated.equals(key) ? "" : translated;
     }
 }
