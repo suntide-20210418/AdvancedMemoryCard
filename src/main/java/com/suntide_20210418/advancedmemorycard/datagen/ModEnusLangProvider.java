@@ -138,6 +138,18 @@ public class ModEnusLangProvider extends LanguageProvider {
         add(Keys.STATUS_LINE_SWITCH_ALREADY_INPUT, "This device is already an input");
         add(Keys.STATUS_LINE_SWITCH_FAILED, "Switch failed: network not ready or device left this network");
 
+        // 树列头与汇总列
+        add(Keys.TREE_COL_NAME, "Name");
+        add(Keys.TREE_COL_FREQ, "Channel");
+        add(Keys.TREE_COL_SUMMARY, "Info");
+        add(Keys.TREE_SUMMARY_CHANNEL, "%s dev, %s left");
+        add(Keys.TREE_SUMMARY_CHANNEL_PLAIN, "%s dev");
+        add(Keys.TREE_SUMMARY_TYPE, "%s dev, %s ch");
+        add(Keys.TREE_ROLE_INPUT, "IN");
+        add(Keys.TREE_ROLE_OUTPUT, "OUT");
+        add(Keys.TREE_PREFIX_INPUT, "IN");
+        add(Keys.TREE_PREFIX_OUTPUT, "OUT");
+
         // 聊天消息
         add(Keys.CHAT_LOCATION_INFO, "%s at %s - (%s) ");
         add(Keys.CHAT_CLICK_TO_TELEPORT, "[Click to Teleport]");

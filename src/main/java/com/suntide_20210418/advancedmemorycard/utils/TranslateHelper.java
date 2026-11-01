@@ -134,6 +134,22 @@ public class TranslateHelper {
         public static final String STATUS_LINE_SWITCH_ALREADY_INPUT = STATUS_LINE_PREFIX + "switch_already_input";
         public static final String STATUS_LINE_SWITCH_FAILED = STATUS_LINE_PREFIX + "switch_failed";
 
+        // 树列头与汇总列
+        public static final String TREE_COL_PREFIX = GUI_PREFIX + "advanced_memory_card.tree_col.";
+        public static final String TREE_COL_NAME = TREE_COL_PREFIX + "name";
+        public static final String TREE_COL_FREQ = TREE_COL_PREFIX + "frequency";
+        public static final String TREE_COL_SUMMARY = TREE_COL_PREFIX + "summary";
+        public static final String TREE_SUMMARY_CHANNEL =
+                GUI_PREFIX + "advanced_memory_card.tree.summary_channel";
+        public static final String TREE_SUMMARY_CHANNEL_PLAIN =
+                GUI_PREFIX + "advanced_memory_card.tree.summary_channel_plain";
+        public static final String TREE_SUMMARY_TYPE =
+                GUI_PREFIX + "advanced_memory_card.tree.summary_type";
+        public static final String TREE_ROLE_INPUT = GUI_PREFIX + "advanced_memory_card.tree.role_input";
+        public static final String TREE_ROLE_OUTPUT = GUI_PREFIX + "advanced_memory_card.tree.role_output";
+        public static final String TREE_PREFIX_INPUT = GUI_PREFIX + "advanced_memory_card.tree.prefix_input";
+        public static final String TREE_PREFIX_OUTPUT = GUI_PREFIX + "advanced_memory_card.tree.prefix_output";
+
         // 聊天消息（高亮/传送相关）
         public static final String CHAT_PREFIX = GUI_PREFIX + "advanced_memory_card.chat.";
         public static final String CHAT_LOCATION_INFO = CHAT_PREFIX + "location_info";
@@ -445,8 +461,24 @@ public class TranslateHelper {
         }
     }
 
+    /** 树列头 */
+    public static class TreeColumn {
+        public static MutableComponent name() {
+            return translate(Keys.TREE_COL_NAME);
+        }
+
+        public static MutableComponent frequency() {
+            return translate(Keys.TREE_COL_FREQ);
+        }
+
+        public static MutableComponent summary() {
+            return translate(Keys.TREE_COL_SUMMARY);
+        }
+    }
+
     /** P2P 树控件相关翻译 */
     public static class P2PTree {
+
         public static MutableComponent empty() {
             return translate(Keys.P2P_TREE_EMPTY);
         }

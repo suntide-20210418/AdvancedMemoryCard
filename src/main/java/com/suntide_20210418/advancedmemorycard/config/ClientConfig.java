@@ -29,6 +29,28 @@ public class ClientConfig {
     public final ForgeConfigSpec.IntValue treeChannelWarningThreshold;
     public final ForgeConfigSpec.IntValue treeP2PNameMaxLength;
 
+    // ========== 语义色板 ==========
+    public final ForgeConfigSpec.IntValue paletteTextPrimary;
+    public final ForgeConfigSpec.IntValue paletteTextSecondary;
+    public final ForgeConfigSpec.IntValue paletteTextTertiary;
+    public final ForgeConfigSpec.IntValue paletteAccent;
+    public final ForgeConfigSpec.IntValue paletteAccentText;
+    public final ForgeConfigSpec.IntValue paletteRowSelected;
+    public final ForgeConfigSpec.IntValue paletteRowHover;
+    public final ForgeConfigSpec.IntValue paletteSurface;
+    public final ForgeConfigSpec.IntValue paletteSurfaceHover;
+    public final ForgeConfigSpec.IntValue paletteDivider;
+    public final ForgeConfigSpec.IntValue paletteStatusOk;
+    public final ForgeConfigSpec.IntValue paletteStatusWarn;
+    public final ForgeConfigSpec.IntValue paletteStatusDanger;
+    public final ForgeConfigSpec.IntValue paletteChipOkBg;
+    public final ForgeConfigSpec.IntValue paletteChipAccentBg;
+    public final ForgeConfigSpec.IntValue paletteChipWarnBg;
+    public final ForgeConfigSpec.IntValue paletteChipDangerBg;
+    public final ForgeConfigSpec.IntValue paletteOverlayBg;
+    public final ForgeConfigSpec.IntValue paletteOverlayBorder;
+    public final ForgeConfigSpec.IntValue paletteOverlayShadow;
+
     // ========== 详情面板颜色 ==========
     public final ForgeConfigSpec.IntValue panelColorBg;
     public final ForgeConfigSpec.IntValue panelColorTitle;
@@ -130,6 +152,75 @@ public class ClientConfig {
                 .defineInRange("p2pNameMaxLength", 20, 5, 100);
 
         builder.pop(); // treeLayout
+
+        // ---- 语义色板 ----
+        // 与基准 1.21.1 的 client.palette.* 同名同默认值。旧的 treeColors/panelColors/
+        // buttonColors 仍然保留（复制模式界面还在用），收敛留给后续阶段。
+        builder.comment("GUI 语义色（ARGB）。默认值已在 SINK #ADB0C4 / CARD #CBCCD4 上验证对比度 >= 4.5:1")
+                .push("palette");
+
+        paletteTextPrimary = builder
+                .comment("主文本（名称、取值）")
+                .defineInRange("textPrimary", 0xFF16191F, Integer.MIN_VALUE, Integer.MAX_VALUE);
+        paletteTextSecondary = builder
+                .comment("次要文本（频段、计数、表头）")
+                .defineInRange("textSecondary", 0xFF3B4152, Integer.MIN_VALUE, Integer.MAX_VALUE);
+        paletteTextTertiary = builder
+                .comment("辅助文本（属性标签、占位提示）")
+                .defineInRange("textTertiary", 0xFF4A5265, Integer.MIN_VALUE, Integer.MAX_VALUE);
+        paletteAccent = builder
+                .comment("强调色（主按钮底、当前可编辑字段）")
+                .defineInRange("accent", 0xFF1B4483, Integer.MIN_VALUE, Integer.MAX_VALUE);
+        paletteAccentText = builder
+                .comment("强调色上的文字")
+                .defineInRange("accentText", 0xFFFFFFFF, Integer.MIN_VALUE, Integer.MAX_VALUE);
+        paletteRowSelected = builder
+                .comment("选中行底色")
+                .defineInRange("rowSelected", 0xFF2E4F86, Integer.MIN_VALUE, Integer.MAX_VALUE);
+        paletteRowHover = builder
+                .comment("悬停行底色")
+                .defineInRange("rowHover", 0xFFBEC3D4, Integer.MIN_VALUE, Integer.MAX_VALUE);
+        paletteSurface = builder
+                .comment("输入框 / 槽位底色")
+                .defineInRange("surface", 0xFFDDE1EA, Integer.MIN_VALUE, Integer.MAX_VALUE);
+        paletteSurfaceHover = builder
+                .comment("输入框 / 槽位悬停底色")
+                .defineInRange("surfaceHover", 0xFFE8EBF2, Integer.MIN_VALUE, Integer.MAX_VALUE);
+        paletteDivider = builder
+                .comment("分隔线 / 细描边")
+                .defineInRange("divider", 0xFF8C93A6, Integer.MIN_VALUE, Integer.MAX_VALUE);
+        paletteStatusOk = builder
+                .comment("状态：连通")
+                .defineInRange("statusOk", 0xFF084D1C, Integer.MIN_VALUE, Integer.MAX_VALUE);
+        paletteStatusWarn = builder
+                .comment("状态：降级 / 未连通")
+                .defineInRange("statusWarn", 0xFF5C3800, Integer.MIN_VALUE, Integer.MAX_VALUE);
+        paletteStatusDanger = builder
+                .comment("状态：异常 / 破坏性操作")
+                .defineInRange("statusDanger", 0xFF7A0F0F, Integer.MIN_VALUE, Integer.MAX_VALUE);
+        paletteChipOkBg = builder
+                .comment("chip 底色：正常")
+                .defineInRange("chipOkBg", 0xFFD6E8DA, Integer.MIN_VALUE, Integer.MAX_VALUE);
+        paletteChipAccentBg = builder
+                .comment("chip 底色：强调")
+                .defineInRange("chipAccentBg", 0xFFD5E0F2, Integer.MIN_VALUE, Integer.MAX_VALUE);
+        paletteChipWarnBg = builder
+                .comment("chip 底色：警告")
+                .defineInRange("chipWarnBg", 0xFFEDE2CC, Integer.MIN_VALUE, Integer.MAX_VALUE);
+        paletteChipDangerBg = builder
+                .comment("chip 底色：危险")
+                .defineInRange("chipDangerBg", 0xFFF2DCDC, Integer.MIN_VALUE, Integer.MAX_VALUE);
+        paletteOverlayBg = builder
+                .comment("浮层底色（频段下拉）")
+                .defineInRange("overlayBg", 0xFFE7EBF3, Integer.MIN_VALUE, Integer.MAX_VALUE);
+        paletteOverlayBorder = builder
+                .comment("浮层描边")
+                .defineInRange("overlayBorder", 0xFF5E6678, Integer.MIN_VALUE, Integer.MAX_VALUE);
+        paletteOverlayShadow = builder
+                .comment("浮层投影（含透明度）")
+                .defineInRange("overlayShadow", 0x40000000, Integer.MIN_VALUE, Integer.MAX_VALUE);
+
+        builder.pop(); // palette
 
         // ---- 详情面板颜色 ----
         builder.comment("详情面板颜色设置 (ARGB)").push("panelColors");

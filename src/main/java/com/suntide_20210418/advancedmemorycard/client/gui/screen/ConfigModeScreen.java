@@ -37,6 +37,17 @@ public class ConfigModeScreen extends AEBaseScreen<ConfigModeMenu> {
     // update_item_info 请求的冷却计时器，避免每 tick 都发送请求
     private int updateItemInfoCooldown = 0;
 
+    /** 列头画在树矩形上方的偏移量。 */
+    private static final int COLUMN_HEADER_OFFSET = 10;
+
+    /**
+     * 上一次处理过的同步版本号。
+     *
+     * <p>以前每 tick 无条件重建整棵树（20 次/秒），数据没变时纯属白烧 CPU，
+     * 还会打断正在进行的选择与就地编辑。现在只在服务端确实发过新包时重建。
+     */
+    private int lastSyncVersion = -1;
+
     public ConfigModeScreen(ConfigModeMenu menu, Inventory playerInventory,
                             Component title, ScreenStyle style) {
         super(menu, playerInventory, title, style);
@@ -379,11 +390,14 @@ public class ConfigModeScreen extends AEBaseScreen<ConfigModeMenu> {
             updateItemInfoCooldown--;
         }
 
-        updateTreeData();
+        // 只在服务端发过新包时重建：syncVersion 每收一个同步包 +1
+        if (menu.getSyncVersion() != lastSyncVersion) {
+            lastSyncVersion = menu.getSyncVersion();
+            updateTreeData();
+        }
 
         // 数据刷新后，检查是否有待绑定的 P2P 需要自动导航定位
         tryAutoNavigateToPendingBind();
-
         // 每 tick 同步详情面板到树中当前选中的节点（rebuildTree 不会触发 listener）
         if (p2pTree != null) {
             updateDetailPanelNode(p2pTree.getSelectedNode());
@@ -424,6 +438,11 @@ public class ConfigModeScreen extends AEBaseScreen<ConfigModeMenu> {
         }
 
         super.render(guiGraphics, mouseX, mouseY, partialTicks);
+
+        // 列头与浮层必须画在所有 widget 之后，否则会被树/面板盖住
+        if (p2pTree != null) {
+            p2pTree.renderColumnHeader(guiGraphics, p2pTree.getX(), p2pTree.getY() - COLUMN_HEADER_OFFSET);
+        }
 
         setTextContent("title", Component.translatable(TranslateHelper.Keys.CONFIG_MODE_SCREEN_TITLE));
         setTextContent("info",  Component.translatable(TranslateHelper.Keys.CONFIG_MODE_SCREEN_INFO));
@@ -472,6 +491,12 @@ public class ConfigModeScreen extends AEBaseScreen<ConfigModeMenu> {
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+        // 框选时指针可能移出树矩形，WidgetContainer 就不会再把拖动派给树；
+        // 这里先自行转发一次，让选择范围能跟着指针越界延伸。
+        if (p2pTree != null && p2pTree.isDragSelecting()) {
+            p2pTree.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+            return true;
+        }
         // 拖拽事件：先让 WidgetContainer 处理（Scrollbar 的 onMouseDrag 需要全局捕获）
         // 但如果 super 不处理，我们手动处理 Scrollbar 的拖拽
         boolean superResult = super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
@@ -485,6 +510,11 @@ public class ConfigModeScreen extends AEBaseScreen<ConfigModeMenu> {
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        // 框选在树外松开时 super 不会派发，这里补一次，否则树会一直停“正在框选”
+        if (p2pTree != null && p2pTree.isDragSelecting()) {
+            p2pTree.mouseReleased(mouseX, mouseY, button);
+            return true;
+        }
         // 让 WidgetContainer 处理 Scrollbar.onMouseUp（停止拖拽状态）
         boolean superResult = super.mouseReleased(mouseX, mouseY, button);
         if (superResult) {
@@ -495,6 +525,14 @@ public class ConfigModeScreen extends AEBaseScreen<ConfigModeMenu> {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        // AE2 的 AEBaseScreen.mouseClicked 在 button==1 且命中原版 child 时会把按键改写成 0
+        // 再派发。树区域目前没有 child，但不要让“右键能到树”依赖这个前提：
+        // 批量模式下的「右键展开/折叠频段」靠它，一旦将来在树上方叠任何原版控件就会静默失效。
+        if (button == 1 && p2pTree != null && isMouseOverTreeArea(mouseX, mouseY)) {
+            if (p2pTree.mouseClicked(mouseX, mouseY, 1)) {
+                return true;
+            }
+        }
         // 先让父类（WidgetContainer）处理，Scrollbar 会作为 ICompositeWidget 收到事件
         boolean superResult = super.mouseClicked(mouseX, mouseY, button);
         if (superResult) {

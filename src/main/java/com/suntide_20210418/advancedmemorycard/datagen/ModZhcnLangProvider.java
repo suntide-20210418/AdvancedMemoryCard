@@ -132,6 +132,18 @@ public class ModZhcnLangProvider extends LanguageProvider {
         add(Keys.STATUS_LINE_SWITCH_ALREADY_INPUT, "该设备已经是输入端");
         add(Keys.STATUS_LINE_SWITCH_FAILED, "切换失败：网络未就绪或设备已不在当前网络");
 
+        // 树列头与汇总列
+        add(Keys.TREE_COL_NAME, "名称");
+        add(Keys.TREE_COL_FREQ, "频段");
+        add(Keys.TREE_COL_SUMMARY, "汇总");
+        add(Keys.TREE_SUMMARY_CHANNEL, "%s台 余%s");
+        add(Keys.TREE_SUMMARY_CHANNEL_PLAIN, "%s台");
+        add(Keys.TREE_SUMMARY_TYPE, "%s台 %s频");
+        add(Keys.TREE_ROLE_INPUT, "输入");
+        add(Keys.TREE_ROLE_OUTPUT, "输出");
+        add(Keys.TREE_PREFIX_INPUT, "入");
+        add(Keys.TREE_PREFIX_OUTPUT, "出");
+
         // 聊天消息
         add(Keys.CHAT_LOCATION_INFO, "%s 在 %s - (%s) ");
         add(Keys.CHAT_CLICK_TO_TELEPORT, "【点击此处来传送】");
