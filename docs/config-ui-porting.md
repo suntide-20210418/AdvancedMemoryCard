@@ -311,7 +311,7 @@ GTNH 约定会强制重排从 1.12.2 复制来的文件（import 顺序为 `java
 ### 实施备注
 
 1. **皮肤是自绘的，没有换贴图**：`assets/advanced_memory_card/textures/gui/config_mode_menu.png` 仍是旧图（7399 字节）。440×312 面板由 `ConfigModeScreen.drawScreen` 里的 `GuiDraw.fillRect(guiLeft, guiTop, PANEL_W, PANEL_H, 0xFFC7CCDA)` 加标题自绘，不读贴图资源。阶段 C 写的是「新底板可见」，按自绘实现了，美术资产替换没有做；将来要换图，改这一处绘制即可。
-2. **实际执行顺序与规划相反**：§1.1 要求先由 1.12.2 冻结共用实现、本版再复制过来；实际本版先做完了，1.12.2 至今仍卡在屏幕接线。所以本版不是「复制 1.12.2」，而是与 1.21.1 基准同构重写。1.12.2 后续应以本版（尤其 `P2PTreeWidget` 的四列/框选/批量与 `ConfigModeScreen` 的回调装配）为参照回补。
+2. **实际执行顺序与规划相反**：§1.1 要求先由 1.12.2 冻结共用实现、本版再复制过来；实际本版先做完了，1.12.2 随后以本版为参照回补（四列树 / 框选 / 批量 / 回调装配），已于 `1.2.0-1.12.2` 发布。所以本版不是「复制 1.12.2」，而是与 1.21.1 基准同构重写。
 3. **频段列此前会溢出**：树里直接画完整 16 位十六进制，而频段列只有 40px（`COL_FREQ_W`），文字会压到名称与汇总列。已补 `P2PTreeWidget.shortFrequency()`：宽度超一屏就只留 `…` + 末 6 位，完整值在检查器看，符合 §1.2 的 F7 降级。
 4. **频道键查找缺失（本次修复）**：`ConfigModeMenu` 的 `channelInfoMap` 以 `frequency|p2pType` 为键（`menu/ConfigModeMenu.java:474`），但树与检查器原先按纯频段查（`channelInfoMap.get(freq)`），永远命中不了 —— 设备行的频道占用数字、搜索树里的频道节点、检查器的频道别名全部取不到数据。新增 `ChannelInfo.find(map, frequency, p2pType)`（先查 `freq|type`、再退回纯频段），替换 `P2PTreeWidget`（搜索树频道节点、设备行汇总）与 `DetailPanelWidget`（`channelAlias`、就地改名回显）的四处查找。
 5. 36 个离屏背包槽位未动（禁改区）。
