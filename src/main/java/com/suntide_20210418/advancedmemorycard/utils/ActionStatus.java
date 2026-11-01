@@ -50,6 +50,10 @@ public final class ActionStatus {
             case BIND_OK, ASSIGNED, RENAMED, REFRESHED, SOURCE_SELECTED -> SEV_OK;
             case BIND_NO_TARGET, BIND_INVALID_FREQ, RENAME_FAILED -> SEV_WARN;
             case BIND_NO_GRID -> SEV_ERROR;
+            // 批量结果：全部成功算成功，部分成功算警告。这两档以前落在 default 分支
+            // 被当成「中性」，状态点显示灰点，读起来像「什么也没发生」。
+            case BIND_BATCH_OK -> SEV_OK;
+            case BIND_BATCH_PARTIAL -> SEV_WARN;
             case SWITCHED_TO_INPUT -> SEV_OK;
             case SWITCH_NO_CHANNEL, SWITCH_ALREADY_INPUT -> SEV_WARN;
             case SWITCH_FAILED -> SEV_ERROR;

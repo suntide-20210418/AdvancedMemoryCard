@@ -58,7 +58,7 @@
 | # | 缺陷 | 证据 | 后果 | 处理 |
 | --- | --- | --- | --- | --- |
 | B1 | `ActionStatus.severity()` 漏判码 10/11 | `utils/ActionStatus.java` 的 severity 分支只覆盖 0–9 与 12–15，10/11 落到默认分支 | 批量绑定成功、部分成功时状态点是中性灰而非绿/黄；三份移植会各复制一遍 | 补两个分支：10 → OK，11 → WARN |
-| B2 | `ServerConfig.allowTeleport` 注释与默认值矛盾 | `config/ServerConfig.java` 注释写「Default: false.」，代码默认 `true` | 文档与行为不一致；玩家以为默认关闭实际默认开启 | 先定真值再统一。建议默认 `false`，与「默认不授予传送权限」的取向一致 |
+| B2 | `ServerConfig.allowTeleport` 注释与默认值矛盾 | `config/ServerConfig.java` 注释写「Default: false.」，代码默认 `true` | 文档与行为不一致；玩家以为默认关闭实际默认开启 | **已定：保留 `true`**（与 1.2.1 行为一致，避免发版即移除既有能力），把注释改成 `Default: true.`。若后续要收紧权限，改这一行的默认值即可，同时更新本条 |
 | B3 | `client/gui/ModMenu.java` 是死代码 | 该文件只被自己引用；真正注册入口是 `menu/ModMenu.java`；两者定义同一批 menu type | 整目录拷贝到目标版本会 double register 并崩溃 | 删除该文件，并把路径写进下游的「禁止复制清单」 |
 
 阶段 0 的验收：`gradlew build` 通过；进游戏打开配置界面，批量绑定两台设备后状态点应为绿色；`runServer` 正常启动。

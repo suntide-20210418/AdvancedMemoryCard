@@ -33,7 +33,7 @@ public class ServerConfig {
                 .comment("是否允许玩家通过配置模式界面的「传送」按钮直接传送到 P2P 设备位置",
                         "关闭时界面不显示传送按钮，服务端也会拒绝任何传送请求",
                         "Allow players to teleport to a P2P device via the 'Teleport' button in the Config Mode GUI.",
-                        "When false the button is hidden and the server rejects teleport requests. Default: false.")
+                        "When false the button is hidden and the server rejects teleport requests. Default: true.")
                 .define("allowTeleport", true);
 
         builder.pop();
