@@ -4,7 +4,7 @@
 
 An Applied Energistics 2 (AE2) add-on that gives the AE2 Memory Card two major capabilities: **bulk region pasting** and **centralized P2P tunnel configuration**.
 
-> **Current version: `1.2.1-1.21.1`** · Minecraft 1.21.1 / NeoForge 21.1.219+ / AE2 1.21.1 line
+> **Current version: `1.2.2-1.21.1`** · Minecraft 1.21.1 / NeoForge 21.1.219+ / AE2 1.21.1 line
 > See [CHANGELOG.md](CHANGELOG.md) for what changed.
 
 ## 🌟 Features
@@ -174,6 +174,12 @@ Used to personalize the UI and rendering, organized by section:
 ## 📝 Changelog
 
 Full history in [CHANGELOG.md](CHANGELOG.md). Latest release:
+
+### 1.2.2-1.21.1
+
+- **Fixed** batch bind receipts are coloured by outcome: all-bound shows green and partially-bound shows amber (both used to fall into the default neutral colour, so a batch looked identical whether it worked or not).
+- **Fixed** the config-mode menu class was registered twice (`client/gui/ModMenu` was dead code left by the UI rewrite, sitting next to `menu/ModMenu` in another package).
+- **Fixed** `ServerConfig.allowTeleport` had a comment contradicting its default; only the comment changed (teleport is still on by default).
 
 ### 1.2.1-1.21.1
 
