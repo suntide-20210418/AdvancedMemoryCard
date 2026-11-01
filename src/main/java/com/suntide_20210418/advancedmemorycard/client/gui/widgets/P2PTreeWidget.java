@@ -427,7 +427,7 @@ public class P2PTreeWidget extends Widget {
                 channelNode.type = NodeType.CHANNEL;
                 channelNode.frequency = freq;
                 channelNode.expanded = true;
-                channelNode.data = channelInfoMap.get(freq);
+                channelNode.data = ChannelInfo.find(channelInfoMap, freq, entry.getKey());
                 channelNode.parent = typeNode;
                 flatNodes.add(channelNode);
 
@@ -460,7 +460,7 @@ public class P2PTreeWidget extends Widget {
         if (p2p.name() != null && p2p.name()
             .toLowerCase()
             .contains(lowerQuery)) return true;
-        ChannelInfo channelInfo = channelInfoMap.get(p2p.frequency());
+        ChannelInfo channelInfo = ChannelInfo.find(channelInfoMap, p2p.frequency(), p2p.p2pType());
         return channelInfo != null && channelInfo.alias() != null
             && channelInfo.alias()
                 .toLowerCase()
@@ -631,7 +631,7 @@ public class P2PTreeWidget extends Widget {
                         }
                         drawRight(summary, summaryRight(), textY, color);
                     }
-                    drawRight(node.frequency, freqRight(), textY, secondary);
+                    drawRight(shortFrequency(node.frequency), freqRight(), textY, secondary);
                 }
                 case P2P -> {
                     P2PInfo info = node.p2pInfo;
@@ -651,7 +651,7 @@ public class P2PTreeWidget extends Widget {
                     // ME 设备在汇总列显示频道占用，带「入 / 出」前缀区分角色：
                     // 输入端用自己的外部网络数字，输出端用频道视角（见 P2PChannelUsage.ofRow）。
                     // 非 ME 类型没有这个概念，仍然显示输入/输出角色。
-                    ChannelInfo channel = channelInfoMap == null ? null : channelInfoMap.get(info.frequency());
+                    ChannelInfo channel = ChannelInfo.find(channelInfoMap, info.frequency(), info.p2pType());
                     P2PChannelUsage usage = P2PChannelUsage.ofRow(info, channel);
                     String summaryText;
                     int summaryColor;
@@ -672,7 +672,7 @@ public class P2PTreeWidget extends Widget {
                     drawRight(summaryText, summaryRight(), textY, summaryColor);
 
                     if (info.frequency() != null && !"0000".equals(info.frequency())) {
-                        drawRight(info.frequency(), freqRight(), textY, secondary);
+                        drawRight(shortFrequency(info.frequency()), freqRight(), textY, secondary);
                     }
                 }
                 default -> {}
@@ -684,6 +684,13 @@ public class P2PTreeWidget extends Widget {
         if (isSelected) return 0xFFB7E3BE;
         if (!info.isActive()) return colorMuted();
         return info.isConnected() ? colorOk() : colorWarn();
+    }
+
+    /** 频段列只有 40px，16 位十六进制放不下：只留末 6 位，完整值在检查器里看。 */
+    private String shortFrequency(String frequency) {
+        if (frequency == null) return "";
+        if (frequency.length() <= 7) return frequency;
+        return "…" + frequency.substring(frequency.length() - 6);
     }
 
     private void drawRight(String text, int rightX, int y, int color) {

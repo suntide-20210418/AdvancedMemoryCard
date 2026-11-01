@@ -7,8 +7,8 @@
 | 分支 | `suntide/1.7.10-GTNH` |
 | 加载器 / Java | GTNH Forge 10.13.4.1614 / JDK 25 + jabel（编译到 Java 8 字节码） |
 | AE2 | GTNH rv3 fork |
-| 版本 | `1.1.0-1.7.10-GTNH` → 目标 `1.2.0-1.7.10-GTNH` |
-| 优先级 | **P3**，1.12.2 的契约层与树完成后实施 |
+| 版本 | `1.1.0-1.7.10-GTNH` → `1.2.0-1.7.10-GTNH`（已实现，见第七节） |
+| 优先级 | **P3**，1.12.2 的契约层与树完成后实施（实际执行顺序与文档规划相反，见第七节第 2 条） |
 
 ---
 
@@ -305,6 +305,17 @@ GTNH 约定会强制重排从 1.12.2 复制来的文件（import 顺序为 `java
 | 日期 | 内容 |
 | --- | --- |
 | 初版 | 建立本版移植文档；确定 P3 优先级、频段显示规则、阶段 0（四处缺陷）/A–G、spotless 提交策略 |
+| 2026-11-01 | 阶段 0（`8619b75`）、自绘脚手架（`38b1d60`）、服务端语义与协议（`8ca5770`）、四列树（`a061228`）、界面总装（`2bd55ab`）全部完成。`2bd55ab` 把业务改动与 `spotlessApply` 放在同一提交，没有按 §4.1 拆成 `style:` + 业务两个提交 |
+| 2026-11-01 | 阶段 G 收尾：`README.md` / `README_en.md` 重写为 1.7.10 真实内容（原来是从 1.20.1 复制的错误版本）、新建 `CHANGELOG.md`、补 `shortFrequency()` 与频道键查找修复（见实施备注 3、4）、两语键集合一致（各 109 键）、`spotlessCheck` 通过、发版 `1.2.0-1.7.10-GTNH` |
+
+### 实施备注
+
+1. **皮肤是自绘的，没有换贴图**：`assets/advanced_memory_card/textures/gui/config_mode_menu.png` 仍是旧图（7399 字节）。440×312 面板由 `ConfigModeScreen.drawScreen` 里的 `GuiDraw.fillRect(guiLeft, guiTop, PANEL_W, PANEL_H, 0xFFC7CCDA)` 加标题自绘，不读贴图资源。阶段 C 写的是「新底板可见」，按自绘实现了，美术资产替换没有做；将来要换图，改这一处绘制即可。
+2. **实际执行顺序与规划相反**：§1.1 要求先由 1.12.2 冻结共用实现、本版再复制过来；实际本版先做完了，1.12.2 至今仍卡在屏幕接线。所以本版不是「复制 1.12.2」，而是与 1.21.1 基准同构重写。1.12.2 后续应以本版（尤其 `P2PTreeWidget` 的四列/框选/批量与 `ConfigModeScreen` 的回调装配）为参照回补。
+3. **频段列此前会溢出**：树里直接画完整 16 位十六进制，而频段列只有 40px（`COL_FREQ_W`），文字会压到名称与汇总列。已补 `P2PTreeWidget.shortFrequency()`：宽度超一屏就只留 `…` + 末 6 位，完整值在检查器看，符合 §1.2 的 F7 降级。
+4. **频道键查找缺失（本次修复）**：`ConfigModeMenu` 的 `channelInfoMap` 以 `frequency|p2pType` 为键（`menu/ConfigModeMenu.java:474`），但树与检查器原先按纯频段查（`channelInfoMap.get(freq)`），永远命中不了 —— 设备行的频道占用数字、搜索树里的频道节点、检查器的频道别名全部取不到数据。新增 `ChannelInfo.find(map, frequency, p2pType)`（先查 `freq|type`、再退回纯频段），替换 `P2PTreeWidget`（搜索树频道节点、设备行汇总）与 `DetailPanelWidget`（`channelAlias`、就地改名回显）的四处查找。
+5. 36 个离屏背包槽位未动（禁改区）。
+6. **全程没有实机视觉验证**：`compileJava` 与 `spotlessCheck` 通过、CI 绿，但批量绑定后的状态点颜色、右键折叠（只在批量模式 + 频道行生效）、Ctrl 框选、跨维度传送、静止时 `syncVersion` 节流都只在代码层核对过。§6.3 的 V-5（零槽位容器是否真的触发空指针）与 V-6（`MinecraftServer` 任务调度入口）仍未实测。
 
 ---
 

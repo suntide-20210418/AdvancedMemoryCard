@@ -254,7 +254,7 @@ public class DetailPanelWidget extends Widget {
 
         if (selectedNode.type == NodeType.P2P && selectedP2PInfo != null) {
             P2PInfo info = selectedP2PInfo;
-            String alias = channelAlias(info.frequency());
+            String alias = channelAlias(info.frequency(), info.p2pType());
             String freqText = alias.equals(info.frequency()) ? info.frequency() : alias + " · " + info.frequency();
             String role = TranslateHelper
                 .translate(info.isOutput() ? TranslateHelper.Keys.STATUS_OUTPUT : TranslateHelper.Keys.STATUS_INPUT);
@@ -545,7 +545,7 @@ public class DetailPanelWidget extends Widget {
         nameField.width = Math.min(120, width - 2 * PAD);
         nameField.height = 10;
         String current = selectedNode.type == NodeType.P2P ? (selectedP2PInfo == null ? "" : selectedP2PInfo.name())
-            : channelAlias(selectedNode.frequency);
+            : channelAlias(selectedNode.frequency, channelTypeOf(selectedNode));
         nameField.setText(current == null ? "" : current);
         nameField.setVisible(true);
         nameField.setFocused(true);
@@ -632,13 +632,18 @@ public class DetailPanelWidget extends Widget {
                 .isEmpty() ? selectedP2PInfo.toShortString() : selectedP2PInfo.name();
         }
         if (selectedNode.type == NodeType.CHANNEL) {
-            return channelAlias(selectedNode.frequency);
+            return channelAlias(selectedNode.frequency, channelTypeOf(selectedNode));
         }
         return selectedNode.typeName == null ? "" : selectedNode.typeName;
     }
 
-    private String channelAlias(String frequency) {
-        ChannelInfo info = channelInfoMap == null || frequency == null ? null : channelInfoMap.get(frequency);
+    /** 频道节点的父节点是类型节点，频道 map 的键需要它才能命中。 */
+    private String channelTypeOf(TreeNode node) {
+        return node != null && node.parent != null ? node.parent.typeName : null;
+    }
+
+    private String channelAlias(String frequency, String p2pType) {
+        ChannelInfo info = ChannelInfo.find(channelInfoMap, frequency, p2pType);
         if (info == null || info.alias() == null
             || info.alias()
                 .equals(frequency)) {
