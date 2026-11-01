@@ -10,6 +10,7 @@ import com.suntide_20210418.advancedmemorycard.client.P2PRenderHelper;
 import com.suntide_20210418.advancedmemorycard.menu.ConfigModeMenu;
 import com.suntide_20210418.advancedmemorycard.client.gui.widgets.DetailPanelWidget;
 import com.suntide_20210418.advancedmemorycard.client.gui.widgets.P2PTreeWidget;
+import com.suntide_20210418.advancedmemorycard.client.gui.widgets.PairBarWidget;
 import com.suntide_20210418.advancedmemorycard.config.ModConfigs;
 import com.suntide_20210418.advancedmemorycard.p2p.NodeType;
 import com.suntide_20210418.advancedmemorycard.p2p.P2PInfo;
@@ -23,10 +24,14 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class ConfigModeScreen extends AEBaseScreen<ConfigModeMenu> {
 
     private P2PTreeWidget p2pTree;
     private Scrollbar scrollbar;
+    private PairBarWidget pairBar;
     private static final int UPDATE_ITEM_INFO_INTERVAL = 10; // 每 10 tick 发送一次
     private AETextField searchField;
     private DetailPanelWidget detailPanel;
@@ -47,6 +52,9 @@ public class ConfigModeScreen extends AEBaseScreen<ConfigModeMenu> {
      * 还会打断正在进行的选择与就地编辑。现在只在服务端确实发过新包时重建。
      */
     private int lastSyncVersion = -1;
+
+    /** 上一次把树展开到的配对源节点 id，用于避免每次刷新都重新居中。 */
+    private String lastRevealedSourceId = null;
 
     public ConfigModeScreen(ConfigModeMenu menu, Inventory playerInventory,
                             Component title, ScreenStyle style) {
@@ -76,6 +84,30 @@ public class ConfigModeScreen extends AEBaseScreen<ConfigModeMenu> {
         // 使用 widgets 管理器创建滚动条，而不是手动创建
         scrollbar = this.widgets.addScrollBar("p2p_tree_scrollbar");
         p2pTree = new P2PTreeWidget(0, 0, 0, 0);
+
+        pairBar = new PairBarWidget(0, 0, 0, 0);
+        pairBar.setCallback(new PairBarWidget.Callback() {
+            @Override
+            public void onSourceCleared() {
+                if (p2pTree != null) {
+                    p2pTree.clearMultiSelection();
+                }
+                menu.dispatchClientAction("clear_pending_bind");
+                resetUpdateCooldown();
+            }
+
+            @Override
+            public void onTargetChanged(String frequency) {
+                // 目标频段只是客户端选择，不需要向服务端发请求；操作条的可用态在阶段 E 接
+            }
+
+            @Override
+            public void onNewFrequency() {
+                menu.dispatchClientAction("assign_freq");
+                resetUpdateCooldown();
+            }
+        });
+        this.widgets.add("pair_bar", pairBar);
 
         // 创建搜索框
         searchField = new AETextField(this.style, this.font, 0, 0, 0, 0);
@@ -219,6 +251,53 @@ public class ConfigModeScreen extends AEBaseScreen<ConfigModeMenu> {
             );
             updateScrollbar();
         }
+    }
+
+    /**
+     * 收到新同步包后的整体刷新：树、配对条、滚动条。
+     *
+     * <p>只在 {@code syncVersion} 变化时调用 —— 之前是每 tick 无条件重建树，
+     * 数据没变时纯属白烧 CPU，还会打断正在进行的选择与就地编辑。
+     */
+    private void refreshFromMenu() {
+        if (p2pTree == null) return;
+        lastSyncVersion = menu.getSyncVersion();
+
+        p2pTree.updateData(
+                menu.getClientP2PTypeInfoMap(),
+                menu.getClientChannelInfoMap(),
+                menu.getClientP2PInfoMap());
+
+        if (pairBar != null) {
+            pairBar.setChannels(new ArrayList<>(menu.getClientChannelInfoMap().values()));
+            pairBar.setStatus(menu.getClientStatusCode(), menu.getClientStatusParam());
+
+            // 配对源换人时把树展开到那台设备并选中；已在可视区就不滚动
+            P2PInfo source = menu.getClientPendingBindP2PInfo();
+            if (source != null) {
+                String sourceId = TreeNode.p2pNodeId(source);
+                if (!sourceId.equals(lastRevealedSourceId)) {
+                    lastRevealedSourceId = sourceId;
+                    p2pTree.revealP2P(source);
+                }
+            }
+
+            // 配对源以树里的选择为准（可能是 Ctrl 多选的一组）；
+            // 还没在树里点过时，退回“打开界面时右键的那一台”。
+            List<P2PInfo> candidates = p2pTree.getSourceCandidates();
+            if (candidates.isEmpty()) {
+                P2PInfo serverSource = menu.getClientPendingBindP2PInfo();
+                pairBar.setSources(serverSource == null ? List.of() : List.of(serverSource));
+            } else {
+                pairBar.setSources(candidates);
+            }
+        }
+
+        detailPanel.setSelectedNode(p2pTree.getSelectedNode(),
+                menu.getClientChannelInfoMap(),
+                menu.getClientP2PTypeInfoMap());
+
+        updateScrollbar();
     }
 
     // 修改 init 方法
@@ -392,8 +471,7 @@ public class ConfigModeScreen extends AEBaseScreen<ConfigModeMenu> {
 
         // 只在服务端发过新包时重建：syncVersion 每收一个同步包 +1
         if (menu.getSyncVersion() != lastSyncVersion) {
-            lastSyncVersion = menu.getSyncVersion();
-            updateTreeData();
+            refreshFromMenu();
         }
 
         // 数据刷新后，检查是否有待绑定的 P2P 需要自动导航定位
@@ -443,6 +521,9 @@ public class ConfigModeScreen extends AEBaseScreen<ConfigModeMenu> {
         if (p2pTree != null) {
             p2pTree.renderColumnHeader(guiGraphics, p2pTree.getX(), p2pTree.getY() - COLUMN_HEADER_OFFSET);
         }
+        if (pairBar != null) {
+            pairBar.renderOverlay(guiGraphics, mouseX, mouseY);
+        }
 
         setTextContent("title", Component.translatable(TranslateHelper.Keys.CONFIG_MODE_SCREEN_TITLE));
         setTextContent("info",  Component.translatable(TranslateHelper.Keys.CONFIG_MODE_SCREEN_INFO));
@@ -474,6 +555,10 @@ public class ConfigModeScreen extends AEBaseScreen<ConfigModeMenu> {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+        // 浮层优先消费：否则会出现「浮层滚一格、树也滚一格」
+        if (pairBar != null && pairBar.isDropdownOpen() && pairBar.handleOverlayScroll(delta)) {
+            return true;
+        }
         // 只有当鼠标在树控件区域或滚动条区域内时，才让 scrollbar 处理滚轮
         // 否则让 super 处理（AEBaseScreen 会将事件分发给 WidgetContainer，Scrollbar 因 captureMouseWheel=true 也能收到）
         if (isMouseOverTreeArea(mouseX, mouseY) || isMouseOverScrollbar(mouseX, mouseY)) {
@@ -525,6 +610,11 @@ public class ConfigModeScreen extends AEBaseScreen<ConfigModeMenu> {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        // 浮层优先：它画在最上层，也必须最先吃掉点击，否则点到的是下面的树
+        if (pairBar != null && pairBar.isDropdownOpen()
+                && pairBar.handleOverlayClick(mouseX, mouseY, button)) {
+            return true;
+        }
         // AE2 的 AEBaseScreen.mouseClicked 在 button==1 且命中原版 child 时会把按键改写成 0
         // 再派发。树区域目前没有 child，但不要让“右键能到树”依赖这个前提：
         // 批量模式下的「右键展开/折叠频段」靠它，一旦将来在树上方叠任何原版控件就会静默失效。
@@ -547,6 +637,11 @@ public class ConfigModeScreen extends AEBaseScreen<ConfigModeMenu> {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        // Esc 先关下拉浮层（256 = GLFW_KEY_ESCAPE），再考虑交给别的控件
+        if (keyCode == 256 && pairBar != null && pairBar.isDropdownOpen()) {
+            pairBar.closeDropdown();
+            return true;
+        }
         // 优先转发到详情面板的 text field（编辑模式下）
         if (detailPanel != null && detailPanel.keyPressed(keyCode, scanCode, modifiers)) {
             return true;

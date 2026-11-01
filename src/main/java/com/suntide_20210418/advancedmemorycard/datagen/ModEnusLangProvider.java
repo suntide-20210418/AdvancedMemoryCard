@@ -150,6 +150,17 @@ public class ModEnusLangProvider extends LanguageProvider {
         add(Keys.TREE_PREFIX_INPUT, "IN");
         add(Keys.TREE_PREFIX_OUTPUT, "OUT");
 
+        // 配对条
+        add(Keys.PAIR_SOURCE, "FROM");
+        add(Keys.PAIR_TARGET, "TO");
+        add(Keys.PAIR_TARGET_PLACEHOLDER, "Click to pick a channel");
+        add(Keys.PAIR_SOURCE_PLACEHOLDER, "Pick a device on the left");
+        add(Keys.PAIR_CLEAR, "Clear");
+        add(Keys.PAIR_NEW_FREQ, "New channel…");
+        add(Keys.PAIR_NO_CHANNEL, "No channels available");
+        add(Keys.PAIR_UNNAMED, "Unnamed");
+        add(Keys.PAIR_SOURCE_MULTI, "%s selected");
+
         // 聊天消息
         add(Keys.CHAT_LOCATION_INFO, "%s at %s - (%s) ");
         add(Keys.CHAT_CLICK_TO_TELEPORT, "[Click to Teleport]");

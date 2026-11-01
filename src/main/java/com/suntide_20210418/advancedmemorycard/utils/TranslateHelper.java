@@ -150,6 +150,18 @@ public class TranslateHelper {
         public static final String TREE_PREFIX_INPUT = GUI_PREFIX + "advanced_memory_card.tree.prefix_input";
         public static final String TREE_PREFIX_OUTPUT = GUI_PREFIX + "advanced_memory_card.tree.prefix_output";
 
+        // 配对条（源 → 目标）
+        public static final String PAIR_PREFIX = GUI_PREFIX + "advanced_memory_card.pair.";
+        public static final String PAIR_SOURCE = PAIR_PREFIX + "source";
+        public static final String PAIR_TARGET = PAIR_PREFIX + "target";
+        public static final String PAIR_TARGET_PLACEHOLDER = PAIR_PREFIX + "target_placeholder";
+        public static final String PAIR_SOURCE_PLACEHOLDER = PAIR_PREFIX + "source_placeholder";
+        public static final String PAIR_CLEAR = PAIR_PREFIX + "clear";
+        public static final String PAIR_NEW_FREQ = PAIR_PREFIX + "new_freq";
+        public static final String PAIR_NO_CHANNEL = PAIR_PREFIX + "no_channel";
+        public static final String PAIR_UNNAMED = PAIR_PREFIX + "unnamed";
+        public static final String PAIR_SOURCE_MULTI = PAIR_PREFIX + "source_multi";
+
         // 聊天消息（高亮/传送相关）
         public static final String CHAT_PREFIX = GUI_PREFIX + "advanced_memory_card.chat.";
         public static final String CHAT_LOCATION_INFO = CHAT_PREFIX + "location_info";
@@ -461,9 +473,47 @@ public class TranslateHelper {
         }
     }
 
+    /** 配对条（源 → 目标）*/
+    public static class Pair {
+        public static MutableComponent source() {
+            return translate(Keys.PAIR_SOURCE);
+        }
+
+        public static MutableComponent target() {
+            return translate(Keys.PAIR_TARGET);
+        }
+
+        public static MutableComponent targetPlaceholder() {
+            return translate(Keys.PAIR_TARGET_PLACEHOLDER);
+        }
+
+        public static MutableComponent sourcePlaceholder() {
+            return translate(Keys.PAIR_SOURCE_PLACEHOLDER);
+        }
+
+        public static MutableComponent clearTooltip() {
+            return translate(Keys.PAIR_CLEAR);
+        }
+
+        public static MutableComponent newFrequency() {
+            return translate(Keys.PAIR_NEW_FREQ);
+        }
+
+        public static MutableComponent noChannel() {
+            return translate(Keys.PAIR_NO_CHANNEL);
+        }
+
+        public static MutableComponent unnamed() {
+            return translate(Keys.PAIR_UNNAMED);
+        }
+
+        public static MutableComponent sourceMulti(String count) {
+            return translate(Keys.PAIR_SOURCE_MULTI, count);
+        }
+    }
+
     /** 树列头 */
-    public static class TreeColumn {
-        public static MutableComponent name() {
+    public static class TreeColumn {        public static MutableComponent name() {
             return translate(Keys.TREE_COL_NAME);
         }
 

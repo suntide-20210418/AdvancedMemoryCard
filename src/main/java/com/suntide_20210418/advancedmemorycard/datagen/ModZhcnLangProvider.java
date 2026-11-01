@@ -144,6 +144,17 @@ public class ModZhcnLangProvider extends LanguageProvider {
         add(Keys.TREE_PREFIX_INPUT, "入");
         add(Keys.TREE_PREFIX_OUTPUT, "出");
 
+        // 配对条
+        add(Keys.PAIR_SOURCE, "源");
+        add(Keys.PAIR_TARGET, "目标");
+        add(Keys.PAIR_TARGET_PLACEHOLDER, "点击选择频段");
+        add(Keys.PAIR_SOURCE_PLACEHOLDER, "在左侧选择设备");
+        add(Keys.PAIR_CLEAR, "解除");
+        add(Keys.PAIR_NEW_FREQ, "新建频段…");
+        add(Keys.PAIR_NO_CHANNEL, "没有可用频段");
+        add(Keys.PAIR_UNNAMED, "未命名");
+        add(Keys.PAIR_SOURCE_MULTI, "已选 %s 台");
+
         // 聊天消息
         add(Keys.CHAT_LOCATION_INFO, "%s 在 %s - (%s) ");
         add(Keys.CHAT_CLICK_TO_TELEPORT, "【点击此处来传送】");
