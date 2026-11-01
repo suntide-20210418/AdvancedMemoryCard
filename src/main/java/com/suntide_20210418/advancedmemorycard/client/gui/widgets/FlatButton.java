@@ -88,6 +88,11 @@ public class FlatButton {
     }
 
     public boolean mouseReleased(int mouseX, int mouseY, int button) {
+        // 只认左键：1.7.10 的 mouseMovedOrUp 会用 -1 表示“纯移动”，
+        // 右键（1）也不该把按下态的左键按钮当成释放。
+        if (button != 0) {
+            return false;
+        }
         if (pressed) {
             pressed = false;
             if (isMouseOver(mouseX, mouseY)) {

@@ -95,26 +95,45 @@ public class P2PManager {
             return;
         }
 
-        long freq = Long.parseLong(frequencyHex, 16);
+        long freq = parseFrequency(frequencyHex);
+        // 频段 0 在 AE2 里代表"未绑定"，而且 P2PCache 会把 freq=0 的设备登记进
+        // inputs[0]/outputs[0]，让一堆未绑定设备在界面里互相"连通"。
+        // 把它当绑定目标等于静默解绑。
+        if (freq == 0) {
+            return;
+        }
 
-        // 非 ME P2P 设备：智能判断输入/输出端角色
-        if (!(p2pTunnelPartBinding instanceof PartP2PTunnelME)) {
-            PartP2PTunnel existingInput = getInput(freq);
-            if (existingInput != null) {
-                if (!p2pTunnelPartBinding.isOutput()) {
-                    setP2POutput(p2pTunnelPartBinding, true);
-                }
-            } else {
-                if (p2pTunnelPartBinding.isOutput()) {
-                    setP2POutput(p2pTunnelPartBinding, false);
-                }
-            }
+        // 角色仲裁对所有隧道类型统一，不豁免 ME：
+        // inputs 是"一个频段只存一个输入端"的映射，后登记的会把先前的挤出去；
+        // 若让第二台 ME 也当输入端，outputs 永远为空，而 isConnected 对输入端要求
+        // "至少一个同频输出端"，整条通道会永久显示未连接，并随 markForSave 写进存档。
+        PartP2PTunnel existingInput = getInput(freq);
+        boolean shouldBeOutput = existingInput != null && existingInput != p2pTunnelPartBinding;
+        if (shouldBeOutput != p2pTunnelPartBinding.isOutput()) {
+            setP2POutput(p2pTunnelPartBinding, shouldBeOutput);
         }
 
         currentP2PService.updateFreq(p2pTunnelPartBinding, freq);
+        // 频段没变时 updateFreq 不落盘，但角色可能变了，显式补一次。
+        if (p2pTunnelPartBinding.getHost() != null) {
+            p2pTunnelPartBinding.getHost()
+                .markForSave();
+        }
 
         this.grid = currentGrid;
         this.p2pService = currentP2PService;
+    }
+
+    /** 解析 16 位十六进制频段；非法输入返回 0（即"未绑定"），由调用方拒绝。 */
+    private static long parseFrequency(String frequencyHex) {
+        if (frequencyHex == null || frequencyHex.isEmpty()) {
+            return 0L;
+        }
+        try {
+            return Long.parseLong(frequencyHex, 16);
+        } catch (NumberFormatException e) {
+            return 0L;
+        }
     }
 
     public void autoConfigP2PIO() {

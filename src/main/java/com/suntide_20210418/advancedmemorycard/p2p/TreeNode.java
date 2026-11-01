@@ -42,7 +42,23 @@ public class TreeNode {
             case CHANNEL:
                 return "channel:" + frequency;
             case P2P:
-                return "p2p:" + (p2pInfo != null ? p2pInfo.hashCode() : "null") + ":" + frequency;
+                // 必须是稳定标识，不能用 p2pInfo.hashCode()：后者是全字段哈希，
+                // 连接状态一变（插拔输出端、上线/下线）id 就变。界面靠这个 id 记住
+                // “当前选中/正在编辑的是哪一行”，id 一抖就会表现为改名后详情面板自己
+                // 跳回未选中、跟随选中反复滚动。
+                return "p2p:" + (p2pInfo != null ? p2pInfo.dimensionId() + "@"
+                    + p2pInfo.position()
+                        .getX()
+                    + ","
+                    + p2pInfo.position()
+                        .getY()
+                    + ","
+                    + p2pInfo.position()
+                        .getZ()
+                    + ":"
+                    + p2pInfo.direction()
+                        .ordinal()
+                    : "null") + ":" + frequency;
             case SEARCH_HEADER:
             default:
                 return "search_header";

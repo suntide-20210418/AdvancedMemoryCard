@@ -430,7 +430,13 @@ public class ConfigModeScreen extends GuiContainer {
             scrollDragging = false;
             return;
         }
-        if (detailPanel != null) detailPanel.mouseReleased(mouseX, mouseY, mouseButton);
+        // 1.7.10 只有 mouseMovedOrUp，没有独立的 mouseReleased。mouseButton == -1 表示
+        // “本次只是移动、并没有松开任何键”。旧代码无条件往下传，于是按住左键从按钮上
+        // 划开再移动一下就会触发该按钮的动作 —— 因为 FlatButton 只看 pressed 和
+        // 指针是否在矩形内，不看是哪个键松开的。
+        if (mouseButton >= 0) {
+            if (detailPanel != null) detailPanel.mouseReleased(mouseX, mouseY, mouseButton);
+        }
         super.mouseMovedOrUp(mouseX, mouseY, mouseButton);
     }
 
