@@ -200,6 +200,13 @@ public class DetailPanelWidget {
 
     private void onNameConfirm() {
         if (!isEditing) return;
+        // 选中频段节点时，改名目标是“频段别名”（= 该频段输入端的名字），
+        // 而不是某台设备。以前这里只判 selectedP2PInfo，导致选中频段后按回车
+        // 只是关掉输入框、什么都不发 —— onChannelAliasConfirm 写好了却没人调。
+        if (selectedNode != null && selectedNode.type == NodeType.CHANNEL) {
+            onChannelAliasConfirm();
+            return;
+        }
         if (selectedP2PInfo != null) {
             String newName = nameField.getText().trim();
             if (!newName.isEmpty() && actionCallback != null) {
