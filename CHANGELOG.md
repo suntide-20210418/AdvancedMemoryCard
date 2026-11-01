@@ -17,6 +17,10 @@
 - **界面显示原始翻译键**：`TranslateHelper.Keys` 里的键都是 `GUI_PREFIX + "advanced_memory_card.<组>."`，拼出来是双份命名空间的 `gui.advanced_memory_card.advanced_memory_card.<组>.*`。历史组（复制模式、检查器、按钮、状态、树、聊天、tooltip）的语言文件一直是双份，能对上；但 1.2.0 新加的 `action_bar` / `pair` / `status_line` / `p2p_type` 写成了单份，`tree` 与 `tree_col` 干脆没有写，于是这 39 个键在游戏里按原样显示。现在两语文件统一为双份命名空间，并补齐 `tree_col.{name,frequency,summary}` 与 `tree.{summary_channel,summary_channel_plain,summary_type,role_input,role_output,prefix_input,prefix_output}` 共 10 条新键。
 - **P2P 类型名的键前缀**：`P2PTypeNames` 的 `LANG_PREFIX` 同步改成双份命名空间，与其余各组保持一致。
 
+### 改动
+
+- **配置模式界面换上基准底图**：1.2.0 交付时面板是纯色自绘的（`GuiDraw.fillRect` 刷一块 `0xFFC7CCDA`），基准 1.21.1 的那张 `guis/config_mode_menu.png` 从没被打包进来。现在把基准图集（512×512，取左上 440×312）原样搬过来，界面直接铺这张图；标题对齐基准的 (7,7)，搜索框去掉原版黑底、改成面板上的纯文字输入并补占位符「搜索…」。控件矩形与基准 JSON 本来就逐项相同，位置没有改动。
+
 ## 1.2.2-1.7.10-GTNH — 2026-11-01
 
 **Minecraft** 1.7.10 · **Forge** 10.13.4.1614 · **AE2** GTNH Applied-Energistics-2-Unofficial rv3

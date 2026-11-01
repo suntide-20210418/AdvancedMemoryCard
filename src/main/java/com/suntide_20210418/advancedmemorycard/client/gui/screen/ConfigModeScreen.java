@@ -9,12 +9,12 @@ import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.util.ResourceLocation;
 
 import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.GL11;
 
 import com.suntide_20210418.advancedmemorycard.client.gui.ConfigUiLayout;
-import com.suntide_20210418.advancedmemorycard.client.gui.GuiDraw;
 import com.suntide_20210418.advancedmemorycard.client.gui.widgets.ActionBarWidget;
 import com.suntide_20210418.advancedmemorycard.client.gui.widgets.DetailPanelWidget;
 import com.suntide_20210418.advancedmemorycard.client.gui.widgets.P2PTreeWidget;
@@ -28,6 +28,7 @@ import com.suntide_20210418.advancedmemorycard.p2p.NodeType;
 import com.suntide_20210418.advancedmemorycard.p2p.P2PInfo;
 import com.suntide_20210418.advancedmemorycard.p2p.TreeNode;
 import com.suntide_20210418.advancedmemorycard.utils.BlockPos;
+import com.suntide_20210418.advancedmemorycard.utils.ResourceLocationHelper;
 import com.suntide_20210418.advancedmemorycard.utils.TranslateHelper;
 
 import cpw.mods.fml.relauncher.Side;
@@ -50,10 +51,14 @@ public class ConfigModeScreen extends GuiContainer {
     private P2PInfo lastNavigatedP2P = null;
 
     // 与基准 1.20.1 / 1.21.1 的 440×312 面板一致；旧版没有 AE2 的 ScreenStyle，
-    // 这里用 ConfigUiLayout 同数值的矩形 + 自绘扁平面板承担。
+    // 这里用 ConfigUiLayout 同数值的矩形承担，面板背景直接铺基准那张图集。
     private static final int PANEL_WIDTH = ConfigUiLayout.PANEL_W;
     private static final int PANEL_HEIGHT = ConfigUiLayout.PANEL_H;
+    private static final ResourceLocation PANEL_TEXTURE = ResourceLocationHelper.guiTexture("config_mode_menu.png");
     private static final int TEXT_COLOR = 0x404040;
+    /** 关掉原版底框后文字贴着 yPosition 画，下移这么多才能在那个 13px 槽位里居中（字高 8）。 */
+    private static final int SEARCH_TEXT_OFFSET = 2;
+    private static final int PLACEHOLDER_COLOR = 0x6E7488;
 
     private boolean scrollDragging = false;
     private int scrollDragStartY = 0;
@@ -202,11 +207,16 @@ public class ConfigModeScreen extends GuiContainer {
         searchField = new GuiTextField(
             fontRendererObj,
             guiLeft + ConfigUiLayout.SEARCH.x,
-            guiTop + ConfigUiLayout.SEARCH.y,
+            // 关掉原版底框后文字贴着 yPosition 画，下移 2px 才能在那个 13px 的槽位里居中
+            guiTop + ConfigUiLayout.SEARCH.y + SEARCH_TEXT_OFFSET,
             ConfigUiLayout.SEARCH.w,
-            ConfigUiLayout.SEARCH.h);
+            ConfigUiLayout.SEARCH.h - SEARCH_TEXT_OFFSET);
         searchField.setMaxStringLength(64);
         searchField.setFocused(false);
+        // 面板底图自带凹槽，原版输入框的黑底 + 灰边会破坏配色：只保留文字与光标
+        searchField.setEnableBackgroundDrawing(false);
+        searchField.setTextColor(TEXT_COLOR);
+        searchField.setDisabledTextColour(PLACEHOLDER_COLOR);
 
         updateTreeData();
     }
@@ -438,17 +448,40 @@ public class ConfigModeScreen extends GuiContainer {
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
         drawDefaultBackground();
 
-        // 扁平面板：旧版没有 AE2 的 ScreenStyle 贴图，用与基准同尺寸的矩形 + 自绘控件承担。
-        int panelBg = 0xFFC7CCDA;
-        GuiDraw.fillRect(guiLeft, guiTop, PANEL_WIDTH, PANEL_HEIGHT, panelBg);
+        // 面板背景：与基准 1.21.1 同一张 guis/config_mode_menu.png（512×512 图集，取左上 440×312）。
+        // drawTexturedModalRect 固定按 256×256 算 UV，非 256 的图必须走 custom sized。
+        // 前一步 drawDefaultBackground 会把 GL 颜色压暗，画贴图前要复位成白色。
+        GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
+        mc.getTextureManager()
+            .bindTexture(PANEL_TEXTURE);
+        Gui.func_146110_a(
+            guiLeft,
+            guiTop,
+            0,
+            0,
+            PANEL_WIDTH,
+            PANEL_HEIGHT,
+            ConfigUiLayout.PANEL_TEX_SIZE,
+            ConfigUiLayout.PANEL_TEX_SIZE);
         GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
 
         // 标题
         String title = TranslateHelper.translate(TranslateHelper.Keys.CONFIG_MODE_SCREEN_TITLE);
-        fontRendererObj.drawString(title, guiLeft + ConfigUiLayout.SEARCH.x, guiTop + 7, TEXT_COLOR);
+        fontRendererObj
+            .drawString(title, guiLeft + ConfigUiLayout.TITLE.x, guiTop + ConfigUiLayout.TITLE.y, TEXT_COLOR);
 
-        // 搜索框
-        if (searchField != null) searchField.drawTextBox();
+        // 搜索框：贴图自带凹槽，框只画文字与光标，空且未聚焦时补占位符
+        if (searchField != null) {
+            if (searchField.getText()
+                .isEmpty() && !searchField.isFocused()) {
+                fontRendererObj.drawString(
+                    TranslateHelper.translate(TranslateHelper.Keys.CONFIG_MODE_SCREEN_SEARCH_PLACEHOLDER),
+                    searchField.xPosition,
+                    searchField.yPosition,
+                    PLACEHOLDER_COLOR);
+            }
+            searchField.drawTextBox();
+        }
 
         // 树
         if (p2pTree != null) {
