@@ -1,12 +1,27 @@
 package com.suntide_20210418.advancedmemorycard.client.gui.widgets;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.Consumer;
 
 import com.suntide_20210418.advancedmemorycard.client.gui.GuiDraw;
 import com.suntide_20210418.advancedmemorycard.client.gui.P2PTypeNames;
 import com.suntide_20210418.advancedmemorycard.config.ModConfigs;
-import com.suntide_20210418.advancedmemorycard.p2p.*;
+import com.suntide_20210418.advancedmemorycard.p2p.ChannelInfo;
+import com.suntide_20210418.advancedmemorycard.p2p.NodeType;
+import com.suntide_20210418.advancedmemorycard.p2p.P2PChannelUsage;
+import com.suntide_20210418.advancedmemorycard.p2p.P2PInfo;
+import com.suntide_20210418.advancedmemorycard.p2p.P2PPosition;
+import com.suntide_20210418.advancedmemorycard.p2p.P2PTypeInfo;
+import com.suntide_20210418.advancedmemorycard.p2p.TreeNode;
 import com.suntide_20210418.advancedmemorycard.utils.TranslateHelper;
 
 /**
