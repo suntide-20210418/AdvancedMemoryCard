@@ -34,6 +34,12 @@ public class AdvancedMemoryCardMod {
         NetworkRegistry.INSTANCE.registerGuiHandler(this, new ModGuiHandler());
         MinecraftForge.EVENT_BUS.register(this);
         CardMode.initializeModes();
+        // 客户端：传送落点判定等「等条件成立再做」的延迟任务（TickEvent 在 FML 总线上）
+        if (net.minecraftforge.fml.common.FMLCommonHandler.instance()
+            .getEffectiveSide()
+            .isClient()) {
+            com.suntide_20210418.advancedmemorycard.client.ClientTickTasks.register();
+        }
     }
 
     @Mod.EventHandler
