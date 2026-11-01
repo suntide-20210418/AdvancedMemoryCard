@@ -4,6 +4,17 @@
 
 ---
 
+## 1.2.3-1.7.10-GTNH — 2026-11-01
+
+**Minecraft** 1.7.10 · **Forge** 10.13.4.1614 · **AE2** GTNH Applied-Energistics-2-Unofficial rv3
+
+修掉界面里显示原始翻译键（`gui.advanced_memory_card...` 这种）的问题：新做的操作条、配对条、状态行、树头与树汇总用的键，代码拼出来的名字和语言文件里的名字对不上。
+
+### 修复
+
+- **界面显示原始翻译键**：`TranslateHelper.Keys` 里的键都是 `GUI_PREFIX + "advanced_memory_card.<组>."`，拼出来是双份命名空间的 `gui.advanced_memory_card.advanced_memory_card.<组>.*`。历史组（复制模式、检查器、按钮、状态、树、聊天、tooltip）的语言文件一直是双份，能对上；但 1.2.0 新加的 `action_bar` / `pair` / `status_line` / `p2p_type` 写成了单份，`tree` 与 `tree_col` 干脆没有写，于是这 39 个键在游戏里按原样显示。现在两语文件统一为双份命名空间，并补齐 `tree_col.{name,frequency,summary}` 与 `tree.{summary_channel,summary_channel_plain,summary_type,role_input,role_output,prefix_input,prefix_output}` 共 10 条新键。
+- **P2P 类型名的键前缀**：`P2PTypeNames` 的 `LANG_PREFIX` 同步改成双份命名空间，与其余各组保持一致。
+
 ## 1.2.2-1.7.10-GTNH — 2026-11-01
 
 **Minecraft** 1.7.10 · **Forge** 10.13.4.1614 · **AE2** GTNH Applied-Energistics-2-Unofficial rv3

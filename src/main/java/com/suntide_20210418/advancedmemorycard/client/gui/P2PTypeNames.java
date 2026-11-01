@@ -19,12 +19,13 @@ import net.minecraft.util.StatCollector;
  * 上既查不到东西、还会因为注册表键是 String 而抛 ClassCastException。
  *
  * <p>
- * 这里改成查本模组自己的语言键：{@code gui.advanced_memory_card.p2p_type.<小写 token>}。
+ * 这里改成查本模组自己的语言键：{@code gui.advanced_memory_card.advanced_memory_card.p2p_type.<小写 token>}
+ * （与其他组的键一样是双份命名空间，见 {@code TranslateHelper.Keys}）。
  * 查不到（第三方模组的 P2P 部件）就退回原始 token —— 至少不会显示成空白。
  */
 public final class P2PTypeNames {
 
-    private static final String LANG_PREFIX = "gui.advanced_memory_card.p2p_type.";
+    private static final String LANG_PREFIX = "gui.advanced_memory_card.advanced_memory_card.p2p_type.";
 
     /** typePath → 可翻译的 key；空串表示没有对应译名。 */
     private static final Map<String, String> LANG_KEY_CACHE = new HashMap<>();
