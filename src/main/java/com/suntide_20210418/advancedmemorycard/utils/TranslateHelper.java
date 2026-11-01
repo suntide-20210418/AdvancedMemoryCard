@@ -74,6 +74,8 @@ public class TranslateHelper {
         public static final String BUTTON_LOCATE = BUTTON_PREFIX + "locate";
         public static final String BUTTON_INIT_P2P = BUTTON_PREFIX + "init_p2p";
         public static final String BUTTON_ASSIGN_FREQ = BUTTON_PREFIX + "assign_freq";
+        public static final String BUTTON_SWITCH_TO_INPUT = BUTTON_PREFIX + "switch_to_input";
+        public static final String BUTTON_TELEPORT = BUTTON_PREFIX + "teleport";
 
         public static final String STATUS_PREFIX = GUI_PREFIX + "advanced_memory_card.status.";
         public static final String STATUS_NOT_ACTIVE = STATUS_PREFIX + "not_active";
@@ -137,6 +139,25 @@ public class TranslateHelper {
         public static final String TOOLTIP_COPY_SECOND_POS = TOOLTIP_PREFIX + "copy.second_pos";
         public static final String TOOLTIP_COPY_READY = TOOLTIP_PREFIX + "copy.ready";
         public static final String TOOLTIP_CONFIG_INFO = TOOLTIP_PREFIX + "config.info";
+
+        // 配对条（源 → 目标）。与 1.20.1 / 1.21.1 同 key，文案在阶段 G 补进 .lang
+        public static final String PAIR_PREFIX = GUI_PREFIX + "advanced_memory_card.pair.";
+        public static final String PAIR_SOURCE = PAIR_PREFIX + "source";
+        public static final String PAIR_TARGET = PAIR_PREFIX + "target";
+        public static final String PAIR_SOURCE_PLACEHOLDER = PAIR_PREFIX + "source_placeholder";
+        public static final String PAIR_TARGET_PLACEHOLDER = PAIR_PREFIX + "target_placeholder";
+        public static final String PAIR_SOURCE_MULTI = PAIR_PREFIX + "source_multi";
+        public static final String PAIR_NEW_FREQ = PAIR_PREFIX + "new_freq";
+        public static final String PAIR_NO_CHANNEL = PAIR_PREFIX + "no_channel";
+
+        // 底部操作条
+        public static final String ACTION_BAR_PREFIX = GUI_PREFIX + "advanced_memory_card.action_bar.";
+        public static final String ACTION_BAR_HINT = ACTION_BAR_PREFIX + "hint";
+        public static final String ACTION_BAR_BIND = ACTION_BAR_PREFIX + "bind";
+        public static final String ACTION_BAR_BATCH = ACTION_BAR_PREFIX + "batch";
+        public static final String ACTION_BAR_EXIT_BATCH = ACTION_BAR_PREFIX + "exit_batch";
+        public static final String ACTION_BAR_HINT_READY = ACTION_BAR_PREFIX + "hint_ready";
+        public static final String ACTION_BAR_HINT_READY_MULTI = ACTION_BAR_PREFIX + "hint_ready_multi";
     }
 
     public static String translate(String key, Object... args) {
@@ -385,6 +406,14 @@ public class TranslateHelper {
         public static String assignFreq() {
             return translate(Keys.BUTTON_ASSIGN_FREQ);
         }
+
+        public static String switchToInput() {
+            return translate(Keys.BUTTON_SWITCH_TO_INPUT);
+        }
+
+        public static String teleport() {
+            return translate(Keys.BUTTON_TELEPORT);
+        }
     }
 
     public static class Status {
@@ -454,6 +483,66 @@ public class TranslateHelper {
 
         public static String teleportSuccess(Object... args) {
             return translate(Keys.CHAT_TELEPORT_SUCCESS, args);
+        }
+    }
+
+    /** 配对条文案（源槽 / 目标槽 / 占位 / 多选 / 新建频段 / 无频段）。1.7.10 返回 String。 */
+    public static class Pair {
+
+        public static String source() {
+            return translate(Keys.PAIR_SOURCE);
+        }
+
+        public static String target() {
+            return translate(Keys.PAIR_TARGET);
+        }
+
+        public static String sourcePlaceholder() {
+            return translate(Keys.PAIR_SOURCE_PLACEHOLDER);
+        }
+
+        public static String targetPlaceholder() {
+            return translate(Keys.PAIR_TARGET_PLACEHOLDER);
+        }
+
+        public static String sourceMulti(String count) {
+            return translate(Keys.PAIR_SOURCE_MULTI, count);
+        }
+
+        public static String newFrequency() {
+            return translate(Keys.PAIR_NEW_FREQ);
+        }
+
+        public static String noChannel() {
+            return translate(Keys.PAIR_NO_CHANNEL);
+        }
+    }
+
+    /** 底部操作条文案（提示 / 绑定 / 批量 / 退出批量 / 就绪提示）。1.7.10 返回 String。 */
+    public static class ActionBar {
+
+        public static String hint() {
+            return translate(Keys.ACTION_BAR_HINT);
+        }
+
+        public static String bind() {
+            return translate(Keys.ACTION_BAR_BIND);
+        }
+
+        public static String batch() {
+            return translate(Keys.ACTION_BAR_BATCH);
+        }
+
+        public static String exitBatch() {
+            return translate(Keys.ACTION_BAR_EXIT_BATCH);
+        }
+
+        public static String hintReady(String sourceName, String frequency) {
+            return translate(Keys.ACTION_BAR_HINT_READY, sourceName, frequency);
+        }
+
+        public static String hintReadyMulti(String count, String frequency) {
+            return translate(Keys.ACTION_BAR_HINT_READY_MULTI, count, frequency);
         }
     }
 }

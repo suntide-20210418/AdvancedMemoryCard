@@ -12,8 +12,8 @@ public class FlatButton {
 
     private int x;
     private int y;
-    private final int width;
-    private final int height;
+    private int width;
+    private int height;
     private String label;
     private final Runnable onClickAction;
 
@@ -57,6 +57,14 @@ public class FlatButton {
 
     public int getHeight() {
         return height;
+    }
+
+    public void setWidth(int width) {
+        this.width = width;
+    }
+
+    public void setHeight(int height) {
+        this.height = height;
     }
 
     public boolean isMouseOver(int mouseX, int mouseY) {

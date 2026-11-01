@@ -54,6 +54,8 @@ gui.advanced_memory_card.advanced_memory_card.button.bind=绑定
 gui.advanced_memory_card.advanced_memory_card.button.locate=定位
 gui.advanced_memory_card.advanced_memory_card.button.init_p2p=初始化P2P
 gui.advanced_memory_card.advanced_memory_card.button.assign_freq=分配新频段
+gui.advanced_memory_card.advanced_memory_card.button.switch_to_input=设为输入端
+gui.advanced_memory_card.advanced_memory_card.button.teleport=传送
 gui.advanced_memory_card.advanced_memory_card.status.not_active=未激活
 gui.advanced_memory_card.advanced_memory_card.status.not_connected=未连接
 gui.advanced_memory_card.advanced_memory_card.status.connected=已连接
@@ -76,3 +78,36 @@ gui.advanced_memory_card.advanced_memory_card.tooltip.copy.first_pos=第一个�
 gui.advanced_memory_card.advanced_memory_card.tooltip.copy.second_pos=第二个位置：%s\n
 gui.advanced_memory_card.advanced_memory_card.tooltip.copy.ready=准备粘贴
 gui.advanced_memory_card.advanced_memory_card.tooltip.config.info=配置模式\n
+# 配对条（源 → 目标）
+gui.advanced_memory_card.pair.source=源设备
+gui.advanced_memory_card.pair.target=目标频段
+gui.advanced_memory_card.pair.source_placeholder=点树里的设备设为配对源
+gui.advanced_memory_card.pair.target_placeholder=点频段行或下拉选择目标
+gui.advanced_memory_card.pair.source_multi=已选 %s 台
+gui.advanced_memory_card.pair.new_freq=＋ 分配新频段
+gui.advanced_memory_card.pair.no_channel=（无可用频段）
+# 底部操作条
+gui.advanced_memory_card.action_bar.hint=先选源设备，再选目标频段
+gui.advanced_memory_card.action_bar.bind=绑定
+gui.advanced_memory_card.action_bar.batch=批量操作
+gui.advanced_memory_card.action_bar.exit_batch=退出批量
+gui.advanced_memory_card.action_bar.hint_ready=将 %s 绑到 %s
+gui.advanced_memory_card.action_bar.hint_ready_multi=将 %s 台设备绑到 %s
+# 状态行回执（与 ActionStatus 的 16 个码一一对应）
+gui.advanced_memory_card.status_line.idle=就绪
+gui.advanced_memory_card.status_line.bind_ok=已绑定到 %s
+gui.advanced_memory_card.status_line.bind_no_target=未选择目标频段
+gui.advanced_memory_card.status_line.bind_invalid_freq=频段 %s 无效
+gui.advanced_memory_card.status_line.bind_no_grid=设备未接入网格
+gui.advanced_memory_card.status_line.source_selected=已选源设备：%s
+gui.advanced_memory_card.status_line.assigned=已分配新频段 %s
+gui.advanced_memory_card.status_line.renamed=已重命名为 %s
+gui.advanced_memory_card.status_line.refreshed=已刷新
+gui.advanced_memory_card.status_line.rename_failed=重命名失败
+gui.advanced_memory_card.status_line.bind_batch_ok=%s 台设备已绑定到 %s
+gui.advanced_memory_card.status_line.bind_batch_partial=批量绑定：%s 台成功，%s 台失败（频段 %s）
+gui.advanced_memory_card.status_line.switched_to_input=已切换为输入端 %s
+gui.advanced_memory_card.status_line.switch_no_channel=频段 %s 无可用通道
+gui.advanced_memory_card.status_line.switch_already_input=已是输入端
+gui.advanced_memory_card.status_line.switch_failed=切换输入端失败
+
