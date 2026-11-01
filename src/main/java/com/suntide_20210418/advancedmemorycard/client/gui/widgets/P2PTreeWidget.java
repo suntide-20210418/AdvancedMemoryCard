@@ -946,6 +946,12 @@ public class P2PTreeWidget extends Widget {
                 beginDragSelection(hovered, mouseY);
             }
         }
+        // 命中矩形就调用 onClick：基准里这一步由 AE2 的 AbstractWidget#mouseClicked 完成，
+        // 旧版 Widget 基类只返回 false，所以必须在这里显式派发一次，否则整棵树点不动。
+        if (button == 0 && isMouseOver(mouseX, mouseY)) {
+            onClick(mouseX, mouseY);
+            return true;
+        }
         // 仍然交给原有逻辑：单击就是「加选 / 取消加选」，拖动则由 mouseDragged 接管
         return super.mouseClicked(mouseX, mouseY, button);
     }

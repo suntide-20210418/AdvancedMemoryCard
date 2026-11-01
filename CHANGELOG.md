@@ -4,7 +4,7 @@
 
 ---
 
-## 未发布（待批准）：界面译名与语言键对齐
+## 未发布（待批准）：界面译名、底图与树点击
 
 **Minecraft** 1.7.10 · **Forge** 10.13.4.1614 · **AE2** GTNH Applied-Energistics-2-Unofficial rv3
 
@@ -13,6 +13,9 @@
 修掉界面里显示原始翻译键（`gui.advanced_memory_card...` 这种）的问题：新做的操作条、配对条、状态行、树头与树汇总用的键，代码拼出来的名字和语言文件里的名字对不上。
 
 ### 修复
+
+- **树整块点不动**：基准里「鼠标命中控件 → 调 `onClick`」是 AE2 `AbstractWidget#mouseClicked` 干的活，旧版 `Widget` 基类的 `mouseClicked` 只返回 `false`，于是 `P2PTreeWidget.onClick` 从头到尾没有调用者 —— 点设备行不选中、点频段行不展开、Ctrl 多选与框选起手也都没了。现在树的 `mouseClicked` 自己派发：左键落在树矩形内就调 `onClick` 并返回 `true`。
+- **滚动条被树吃掉点击**：滚动条的矩形压在树右缘的 14px 留白上，而事件的派发顺序是「树 → 滚动条」，树开始消费点击之后滑块就再也拖不动了。现在滚动条先于树判定（与基准里它是独立控件、后加的在上层一致）。
 
 - **界面显示原始翻译键**：`TranslateHelper.Keys` 里的键都是 `GUI_PREFIX + "advanced_memory_card.<组>."`，拼出来是双份命名空间的 `gui.advanced_memory_card.advanced_memory_card.<组>.*`。历史组（复制模式、检查器、按钮、状态、树、聊天、tooltip）的语言文件一直是双份，能对上；但 1.2.0 新加的 `action_bar` / `pair` / `status_line` / `p2p_type` 写成了单份，`tree` 与 `tree_col` 干脆没有写，于是这 39 个键在游戏里按原样显示。现在两语文件统一为双份命名空间，并补齐 `tree_col.{name,frequency,summary}` 与 `tree.{summary_channel,summary_channel_plain,summary_type,role_input,role_output,prefix_input,prefix_output}` 共 10 条新键。
 - **P2P 类型名的键前缀**：`P2PTypeNames` 的 `LANG_PREFIX` 同步改成双份命名空间，与其余各组保持一致。
