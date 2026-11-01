@@ -110,4 +110,19 @@ gui.advanced_memory_card.status_line.switched_to_input=已切换为输入端 %s
 gui.advanced_memory_card.status_line.switch_no_channel=频段 %s 无可用通道
 gui.advanced_memory_card.status_line.switch_already_input=已是输入端
 gui.advanced_memory_card.status_line.switch_failed=切换输入端失败
+# P2P 隧道类型名（1.7.10 的类型 token 是部件类名后缀，如 PartP2PTunnelME -> ME）
+gui.advanced_memory_card.p2p_type.p2p=P2P 隧道
+gui.advanced_memory_card.p2p_type.normal=P2P 隧道
+gui.advanced_memory_card.p2p_type.me=ME P2P 隧道
+gui.advanced_memory_card.p2p_type.redstone=红石 P2P 隧道
+gui.advanced_memory_card.p2p_type.items=物品 P2P 隧道
+gui.advanced_memory_card.p2p_type.light=光 P2P 隧道
+gui.advanced_memory_card.p2p_type.liquids=流体 P2P 隧道
+gui.advanced_memory_card.p2p_type.interface=接口 P2P 隧道
+gui.advanced_memory_card.p2p_type.sound=声音 P2P 隧道
+gui.advanced_memory_card.p2p_type.pressure=气压 P2P 隧道
+gui.advanced_memory_card.p2p_type.rfpower=RF P2P 隧道
+gui.advanced_memory_card.p2p_type.ic2power=IC2 P2P 隧道
+gui.advanced_memory_card.p2p_type.gt5power=GT5 电力 P2P 隧道
+gui.advanced_memory_card.p2p_type.opencomputers=OC P2P 隧道
 

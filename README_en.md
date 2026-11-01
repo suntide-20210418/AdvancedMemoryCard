@@ -2,14 +2,14 @@
 
 ![Minecraft Version](https://img.shields.io/badge/Minecraft-1.7.10-blue)
 ![Forge Version](https://img.shields.io/badge/Forge-10.13.4.1614-orange)
-![Mod Version](https://img.shields.io/badge/Version-1.2.0--1.7.10--GTNH-green)
+![Mod Version](https://img.shields.io/badge/Version-1.2.2--1.7.10--GTNH-green)
 ![License](https://img.shields.io/badge/License-GPL--3.0-green)
 
 **English** | [简体中文](README.md)
 
 An Applied Energistics 2 (AE2) add-on that enhances the AE2 Memory Card with two major features: **bulk configuration copying** and **advanced P2P tunnel management**.
 
-> **Current version: `1.2.0-1.7.10-GTNH`** · Minecraft 1.7.10 / Forge 10.13.4.1614
+> **Current version: `1.2.2-1.7.10-GTNH`** · Minecraft 1.7.10 / Forge 10.13.4.1614
 > See [CHANGELOG.md](CHANGELOG.md) for what changed.
 
 ## 🌟 Features
@@ -90,7 +90,7 @@ Right-click any **P2P tunnel part** to open the configuration GUI — a 440×312
 
 ### Steps
 
-1. Download `advanced_memory_card-1.2.0-1.7.10-GTNH.jar` from the releases page.
+1. Download `advanced_memory_card-1.2.2-1.7.10-GTNH.jar` from the releases page.
 2. Place the jar into Minecraft's `mods` folder.
 3. Make sure the dependencies above are installed, matching your modpack's versions.
 4. Launch the game and find the item under the "Advanced Memory Card" creative tab.

@@ -2,14 +2,14 @@
 
 ![Minecraft Version](https://img.shields.io/badge/Minecraft-1.7.10-blue)
 ![Forge Version](https://img.shields.io/badge/Forge-10.13.4.1614-orange)
-![Mod Version](https://img.shields.io/badge/Version-1.2.0--1.7.10--GTNH-green)
+![Mod Version](https://img.shields.io/badge/Version-1.2.2--1.7.10--GTNH-green)
 ![License](https://img.shields.io/badge/License-GPL--3.0-green)
 
 [简体中文](README.md) | **English**（见 [README_en.md](README_en.md)）
 
 一个 Applied Energistics 2（AE2）扩展模组，为 AE2 内存卡提供**批量复制**与**P2P 通道高级配置**两大增强功能。
 
-> **当前版本：`1.2.0-1.7.10-GTNH`** · Minecraft 1.7.10 / Forge 10.13.4.1614
+> **当前版本：`1.2.2-1.7.10-GTNH`** · Minecraft 1.7.10 / Forge 10.13.4.1614
 > 更新内容见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 🌟 功能特性
@@ -90,7 +90,7 @@
 
 ### 安装步骤
 
-1. 从发布页下载 `advanced_memory_card-1.2.0-1.7.10-GTNH.jar`。
+1. 从发布页下载 `advanced_memory_card-1.2.2-1.7.10-GTNH.jar`。
 2. 放入 Minecraft 的 `mods` 文件夹。
 3. 确保已安装上述前置模组，版本与整合包保持一致。
 4. 启动游戏，在创造模式物品栏「高级内存卡」标签页中找到该物品。

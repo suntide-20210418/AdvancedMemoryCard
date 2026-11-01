@@ -17,8 +17,8 @@ public final class P2PChannelUsage {
 
     public static final P2PChannelUsage NONE = new P2PChannelUsage(0, 0);
 
-    /** ME 隧道的类型 id（{@code IPartItem.getId(...).getPath()}） */
-    public static final String ME_TYPE = "me_p2p_tunnel";
+    /** ME 隧道的类型 token（{@code P2PManager.getP2PType}：{@code PartP2PTunnelME} → {@code ME}） */
+    public static final String ME_TYPE = "ME";
 
     public final int used;
     public final int max;

@@ -110,4 +110,19 @@ gui.advanced_memory_card.status_line.switched_to_input=Switched to input: %s
 gui.advanced_memory_card.status_line.switch_no_channel=Frequency %s has no available channel
 gui.advanced_memory_card.status_line.switch_already_input=Already an input
 gui.advanced_memory_card.status_line.switch_failed=Failed to switch to input
+# P2P tunnel type names (1.7.10 token is the part class suffix, e.g. PartP2PTunnelME -> ME)
+gui.advanced_memory_card.p2p_type.p2p=P2P Tunnel
+gui.advanced_memory_card.p2p_type.normal=P2P Tunnel
+gui.advanced_memory_card.p2p_type.me=ME P2P Tunnel
+gui.advanced_memory_card.p2p_type.redstone=Redstone P2P Tunnel
+gui.advanced_memory_card.p2p_type.items=Item P2P Tunnel
+gui.advanced_memory_card.p2p_type.light=Light P2P Tunnel
+gui.advanced_memory_card.p2p_type.liquids=Fluid P2P Tunnel
+gui.advanced_memory_card.p2p_type.interface=Interface P2P Tunnel
+gui.advanced_memory_card.p2p_type.sound=Sound P2P Tunnel
+gui.advanced_memory_card.p2p_type.pressure=Pressure P2P Tunnel
+gui.advanced_memory_card.p2p_type.rfpower=RF P2P Tunnel
+gui.advanced_memory_card.p2p_type.ic2power=IC2 P2P Tunnel
+gui.advanced_memory_card.p2p_type.gt5power=GT5 Power P2P Tunnel
+gui.advanced_memory_card.p2p_type.opencomputers=OpenComputers P2P Tunnel
 

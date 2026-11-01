@@ -4,6 +4,22 @@
 
 ---
 
+## 1.2.2-1.7.10-GTNH — 2026-11-01
+
+**Minecraft** 1.7.10 · **Forge** 10.13.4.1614 · **AE2** GTNH Applied-Energistics-2-Unofficial rv3
+
+修复 1.2.1 里同一张界面剩下的第二个崩溃点：类型名解析走了 1.7.10 用不上的物品注册表；顺带把 P2P 类型名与 ME 类型判断改对。
+
+### 修复
+
+- **配置模式界面崩溃（`ClassCastException`）**：渲染 P2P 树的类型行时，`P2PTypeNames` 用 `ResourceLocation` 去查 1.7.10 的物品注册表，而这张表的键是 `String`，`RegistryNamespaced.getObject(Object)` 会先做强转，于是抛 `ResourceLocation cannot be cast to String`，客户端在 `Rendering screen` 阶段崩溃。现在类型名只查本模组自己的语言键，不再碰注册表。
+- **类型名显示成类名**：`P2PManager.getP2PType` 只剥掉了 `PartP2PTunnel` 前缀，`PartP2PRedstone` / `PartP2PItems` 这类部件会把 `PartP2PRedstone` 原样画到树上。现在两个前缀都剥掉，配合新增的 14 条 `gui.advanced_memory_card.p2p_type.*` 语言键（中英各一份），树上显示「红石 P2P 隧道」「物品 P2P 隧道」等名称；第三方模组的 P2P 部件查不到译名时退回原始 token。
+- **ME 频道的占用数字不显示**：`P2PChannelUsage.ME_TYPE` 沿用基准的 `me_p2p_tunnel`，而 1.7.10 的类型 token 是 `ME`，两者永远不相等，导致 ME 频道的占用统计与检查器里的 ME 判定一直失效。现在统一为 `ME`，输出端设备行与频道行重新显示占用数字。
+
+### 改进
+
+- **配置模式树**：类型行不再有 `PartP2P` 前缀噪声，同一类型下 ME / 普通隧道分组名与其他界面（检查器「类型」一行）保持一致。
+
 ## 1.2.1-1.7.10-GTNH — 2026-11-01
 
 **Minecraft** 1.7.10 · **Forge** 10.13.4.1614 · **AE2** GTNH Applied-Energistics-2-Unofficial rv3

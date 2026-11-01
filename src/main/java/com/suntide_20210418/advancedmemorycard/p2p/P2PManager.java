@@ -580,8 +580,13 @@ public class P2PManager {
     public static String getP2PType(PartP2PTunnel p2pPart) {
         String name = p2pPart.getClass()
             .getSimpleName();
+        // AE2 rv3 的隧道部件有两套命名：PartP2PTunnelME / PartP2PTunnelNormal，
+        // 以及 PartP2PRedstone / PartP2PItems 这类。两个前缀都要剥掉，否则界面上
+        // 会显示成 "PartP2PRedstone" 这种类名。
         if (name.startsWith("PartP2PTunnel")) {
             name = name.substring("PartP2PTunnel".length());
+        } else if (name.startsWith("PartP2P")) {
+            name = name.substring("PartP2P".length());
         }
         return name.isEmpty() ? "P2P" : name;
     }

@@ -7,7 +7,7 @@
 | 分支 | `suntide/1.7.10-GTNH` |
 | 加载器 / Java | GTNH Forge 10.13.4.1614 / JDK 25 + jabel（编译到 Java 8 字节码） |
 | AE2 | GTNH rv3 fork |
-| 版本 | `1.1.0-1.7.10-GTNH` → `1.2.1-1.7.10-GTNH`（已实现，见第七节） |
+| 版本 | `1.1.0-1.7.10-GTNH` → `1.2.2-1.7.10-GTNH`（已实现，见第七节） |
 | 优先级 | **P3**，1.12.2 的契约层与树完成后实施（实际执行顺序与文档规划相反，见第七节第 2 条） |
 
 ---
@@ -25,7 +25,7 @@
 
 ### 1.2 能力范围与降级
 
-18 项能力全部可实现。四条平台级降级：
+18 项能力全部可实现。五条平台级降级：
 
 | 能力 | 降级方式 | 原因 |
 | --- | --- | --- |
@@ -33,6 +33,7 @@
 | F7 频段列 | 别名优先；无别名画 `…` + 末 6 位 | 16 位 hex 约 96px，40px 列放不下 |
 | F11 框选收尾 | 用 `mouseMovedOrUp(button >= 0)` 判定释放 | rv3 的 `GuiScreen` **没有** `mouseReleased` |
 | F16 语义色板 | 文字色只能 RGB | 同 1.12.2 |
+| F10 类型显示名 | 类型 token 是部件类名后缀（`PartP2PTunnelME` → `ME`、`PartP2PRedstone` → `Redstone`），显示名查本模组的 `gui.advanced_memory_card.p2p_type.*` | rv3 的 P2P 隧道是同一个物品（`ItemMultiPart`）的多个 damage，物品注册表里没有按变体区分的键；用 `ResourceLocation` 查物品注册表还会 `ClassCastException`（见实施备注 8） |
 
 另有一条**不是降级但必须保留**的历史包袱：`ConfigModeMenu` 有 36 个离屏背包槽位（放在 -10000）。这是为了规避 1.7.10 零槽位容器在 `NetHandlerPlayServer` 上的空指针，属**禁改区**。
 
@@ -308,6 +309,7 @@ GTNH 约定会强制重排从 1.12.2 复制来的文件（import 顺序为 `java
 | 2026-11-01 | 阶段 0（`8619b75`）、自绘脚手架（`38b1d60`）、服务端语义与协议（`8ca5770`）、四列树（`a061228`）、界面总装（`2bd55ab`）全部完成。`2bd55ab` 把业务改动与 `spotlessApply` 放在同一提交，没有按 §4.1 拆成 `style:` + 业务两个提交 |
 | 2026-11-01 | 阶段 G 收尾：`README.md` / `README_en.md` 重写为 1.7.10 真实内容（原来是从 1.20.1 复制的错误版本）、新建 `CHANGELOG.md`、补 `shortFrequency()` 与频道键查找修复（见实施备注 3、4）、两语键集合一致（各 109 键）、`spotlessCheck` 通过、发版 `1.2.0-1.7.10-GTNH` |
 | 2026-11-01 | `1.2.1-1.7.10-GTNH`：实机打开配置模式界面即崩（`Ticking screen` / `NumberFormatException: For input string: "000001A13FF44AA4" under radix 16`，`P2PTreeWidget.buildDefaultTree` 的频道排序）。全部频段比较改为 64 位无符号（`ChannelInfo.compareFrequency`），服务端频段解析改 `Long.parseUnsignedLong`（见实施备注 7） |
+| 2026-11-01 | `1.2.2-1.7.10-GTNH`：再崩一次（`Rendering screen` / `ClassCastException: ResourceLocation cannot be cast to String`，`P2PTypeNames.resolveLangKey` 拿 `ResourceLocation` 查以 String 为键的 1.7.10 物品注册表）。类型名彻底改为查本模组语言键，并统一类型 token 与 `ME_TYPE`（见实施备注 8、§1.2 F10 行） |
 
 ### 实施备注
 
@@ -318,6 +320,7 @@ GTNH 约定会强制重排从 1.12.2 复制来的文件（import 顺序为 `java
 5. 36 个离屏背包槽位未动（禁改区）。
 6. **全程没有实机视觉验证**：`compileJava` 与 `spotlessCheck` 通过、CI 绿，但批量绑定后的状态点颜色、右键折叠（只在批量模式 + 频道行生效）、Ctrl 框选、跨维度传送、静止时 `syncVersion` 节流都只在代码层核对过。§6.3 的 V-5（零槽位容器是否真的触发空指针）与 V-6（`MinecraftServer` 任务调度入口）仍未实测。
 7. **频段比较必须按 64 位无符号（`1.2.1` 崩溃根因）**：1.7.10 的频段是 `long`，服务端以 `String.format("%016X", freq)` 下发，最长 16 位十六进制。树里原先用 `Integer.parseInt(frequency, 16)` 排序频道，遇到 `000001A13FF44AA4` 直接抛 `NumberFormatException`，而这条排序正好在界面 tick 的 `updateScreen` → `tryAutoNavigateToPendingBind` → `navigateToP2P` → `rebuildTree` 链上，于是客户端 `Ticking screen` 崩溃。现在统一走 `ChannelInfo.compareFrequency`（`Long.parseUnsignedLong` + `Long.compareUnsigned`，脏数据退化为长度 + 字典序）；`P2PManager.parseFrequency` 也改成 `Long.parseUnsignedLong`，最高位为 1 的频段不再被误判为「未绑定」。**后续任何按频段数值排序/解析的地方都必须用无符号 64 位**，不能用 `int`。
+8. **类型 token 不是注册表路径（`1.2.2` 崩溃根因）**：`P2PTypeNames` 原先照抄基准，用 `new ResourceLocation("ae2", typePath)` 查 `Item.itemRegistry` 再取物品译名。1.7.10 的注册表键是 **String**，`RegistryNamespaced.getObject(Object)` 会先强转 `(String)`，于是渲染类型行时直接 `ClassCastException`（`Rendering screen` 崩溃）；即便不崩，rv3 的 P2P 隧道是 `ItemMultiPart` 的多个 damage，AE2 的语言文件里只有一条通用 `item.appliedenergistics2.ItemPart.P2PTunnel.name`，按变体查也查不到。现在 `P2PTypeNames` 只查 `gui.advanced_memory_card.p2p_type.<小写 token>`（14 条，中英各一份），查不到退回原始 token；`P2PManager.getP2PType` 同时剥掉 `PartP2PTunnel` 与 `PartP2P` 两个前缀（否则界面上会出现 `PartP2PRedstone` 这种类名）；`P2PChannelUsage.ME_TYPE` 从 `me_p2p_tunnel` 改成 `ME`，ME 频道的占用数字与 `DetailPanelWidget.isMEP2P` 才重新有效。**后续任何「类型 → 显示名」的实现都不能碰 1.7.10 的物品注册表。**
 
 ---
 
