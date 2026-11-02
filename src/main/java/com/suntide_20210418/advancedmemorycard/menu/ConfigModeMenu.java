@@ -25,6 +25,7 @@ import com.suntide_20210418.advancedmemorycard.config.ModConfigs;
 import com.suntide_20210418.advancedmemorycard.network.ConfigModeActionPacket;
 import com.suntide_20210418.advancedmemorycard.network.ConfigModeSyncPacket;
 import com.suntide_20210418.advancedmemorycard.network.NetworkHandler;
+import com.suntide_20210418.advancedmemorycard.network.ServerTaskQueue;
 import com.suntide_20210418.advancedmemorycard.p2p.ChannelInfo;
 import com.suntide_20210418.advancedmemorycard.p2p.P2PInfo;
 import com.suntide_20210418.advancedmemorycard.p2p.P2PManager;
@@ -315,6 +316,24 @@ public class ConfigModeMenu extends Container implements ConfigModeActionPacket.
         player.setPositionAndUpdate(x + 0.5D, y + 1.0D, z + 0.5D);
         player.playerNetServerHandler
             .setPlayerLocation(x + 0.5D, y + 1.0D, z + 0.5D, player.rotationYaw, player.rotationPitch);
+
+        // 客户端渲染高亮要等目标区块加载；传送刚完成时可能还没到。2 秒 / 4 秒各补发
+        // 一次 HighlightPacket —— 走的是与「高亮」按钮完全相同的路径，不依赖客户端 tick 任务。
+        final PartP2PTunnel target = p2pPart;
+        ServerTaskQueue.enqueueDelayed(new Runnable() {
+
+            @Override
+            public void run() {
+                if (p2pManager != null) p2pManager.renderP2P(target);
+            }
+        }, 40);
+        ServerTaskQueue.enqueueDelayed(new Runnable() {
+
+            @Override
+            public void run() {
+                if (p2pManager != null) p2pManager.renderP2P(target);
+            }
+        }, 80);
     }
 
     // ==================== 构建并发送同步数据包 ====================

@@ -30,6 +30,20 @@ public final class ServerTaskQueue {
 
     private static final Queue<Runnable> TASKS = new ConcurrentLinkedQueue<>();
 
+    /** 需要等 N 个服务端 tick 再执行的任务（例如传送后等客户端把目标区块加载出来）。 */
+    private static final Queue<DelayedTask> DELAYED = new ConcurrentLinkedQueue<>();
+
+    private static final class DelayedTask {
+
+        final Runnable task;
+        int ticksLeft;
+
+        DelayedTask(Runnable task, int ticksLeft) {
+            this.task = task;
+            this.ticksLeft = ticksLeft;
+        }
+    }
+
     /**
      * 必须有实例可注册。1.7.10 的 FML {@code EventBus} 只有 {@code register(Object)}，
      * 没有 {@code register(Class<?>)} 重载；传 {@code ServerTaskQueue.class} 时，
@@ -45,6 +59,11 @@ public final class ServerTaskQueue {
         TASKS.add(task);
     }
 
+    /** 延迟 {@code ticks} 个服务端 tick 再执行；线程安全，任意线程可调用。 */
+    public static void enqueueDelayed(Runnable task, int ticks) {
+        DELAYED.add(new DelayedTask(task, Math.max(1, ticks)));
+    }
+
     /** 在 {@code AdvancedMemoryCardMod#preInit} 注册到 FML 总线。 */
     public static void register() {
         FMLCommonHandler.instance()
@@ -54,17 +73,33 @@ public final class ServerTaskQueue {
 
     @SubscribeEvent
     public void onServerTick(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || TASKS.isEmpty()) {
+        if (event.phase != TickEvent.Phase.END) {
             return;
         }
-        Iterator<Runnable> it = TASKS.iterator();
-        while (it.hasNext()) {
-            Runnable task = it.next();
-            it.remove();
-            try {
-                task.run();
-            } catch (RuntimeException e) {
-                LOGGER.warn("Server task failed", e);
+        if (!TASKS.isEmpty()) {
+            Iterator<Runnable> it = TASKS.iterator();
+            while (it.hasNext()) {
+                Runnable task = it.next();
+                it.remove();
+                try {
+                    task.run();
+                } catch (RuntimeException e) {
+                    LOGGER.warn("Server task failed", e);
+                }
+            }
+        }
+        if (!DELAYED.isEmpty()) {
+            Iterator<DelayedTask> it = DELAYED.iterator();
+            while (it.hasNext()) {
+                DelayedTask delayed = it.next();
+                if (--delayed.ticksLeft <= 0) {
+                    it.remove();
+                    try {
+                        delayed.task.run();
+                    } catch (RuntimeException e) {
+                        LOGGER.warn("Delayed server task failed", e);
+                    }
+                }
             }
         }
     }

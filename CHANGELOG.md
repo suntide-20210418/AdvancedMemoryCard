@@ -40,6 +40,10 @@
 
 - **批量模式多选只绑定一台**：多选集合的键 `positionKey` 用 `info.dimension()`（维度名，如 `Overworld`）拼 `P2PPosition`，而 `p2pInfoMap` 的键用的是 `String.valueOf(dimensionId)`（如 `0`）；`P2PPosition.equals` 又把 dimension 纳入比较，于是 `p2pInfoMap.get(key)` 全部落空，`getSourceCandidates()` 退回单选的 `selectedP2PInfo`，`doBind()` 只发 `bind_frequency` 而不是 `bind_frequency_batch`。现在 `positionKey` 统一用维度 id 字符串，多选反查能拿全所有设备。
 
+### 修复（传送高亮）
+
+- **传送后仍不亮（客户端延迟任务未触发）**：保留客户端 `ClientTickTasks` 的落地判定，同时由服务端在传送后 2 秒 / 4 秒各补发一次 `HighlightPacket`，复用「高亮」按钮那条已经验证可用的渲染路径。这样即使客户端 tick 任务因维度切换、加载界面或区块未就绪没有跑到，也能在区块加载完后点亮目标。
+
 ### 新增
 
 - **传送落地后点亮目标 P2P**：传送发包后界面立即关闭，但此时坐标还是旧的，跨维度时新维度的区块也还没加载，直接点亮会拿不到部件。现在用 `ClientTickTasks` 每 tick 探一次「落点 + 目标部件可查」（客户端世界维度一致、距方块中心 2 格内、`findPart` 能找到部件），真正到达并加载后再点亮目标，并在 `rotateHeadOnHighlight` 开启时转头；10 秒超时。只判坐标会在"坐标先到、区块后到"的窗口里把高亮静默丢掉，这是上一次修复后传送仍不显示的原因。
