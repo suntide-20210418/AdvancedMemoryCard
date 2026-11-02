@@ -16,6 +16,11 @@ public final class ConfigUiLayout {
     /** 面板尺寸（贴图 srcRect，也是整体内容区）。 */
     public static final int PANEL_W = 440;
     public static final int PANEL_H = 312;
+    /** 底图图集尺寸：贴图是 512×512，绘制时取左上 440×312。 */
+    public static final int PANEL_TEX_SIZE = 512;
+
+    /** 标题文字左上角（对应 JSON 的 {@code text.title.position}）。 */
+    public static final Rect TITLE = new Rect(7, 7, 0, 0);
 
     /** 顶部「源 → 目标」配对条。 */
     public static final Rect PAIR_BAR = new Rect(10, 20, 420, 52);
