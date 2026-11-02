@@ -4,6 +4,7 @@ import appeng.parts.p2p.PartP2PTunnel;
 import com.suntide_20210418.advancedmemorycard.client.renderer.P2PRenderer;
 import com.suntide_20210418.advancedmemorycard.config.ModConfigs;
 import com.suntide_20210418.advancedmemorycard.network.HighlightPacket;
+import com.suntide_20210418.advancedmemorycard.p2p.P2PInfo;
 import com.suntide_20210418.advancedmemorycard.p2p.P2PPosition;
 import net.minecraft.client.Minecraft;
 import net.minecraft.tileentity.TileEntity;
@@ -37,6 +38,19 @@ public final class ClientHighlightHandler {
                 }
             }
         });
+    }
+
+    /**
+     * 客户端本地点亮一台 P2P（用于传送落地后的目标提示），不经过服务端。
+     * 直接复用 {@link #findPart}：维度必须用 id 字符串，和同步包 map 键一致。
+     */
+    public static void highlight(P2PInfo info) {
+        if (info == null) return;
+        PartP2PTunnel part = findPart(
+            new P2PPosition(info.position(), info.direction(), String.valueOf(info.dimensionId())));
+        if (part != null) {
+            P2PRenderer.getInstance().triggerRender(part, resolveColor(HighlightPacket.TYPE_SELF));
+        }
     }
 
     /** 按客户端本地配置解析高亮类型对应的颜色 */

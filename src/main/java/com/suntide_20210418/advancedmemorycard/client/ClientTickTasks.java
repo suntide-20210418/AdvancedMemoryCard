@@ -33,6 +33,13 @@ public final class ClientTickTasks {
 
     private static final List<Task> TASKS = new ArrayList<>();
 
+    /**
+     * 必须注册实例：1.12.2 的 FML {@code EventBus} 只有 {@code register(Object)}，
+     * 传 {@code ClientTickTasks.class} 会去扫描 {@code java.lang.Class} 的方法，
+     * {@code onClientTick} 根本不会被注册，所有延迟任务都不会执行。
+     */
+    private static final ClientTickTasks INSTANCE = new ClientTickTasks();
+
     private ClientTickTasks() {}
 
     private static final class Task {
@@ -63,11 +70,11 @@ public final class ClientTickTasks {
     public static void register() {
         FMLCommonHandler.instance()
             .bus()
-            .register(ClientTickTasks.class);
+            .register(INSTANCE);
     }
 
     @SubscribeEvent
-    public static void onClientTick(TickEvent.ClientTickEvent event) {
+    public void onClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase != TickEvent.Phase.END || TASKS.isEmpty()) {
             return;
         }

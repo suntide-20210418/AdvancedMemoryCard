@@ -15,6 +15,11 @@
 - **树整块点不动**：基准里「鼠标命中控件 → 调 `onClick`」是 AE2 `AbstractWidget#mouseClicked` 干的活，旧版 `Widget` 基类的 `mouseClicked` 只返回 `false`，于是 `P2PTreeWidget.onClick` 从头到尾没有调用者 —— 点设备行不选中、点频段行不展开、Ctrl 多选与框选起手也都没了。现在树的 `mouseClicked` 自己派发：左键落在树矩形内就调 `onClick` 并返回 `true`。
 - **滚动条被树吃掉点击**：滚动条的矩形压在树右缘的 14px 留白上，而事件的派发顺序是「树 → 滚动条」，树开始消费点击之后滑块就再也拖不动了。现在滚动条先于树判定。
 - **批量模式多选只绑定一台**：多选集合的键 `positionKey` 用 `info.dimension()`（维度名，如 `overworld`）拼 `P2PPosition`，而 `p2pInfoMap` 的键用的是 `String.valueOf(dimensionId)`（如 `0`）；`P2PPosition.equals` 又把 dimension 纳入比较，于是 `p2pInfoMap.get(key)` 全部落空，`getSourceCandidates()` 退回单选的 `selectedP2PInfo`，`doBind()` 只发 `bind_frequency` 而不是 `bind_frequency_batch`。现在 `positionKey` 统一用维度 id 字符串，多选反查能拿全所有设备。
+- **客户端延迟任务不执行**：`ClientTickTasks.register()` 把 `ClientTickTasks.class` 传给 FML 的 `EventBus.register(Object)`；1.12.2 没有 `register(Class<?>)` 重载，扫描的是 `java.lang.Class` 的方法，`onClientTick` 从未注册。改为注册单例实例。传送落地后的点亮就依赖这个队列。
+
+### 新增
+
+- **传送落地后点亮目标 P2P**：传送发包后界面立即关闭，但此时坐标还是旧的，跨维度时新维度的区块也还没加载，直接点亮会拿不到部件。现在用 `ClientTickTasks` 每 tick 探一次落点（维度一致 + 距方块中心 2 格内），真正到达后再点亮目标，并在 `rotateHeadOnHighlight` 开启时转头；5 秒未到达则自动放弃。
 
 ## 1.2.0-1.12.2 — 2026-11-01
 

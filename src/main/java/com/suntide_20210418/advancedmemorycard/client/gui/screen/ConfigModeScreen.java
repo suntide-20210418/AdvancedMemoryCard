@@ -13,6 +13,7 @@ import net.minecraft.util.math.BlockPos;
 
 import org.lwjgl.input.Mouse;
 
+import com.suntide_20210418.advancedmemorycard.client.ClientTickTasks;
 import com.suntide_20210418.advancedmemorycard.client.gui.ConfigUiLayout;
 import com.suntide_20210418.advancedmemorycard.client.gui.GuiDraw;
 import com.suntide_20210418.advancedmemorycard.client.gui.menu.ConfigModeMenu;
@@ -20,6 +21,7 @@ import com.suntide_20210418.advancedmemorycard.client.gui.widgets.ActionBarWidge
 import com.suntide_20210418.advancedmemorycard.client.gui.widgets.DetailPanelWidget;
 import com.suntide_20210418.advancedmemorycard.client.gui.widgets.P2PTreeWidget;
 import com.suntide_20210418.advancedmemorycard.client.gui.widgets.PairBarWidget;
+import com.suntide_20210418.advancedmemorycard.client.network.ClientHighlightHandler;
 import com.suntide_20210418.advancedmemorycard.config.ModConfigs;
 import com.suntide_20210418.advancedmemorycard.network.ConfigModeSyncPacket;
 import com.suntide_20210418.advancedmemorycard.network.NetworkHandler;
@@ -45,6 +47,10 @@ public class ConfigModeScreen extends GuiContainer {
     private GuiTextField searchField;
 
     private static final int UPDATE_ITEM_INFO_INTERVAL = 10;
+    /** 传送后等落点同步的最长 tick 数（5 秒）：跨维度换维度 + 加载区块都在这个窗口里。 */
+    private static final int TELEPORT_ARRIVAL_TIMEOUT_TICKS = 100;
+    /** 落点判定半径的平方：玩家与设备的方块中心在 2 格内即认为已经站到了目标处。 */
+    private static final double TELEPORT_ARRIVAL_DIST_SQR = 4.0;
     private int updateItemInfoCooldown = 0;
     private P2PInfo lastNavigatedP2P = null;
 
@@ -116,7 +122,20 @@ public class ConfigModeScreen extends GuiContainer {
 
             @Override
             public void onTeleportP2P(P2PInfo p2pInfo) {
+                if (p2pInfo == null) return;
+                // 先发包再关界面：传送由服务端执行，界面留着会挡住落点，
+                // 玩家会以为按钮没反应。基准 1.21.1 的 doTeleport 同样在这里关界面。
                 actionTeleportP2P(p2pInfo);
+                Minecraft.getMinecraft()
+                    .displayGuiScreen(null);
+                // 不能紧接着点亮：发包时坐标还是旧的，跨维度时新维度的区块也还没加载，
+                // 这时 findPart 拿不到部件。交给客户端 tick 任务，真正落地后再点亮。
+                ClientTickTasks.when(mc -> hasArrivedAt(mc, p2pInfo), () -> {
+                    ClientHighlightHandler.highlight(p2pInfo);
+                    if (ModConfigs.getClientConfig().rotateHeadOnHighlight) {
+                        rotatePlayerTowardsP2P(p2pInfo);
+                    }
+                }, TELEPORT_ARRIVAL_TIMEOUT_TICKS);
             }
 
             @Override
@@ -280,6 +299,22 @@ public class ConfigModeScreen extends GuiContainer {
 
     public void actionSwitchToInput(P2PInfo p2pInfo) {
         menu.dispatchClientAction("switch_to_input", encodeP2PPosition(p2pInfo));
+    }
+
+    /**
+     * 玩家是否已经落到目标 P2P 旁：维度一致，且与方块中心距离在 2 格内。
+     * 服务端的落点是 (x+0.5, y+1.0, z+0.5)，正常情况距离约 1 格。
+     */
+    private static boolean hasArrivedAt(Minecraft mc, P2PInfo info) {
+        if (mc == null || mc.player == null || info == null) return false;
+        if (mc.player.dimension != info.dimensionId()) return false;
+        double dx = mc.player.posX - (info.position()
+            .getX() + 0.5);
+        double dy = mc.player.posY - info.position()
+            .getY();
+        double dz = mc.player.posZ - (info.position()
+            .getZ() + 0.5);
+        return dx * dx + dy * dy + dz * dz <= TELEPORT_ARRIVAL_DIST_SQR;
     }
 
     private void rotatePlayerTowardsP2P(P2PInfo p2pInfo) {
