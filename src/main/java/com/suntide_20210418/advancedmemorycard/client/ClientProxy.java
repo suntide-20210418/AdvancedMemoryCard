@@ -38,6 +38,8 @@ public class ClientProxy extends CommonProxy {
         FMLCommonHandler.instance()
             .bus()
             .register(new KeyEvent());
+        // 传送落点判定等「等条件成立再做」的延迟任务
+        ClientTickTasks.register();
         MinecraftForge.EVENT_BUS.register(P2PRenderer.getInstance());
         MinecraftForge.EVENT_BUS.register(new CopyModeRenderer());
     }

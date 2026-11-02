@@ -35,11 +35,15 @@ public class P2PPosition {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         P2PPosition that = (P2PPosition) o;
-        return Objects.equals(position, that.position) && direction == that.direction;
+        // 维度必须参与比较：主世界与下界可以存在同坐标、同朝向的两台 P2P。
+        // 只比坐标会把它们并成同一个键 —— 多选集合永远只选中一台，按位置反查
+        // 设备也会命中错误的那一台。
+        return Objects.equals(position, that.position) && direction == that.direction
+            && Objects.equals(dimension, that.dimension);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(position, direction);
+        return Objects.hash(position, direction, dimension);
     }
 }

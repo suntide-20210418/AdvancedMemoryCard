@@ -40,4 +40,5 @@ layout.json
 /gradle_ver.log
 
 # GTNH addon 模板自带的搬运说明（FAQ/porting/migration），与本模组无关
-/docs/
+/docs/*
+!/docs/config-ui-porting.md

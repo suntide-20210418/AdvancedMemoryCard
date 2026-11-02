@@ -12,8 +12,8 @@ public class FlatButton {
 
     private int x;
     private int y;
-    private final int width;
-    private final int height;
+    private int width;
+    private int height;
     private String label;
     private final Runnable onClickAction;
 
@@ -59,6 +59,14 @@ public class FlatButton {
         return height;
     }
 
+    public void setWidth(int width) {
+        this.width = width;
+    }
+
+    public void setHeight(int height) {
+        this.height = height;
+    }
+
     public boolean isMouseOver(int mouseX, int mouseY) {
         return mouseX >= x && mouseX <= x + width && mouseY >= y && mouseY <= y + height;
     }
@@ -88,6 +96,11 @@ public class FlatButton {
     }
 
     public boolean mouseReleased(int mouseX, int mouseY, int button) {
+        // 只认左键：1.7.10 的 mouseMovedOrUp 会用 -1 表示“纯移动”，
+        // 右键（1）也不该把按下态的左键按钮当成释放。
+        if (button != 0) {
+            return false;
+        }
         if (pressed) {
             pressed = false;
             if (isMouseOver(mouseX, mouseY)) {

@@ -1,50 +1,80 @@
 # Advanced Memory Card
 
-![Minecraft Version](https://img.shields.io/badge/Minecraft-1.20.1-blue)
-![Forge Version](https://img.shields.io/badge/Forge-47.4.10-orange)
-![Mod Version](https://img.shields.io/badge/Version-1.1.1-green)
+![Minecraft Version](https://img.shields.io/badge/Minecraft-1.7.10-blue)
+![Forge Version](https://img.shields.io/badge/Forge-10.13.4.1614-orange)
+![Mod Version](https://img.shields.io/badge/Version-1.2.0--1.7.10--GTNH-green)
 ![License](https://img.shields.io/badge/License-GPL--3.0-green)
 
 **English** | [简体中文](README.md)
 
-An Applied Energistics 2 (AE2) add-on mod that supercharges the AE2 Memory Card with two major features: **bulk configuration copying** and **advanced P2P tunnel management**.
+An Applied Energistics 2 (AE2) add-on that enhances the AE2 Memory Card with two major features: **bulk configuration copying** and **advanced P2P tunnel management**.
+
+> **Current version: `1.2.0-1.7.10-GTNH`** · Minecraft 1.7.10 / Forge 10.13.4.1614
+> See [CHANGELOG.md](CHANGELOG.md) for what changed.
 
 ## 🌟 Features
 
 ### 🔧 Two Working Modes
 
-The mod stores its state as a "mode" inside the item's NBT, and you can switch between them at any time:
+The mod stores its state as a "mode" inside the item's NBT, and you can switch between the two at any time:
 
 | Mode | Description |
 | --- | --- |
 | **Copy Mode** | Select a region and paste a copied AE2 device configuration onto every AE2 block and part inside it at once |
-| **Config Mode (P2P Tunnel Config)** | Right-click a P2P tunnel part to open a GUI for centrally managing and configuring P2P tunnels within the network |
+| **Config Mode (P2P Channel Management)** | Right-click a P2P tunnel part to open a GUI for centrally managing and configuring P2P tunnels in the network |
 
 ### 📋 Copy Mode
 
-- **Bulk region copy**: Copy a single AE2 device's configuration first, then select two opposite corner blocks to define a region, and right-click on air to apply the config in bulk.
-- **Supports AE2 blocks and parts**: Every `AEBaseBlockEntity` (ME controllers, interfaces, storage buses, etc.) and every part on an `IPartHost` within the region is processed.
-- **Volume limit protection**: If the region volume exceeds the server config `maxCopyVolume` (default 2048 blocks), the paste is rejected with a message to prevent accidental oversized selections and lag.
-- **Visual selection box**: The selection is color-coded in real time (red = pick first point / white = pick second point / green = ready to paste), with distinct colors for the targeted block and out-of-range blocks.
-- **Real-time feedback**: The item tooltip and chat bar display marked coordinates, region size, and the number of blocks pasted.
+- **Bulk region copy**: Copy a single AE2 device's configuration into the card first, then select two opposite corner blocks to define a region and right-click on air to apply the configuration in bulk.
+- **Supports AE2 blocks and parts**: Every `AEBaseTile` in the region (ME controllers, interfaces, storage buses, etc.) as well as every part on an `IPartHost` is processed.
+- **Volume limit protection**: If the region volume exceeds the server config `maxCopyVolume` (2048 blocks by default), the paste is rejected with a message, so a huge accidental selection cannot stall the game.
+- **Visual selection box**: The selection is color-coded in real time (red = first point / white = second point / green = ready to paste), with separate colors for the targeted block and for blocks outside the limit.
+- **Real-time feedback**: the chat bar reports marked coordinates, region size and how many blocks were actually pasted, while the item tooltip shows the current mode.
+- **Options panel pops up after copying**: After each successful copy, a per-card switch decides whether the panel opens immediately, so you can adjust what this paste should apply.
 
-### 🕸 Config Mode (P2P Tunnel Config)
+#### Paste Options (7 items, saved per card)
 
-Right-click any **P2P tunnel part** to open the configuration GUI and visually manage all P2P devices in the current AE network:
+| Option | Effect |
+| --- | --- |
+| Settings | Output face, fuzzy mode and other general settings |
+| Priority | Priority of storage buses / interfaces |
+| Config items | Contents of filter, marking and similar config slots |
+| Patterns | The interface's pattern slots |
+| P2P type | P2P tunnel type (if ticked and different from the target, the part is torn down and rebuilt) |
+| P2P frequency | P2P frequency |
+| Name | The block's custom name |
 
-- **P2P tree list**: Automatically scans the network and displays all P2P devices grouped by type / channel, with expand/collapse and search filtering.
-- **Detail panel**: Selecting a node shows its type, frequency, input/output role, connection status, and more.
-- **Rename / alias**: Set a custom name for an individual P2P device, or set an alias for an entire channel (the channel's input side) for easy identification.
-- **Bind frequency**: Bind the selected P2P to a specific 4-digit hexadecimal frequency (e.g. `0A1B`). Non-ME P2Ps automatically and intelligently determine their input/output role.
-- **Assign new channel**: Assign a brand-new free frequency to the selected non-ME P2P and set it as the input side with one click.
-- **Auto-configure input/output (ME P2P only)**: Automatically decides whether an ME P2P should act as input or output based on whether its external network is connected to an ME Controller, and assigns a frequency automatically.
-- **Highlight & locate**: Highlights P2P tunnels in the world (self / input / output rendered in different colors), optionally auto-turns your head toward the target, and sends location info and a teleport link to the chat bar.
-- **Cross-dimension connections**: Fixes the vanilla issue where the client only sent coordinates, making cross-dimension P2Ps impossible to locate. The encoding now carries dimension info, allowing P2P devices to be correctly located and highlighted across dimensions.
+- **Unticked items keep the target's current value** instead of being cleared — the biggest difference from AE2's own memory card, and the reason this mod writes every section itself through `SettingsApplier` rather than reusing `uploadSettings`, which clears a section as soon as the key is missing.
+- **A fresh card has nothing ticked**: press `G` to open the panel and pick the items on first use; with an empty mask, pasting only prints a hint and does not consume the selection.
+- **"Patterns" has no effect on 1.7.10**: AE2 rv3's `downloadSettings` only writes `display` / `configManager` / `priority` / `config`, and patterns belong to the save path, so they never reach the memory card. The option stays on the panel, but ticking it will not change the target.
+- **"Name" applies to blocks only**: the part side has no `display` section, so part names stay as they are.
 
-### ⌨️ Mode Switching
+### 🕸 Config Mode (P2P Channel Management)
 
-- **`V` key** (default, rebindable in the game's Controls settings) — press while holding the Advanced Memory Card to switch modes.
-- **Shift + Right-click** — quickly switch between the two modes (in Copy Mode, Shift + Right-click performs the native AE2 copy action instead of switching).
+Right-click any **P2P tunnel part** to open the configuration GUI — a 440×312 custom-drawn panel — and manage every P2P device in the current AE network visually:
+
+- **Four-column P2P tree**: status dot / name / frequency / summary, grouped by type and channel, with expand-collapse and search filtering (a search matches the full frequency hex).
+- **Pairing bar**: "source → target + frequency dropdown" at the top; pick a source, a target and a frequency to bind in one go.
+- **Inspector**: the right-hand side shows the selected device's frequency, role, connection state and channel alias, plus buttons to rename, switch to input, teleport and highlight.
+- **Batch binding**: Ctrl-click a non-device row to enter batch mode, box-select several devices and bind them all to one frequency at once; the status line reports "batch succeeded" or "partially succeeded".
+- **64-bit frequencies**: a frequency is a 64-bit integer, shown and passed around as **16 hex digits** (e.g. `A3F019B7C2D40815`). Pick the target frequency from the dropdown in the pairing bar; without an alias the tree shows only `…` plus the last 6 digits (e.g. `…A3F019`), while the full value lives in the inspector and the tooltip. `0000…0000` (unbound) is not a valid binding target and is rejected.
+- **Channel grouping**: the channel key is "frequency + P2P type", so different types sharing one frequency form separate groups and do not interfere.
+- **Inline rename**: edit the name directly in the inspector and press `Enter` to commit or `Esc` to cancel; an alias can also be set for a whole channel.
+- **Switch to input**: promote the selected P2P to the input side of its frequency; the previous input is demoted to output automatically.
+- **Assign a new channel / auto-configure I/O**: give the selected device a free frequency and make it the input; for ME P2P, the role can also be decided automatically from whether the external network is connected to an ME Controller.
+- **Highlight & locate**: render the P2P channel in the world (self / input / output in different colors), optionally turn your head toward the target, and send position and teleport links to chat. With `server.allowTeleport` off, the teleport button is hidden and the server refuses the request.
+- **Status line**: every action is reported at the bottom (bound / no target / invalid frequency / no network / switched to input, and so on).
+- **Cross-dimension location**: the encoded position carries dimension information, so P2P devices are found and highlighted correctly across dimensions.
+
+### ⌨️ Key Bindings
+
+| Key | Action |
+| --- | --- |
+| `V` | Switch between Copy Mode and Config Mode while holding the card |
+| `G` | Open the paste options panel in Copy Mode |
+| `Shift + Right-click` | In Copy Mode: copy the target device's configuration into the card (native AE2 behaviour); otherwise: quickly switch modes |
+
+> Both `V` and `G` can be rebound under "Options → Controls → Key Binds → Advanced Memory Card".
 
 ## 📦 Installation
 
@@ -52,59 +82,64 @@ Right-click any **P2P tunnel part** to open the configuration GUI and visually m
 
 | Dependency | Version |
 | --- | --- |
-| Minecraft | 1.20.1 |
-| Forge | 47.4.10 or higher (loader range `[47,)`) |
-| Applied Energistics 2 (AE2) | `15.4.10` or higher (`[15.4.10,)`) |
-| mixinextras | `1.0.0+` (optional, for Mixin enhancements) |
+| Minecraft | 1.7.10 |
+| Forge | 10.13.4.1614 (GTNH Forge) |
+| Applied Energistics 2 | GTNH `Applied-Energistics-2-Unofficial` rv3 (built against `rv3-beta-1000-GTNH`) |
 
-> The mod also depends on Jade, GuideME, and JEI at runtime (common AE2-ecosystem add-ons; installing them is recommended for the best experience).
+> The mod references `appeng.*` P2P and part implementations directly, so AE2 is a **required** dependency and the mod will not load without it. NEI (NotEnoughItems) is only a runtime dependency of the development environment; you do not need it to play.
 
 ### Steps
 
-1. Download the latest `advanced_memory_card-<version>.jar` from the releases page.
-2. Place the `.jar` file into your Minecraft `mods` folder.
-3. Make sure the required mods above are installed.
+1. Download `advanced_memory_card-1.2.0-1.7.10-GTNH.jar` from the releases page.
+2. Place the jar into Minecraft's `mods` folder.
+3. Make sure the dependencies above are installed, matching your modpack's versions.
 4. Launch the game and find the item under the "Advanced Memory Card" creative tab.
 
 ## 🛠 Configuration
 
-The mod provides both client and server config files (located in the `config/` directory):
+Config files live in `config/advanced_memory_card/`:
 
-### Server config (`advanced_memory_card-server.toml`)
+### Server config (`server.cfg`, `[server]` section)
 
 | Option | Default | Description |
 | --- | --- | --- |
 | `maxCopyVolume` | `2048` | Maximum region volume (block count) allowed in Copy Mode; larger selections are rejected |
-| `sendHighlightToChat` | `true` | Whether to send location info and a teleport link to chat when highlighting a P2P device |
+| `sendHighlightToChat` | `true` | Whether to send position info and a teleport link to chat when highlighting a P2P device |
+| `allowTeleport` | `true` | Whether the config GUI may teleport you to a P2P device; when off, the button is hidden and the server refuses teleports |
 
-### Client config (`advanced_memory_card-client.toml`)
+### Client config (`client.cfg`)
 
-Mainly used to personalize UI and rendering appearance. You can adjust:
+Used to personalize the UI and rendering appearance. The groups are:
 
-- **Highlight behavior**: `rotateHeadOnHighlight` (auto-turn head when highlighting), `p2pHighlightDurationSec` (highlight duration, 1–60 seconds).
-- **P2P tree widget**: background / selected / hover colors, indent, row height, icon spacing, channel warning threshold, max name length, etc.
-- **Detail panel**: background, title, label, value, and status (not active / not connected / connected) colors and layout dimensions.
-- **Generic buttons (FlatButton)**: default / hover / pressed / text colors.
-- **Copy Mode selection box**: colors for start point, end point, targeted point, out-of-range, and the three selection states.
-- **P2P highlight rendering**: self / input / output colors.
-- **Item color**: item base color and tint color.
+| Group | Contents |
+| --- | --- |
+| `client.highlight` | Auto-turn head on highlight, highlight duration (1–60 seconds) |
+| `client.palette` | Semantic palette of the new Config Mode UI: primary / secondary / tertiary text, accent, row selected and hover, panel surface, divider, status colors, chip backgrounds, overlay colors |
+| `client.treeColors` / `client.treeLayout` | P2P tree background / selected / hover colors; indent, row height, icon spacing, expand-icon width, channel warning threshold, name length limit |
+| `client.panelColors` / `client.panelLayout` | Inspector background and text colors, status colors, layout dimensions |
+| `client.buttonColors` | Generic button default / hover / pressed / text colors |
+| `client.copyColors` | Copy Mode selection box: start, end, targeted and out-of-range points plus the three selection states |
+| `client.highlightColors` | P2P highlight colors for self / input / output |
+| `client.itemColors` | Item base color and tint color |
 
-> All colors are hexadecimal values (ARGB for GUI classes, RGB for rendering classes) and can be edited directly in the config files.
+> The new Config Mode UI takes its colors from `client.palette`; the older groups `client.treeColors` / `client.panelColors` / `client.buttonColors` are still written for compatibility with existing configs.
+> Colors are hexadecimal values (ARGB for GUI classes, RGB for rendering classes); edit the files directly and restart the game for changes to take effect.
 
 ## 📖 Quick Usage Guide
 
 ### Copy Mode
 
-1. Hold the Advanced Memory Card in Copy Mode and **Shift + Right-click** a source AE2 device to copy its configuration.
-2. **Right-click** the first corner block to mark the start point (red).
-3. **Right-click** the opposite corner block to mark the end point (white); it now enters the ready-to-paste state (green).
-4. **Right-click** on air to apply the config in bulk to all AE2 devices in the region.
+1. Hold the card in Copy Mode and **Shift + Right-click** a source AE2 device to copy its configuration.
+2. (Optional) Press `G`, or let the panel pop up, and tick the items to apply this time.
+3. **Right-click** the first corner block to mark the start point (red).
+4. **Right-click** the opposite corner block to mark the end point (white); the selection is now ready to paste (green).
+5. **Right-click** on air to apply the configuration to every AE2 device in the region.
 
 ### Config Mode
 
-1. Switch to Config Mode and **right-click** any P2P tunnel part to open the configuration GUI.
-2. Browse / search the network's P2Ps in the left tree, and select a node to view its details on the right.
-3. Use the detail panel buttons to rename, bind a frequency, assign a new channel, auto-configure input/output, highlight & locate, and more.
+1. Switch to Config Mode and **right-click** any P2P tunnel part to open the GUI.
+2. Browse or search the network's P2P devices in the four-column tree on the left, and select a node to inspect it on the right.
+3. Pick a source and target in the pairing bar (Ctrl to select several for batch binding), or rename, switch to input, teleport or highlight from the inspector.
 
 ## 🔧 Development & Build (for developers)
 
@@ -112,16 +147,26 @@ Mainly used to personalize UI and rendering appearance. You can adjust:
 # Run the client (dev environment)
 ./gradlew runClient
 
+# Run a dedicated server
+./gradlew runServer
+
 # Build the release jar
 ./gradlew build
 
-# Generate data packs / language files
-./gradlew runData
+# Format check / auto-fix
+./gradlew spotlessCheck
+./gradlew spotlessApply
 ```
 
-- Built on Forge Gradle 6.x with a Java 17 toolchain.
-- Uses Mixin (`advanced_memory_card.mixins.json`) to extend AE2's `P2PTunnelPart`.
-- Resource files are produced by the data generators under `src/main/java/.../datagen` into `src/generated/resources/`.
+- The build uses the **GTNH Gradle convention plugin**: `build.gradle.kts` is just `plugins { id("com.gtnewhorizons.gtnhconvention") }`, the plugin version is declared in `settings.gradle.kts` (`gtnhsettingsconvention` 2.0.20), and the Gradle wrapper is pinned to 9.3.1.
+- **JDK 25** is required to run Gradle; `enableModernJavaSyntax = jabel` lets the sources use modern syntax while still compiling to Java 8 bytecode.
+- AE2 is consumed as GTNH's `com.github.GTNewHorizons:Applied-Energistics-2-Unofficial:rv3-beta-1000-GTNH:dev`; NEI is only a `runtimeOnlyNonPublishable` entry for the dev environment.
+- AE2 package-private members (such as `PartP2PTunnel#setOutput`) are reached through `src/main/resources/META-INF/advanced_memory_card_at.cfg`, and the reflection entry points are centralized in `P2PManager`.
+- This branch has neither Mixin nor datagen: no `mixins.json`, no `runData`, no `src/generated/resources`. Models, textures and language files are maintained directly under `src/main/resources`, and metadata uses `mcmod.info`.
+
+## 📝 Changelog
+
+See [CHANGELOG.md](CHANGELOG.md).
 
 ## 📄 License
 

@@ -1,13 +1,14 @@
 package com.suntide_20210418.advancedmemorycard.client.network;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
-import net.minecraftforge.common.DimensionManager;
 
 import com.suntide_20210418.advancedmemorycard.client.renderer.P2PRenderer;
 import com.suntide_20210418.advancedmemorycard.config.ClientConfig;
 import com.suntide_20210418.advancedmemorycard.config.ModConfigs;
 import com.suntide_20210418.advancedmemorycard.network.HighlightPacket;
+import com.suntide_20210418.advancedmemorycard.p2p.P2PInfo;
 import com.suntide_20210418.advancedmemorycard.p2p.P2PPosition;
 
 import appeng.api.parts.IPart;
@@ -47,6 +48,30 @@ public final class ClientHighlightHandler {
         }
     }
 
+    /**
+     * 客户端本地点亮一台 P2P（用于传送落地后的目标提示），不经过服务端。
+     * 直接复用 {@link #findPart}：维度必须用 id 字符串，和同步包 map 键一致。
+     */
+    /**
+     * 目标部件是否已经在客户端世界里可查（区块已加载、部件已下发）。
+     * 传送刚落地时坐标可能先到、区块后到；只判坐标会在 findPart 拿到 null 时
+     * 把高亮静默丢掉，所以延迟任务要把这个条件一起等。
+     */
+    public static boolean canHighlight(P2PInfo info) {
+        if (info == null) return false;
+        return findPart(new P2PPosition(info.position(), info.direction(), String.valueOf(info.dimensionId()))) != null;
+    }
+
+    public static void highlight(P2PInfo info) {
+        if (info == null) return;
+        PartP2PTunnel part = findPart(
+            new P2PPosition(info.position(), info.direction(), String.valueOf(info.dimensionId())));
+        if (part != null) {
+            P2PRenderer.getInstance()
+                .triggerRender(part, resolveColor(HighlightPacket.TYPE_SELF));
+        }
+    }
+
     private static int resolveColor(int type) {
         ClientConfig config = ModConfigs.getClientConfig();
         switch (type) {
@@ -62,8 +87,13 @@ public final class ClientHighlightHandler {
     private static PartP2PTunnel findPart(P2PPosition position) {
         try {
             int dimId = Integer.parseInt(position.dimension);
-            World world = DimensionManager.getWorld(dimId);
-            if (world == null) {
+            // 必须用客户端当前世界。DimensionManager 是服务端注册表（setWorld 只在
+            // WorldServer/MinecraftServer 里调用），客户端 loadWorld 不会把 WorldClient
+            // 注册进去：专用服务器客户端上 getWorld 恒为 null，单机则拿到服务端的
+            // WorldServer 与其部件 —— 两者都不是渲染用的那一份，高亮会静默不显示。
+            // 跨维度的部件本来就看不见，这里只处理当前维度。
+            World world = Minecraft.getMinecraft().theWorld;
+            if (world == null || world.provider.dimensionId != dimId) {
                 return null;
             }
             TileEntity te = world.getTileEntity(position.position.x, position.position.y, position.position.z);

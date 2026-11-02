@@ -23,43 +23,105 @@ import io.netty.buffer.ByteBuf;
  */
 public class ConfigModeSyncPacket implements IMessage {
 
+    /**
+     * 包内格式版本。加字段就 +1；解码时对不上直接当成空包，绝不能让字节流错位解析。
+     */
+    private static final int FORMAT_VERSION = 2;
+
     private HashMap<String, String> p2pFrequencyAndAlias;
     private HashMap<P2PPosition, String> p2pDevicesMap;
     private HashMap<P2PPosition, P2PInfo> p2pInfoMap;
     private HashMap<String, ChannelInfo> channelInfoMap;
     private HashMap<String, P2PTypeInfo> p2pTypeInfoMap;
 
+    /** 当前配对源设备的位置；null 表示尚未选择。 */
+    private P2PPosition pendingBindPosition;
+    /** 上一次操作的 ActionStatus 码。 */
+    private int statusCode;
+    /** 状态码的参数（频段 hex / 设备名 / "ok|freq" 这类拼串）。 */
+    private String statusParam = "";
+
     public ConfigModeSyncPacket() {}
 
     public ConfigModeSyncPacket(HashMap<String, String> p2pFrequencyAndAlias,
         HashMap<P2PPosition, String> p2pDevicesMap, HashMap<P2PPosition, P2PInfo> p2pInfoMap,
         HashMap<String, ChannelInfo> channelInfoMap, HashMap<String, P2PTypeInfo> p2pTypeInfoMap) {
-        this.p2pFrequencyAndAlias = p2pFrequencyAndAlias;
-        this.p2pDevicesMap = p2pDevicesMap;
-        this.p2pInfoMap = p2pInfoMap;
-        this.channelInfoMap = channelInfoMap;
-        this.p2pTypeInfoMap = p2pTypeInfoMap;
+        this(p2pFrequencyAndAlias, p2pDevicesMap, p2pInfoMap, channelInfoMap, p2pTypeInfoMap, null, 0, "");
+    }
+
+    public ConfigModeSyncPacket(HashMap<String, String> p2pFrequencyAndAlias,
+        HashMap<P2PPosition, String> p2pDevicesMap, HashMap<P2PPosition, P2PInfo> p2pInfoMap,
+        HashMap<String, ChannelInfo> channelInfoMap, HashMap<String, P2PTypeInfo> p2pTypeInfoMap,
+        P2PPosition pendingBindPosition, int statusCode, String statusParam) {
+        // 构造即快照：服务端下一 tick 会 clear() 这些 map，而 Netty 线程读的是这份对象
+        this.p2pFrequencyAndAlias = new HashMap<>(p2pFrequencyAndAlias);
+        this.p2pDevicesMap = new HashMap<>(p2pDevicesMap);
+        this.p2pInfoMap = new HashMap<>(p2pInfoMap);
+        this.channelInfoMap = new HashMap<>(channelInfoMap);
+        this.p2pTypeInfoMap = new HashMap<>(p2pTypeInfoMap);
+        this.pendingBindPosition = pendingBindPosition;
+        this.statusCode = statusCode;
+        this.statusParam = statusParam == null ? "" : statusParam;
     }
 
     @Override
     public void toBytes(ByteBuf buf) {
+        buf.writeInt(FORMAT_VERSION);
         writeStringMap(buf, p2pFrequencyAndAlias);
         writePosStringMap(buf, p2pDevicesMap);
         writePosP2PInfoMap(buf, p2pInfoMap);
         writeStringChannelMap(buf, channelInfoMap);
         writeStringTypeMap(buf, p2pTypeInfoMap);
+
+        // 配对源（可能没有）+ 状态回执
+        buf.writeBoolean(pendingBindPosition != null);
+        if (pendingBindPosition != null) {
+            writeP2PPosition(buf, pendingBindPosition);
+        }
+        buf.writeInt(statusCode);
+        ByteBufUtils.writeUTF8String(buf, statusParam == null ? "" : statusParam);
     }
 
     @Override
     public void fromBytes(ByteBuf buf) {
+        int formatVersion = buf.readInt();
+        if (formatVersion != FORMAT_VERSION) {
+            // 字段布局未知，继续往下读只会解析成垃圾。丢成空包，让界面显示为空而不是崩包。
+            p2pFrequencyAndAlias = new HashMap<>();
+            p2pDevicesMap = new HashMap<>();
+            p2pInfoMap = new HashMap<>();
+            channelInfoMap = new HashMap<>();
+            p2pTypeInfoMap = new HashMap<>();
+            pendingBindPosition = null;
+            statusCode = 0;
+            statusParam = "";
+            return;
+        }
         p2pFrequencyAndAlias = readStringMap(buf);
         p2pDevicesMap = readPosStringMap(buf);
         p2pInfoMap = readPosP2PInfoMap(buf);
         channelInfoMap = readStringChannelMap(buf);
         p2pTypeInfoMap = readStringTypeMap(buf);
+
+        pendingBindPosition = buf.readBoolean() ? readP2PPosition(buf) : null;
+        statusCode = buf.readInt();
+        statusParam = ByteBufUtils.readUTF8String(buf);
     }
 
     // ==================== 访问器 ====================
+
+    /** 当前配对源设备的位置；null 表示未选择。 */
+    public P2PPosition getPendingBindPosition() {
+        return pendingBindPosition;
+    }
+
+    public int getStatusCode() {
+        return statusCode;
+    }
+
+    public String getStatusParam() {
+        return statusParam;
+    }
 
     public HashMap<String, String> getP2PFrequencyAndAlias() {
         return p2pFrequencyAndAlias;
