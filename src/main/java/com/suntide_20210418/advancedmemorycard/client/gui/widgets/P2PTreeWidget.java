@@ -1110,7 +1110,11 @@ public class P2PTreeWidget extends Widget {
     /** 设备身份键：维度 + 坐标 + 朝向，和服务端下发的 map 键一致 */
     private static P2PPosition positionKey(P2PInfo info) {
         if (info == null) return null;
-        return new P2PPosition(info.position(), info.direction(), info.dimension());
+        // 必须与 ConfigModeSyncPacket 里 p2pInfoMap 的键一致：那边用的是
+        // String.valueOf(dimensionId)。info.dimension() 是维度名（"Overworld"），
+        // 拿它拼键会让 p2pInfoMap.get(key) 全部落空，多选反查只剩 selectedP2PInfo
+        // 一台，批量绑定退化成单台绑定。
+        return new P2PPosition(info.position(), info.direction(), String.valueOf(info.dimensionId()));
     }
 
     /**

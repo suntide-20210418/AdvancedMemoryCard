@@ -35,6 +35,10 @@
 - **设备行第一次点击后选中态被清掉**：`TreeNode.p2pNodeId()` 用的是 `dimension()` 且漏掉 `:frequency`，与 `getNodeId()` 的 P2P 分支拼法不一致。点击设备会触发 `set_pending_bind`，服务端回包后自动导航用 `p2pNodeId` 恢复选中，匹配失败就把选中态当成节点消失清掉；第二次点击时 pending 已相同、不再导航，所以能选上。现在两者逐字一致（维度 id + 坐标 + 朝向 + 频段）。
 - **右侧检查器多出一块白色矩形**：`DetailPanelWidget.render()` 先用 `paletteSurface` 铺满整块面板，盖住了基准底图。现在移除这次填充，面板底色交给 `config_mode_menu.png`，与 1.21.1 用 `ScreenStyle` 面板底、不二次填充的做法一致。
 
+### 修复（批量绑定）
+
+- **批量模式多选只绑定一台**：多选集合的键 `positionKey` 用 `info.dimension()`（维度名，如 `Overworld`）拼 `P2PPosition`，而 `p2pInfoMap` 的键用的是 `String.valueOf(dimensionId)`（如 `0`）；`P2PPosition.equals` 又把 dimension 纳入比较，于是 `p2pInfoMap.get(key)` 全部落空，`getSourceCandidates()` 退回单选的 `selectedP2PInfo`，`doBind()` 只发 `bind_frequency` 而不是 `bind_frequency_batch`。现在 `positionKey` 统一用维度 id 字符串，多选反查能拿全所有设备。
+
 ### 改动
 
 - **配置模式界面换上基准底图**：1.2.0 交付时面板是纯色自绘的（`GuiDraw.fillRect` 刷一块 `0xFFC7CCDA`），基准 1.21.1 的那张 `guis/config_mode_menu.png` 从没被打包进来。现在把基准图集（512×512，取左上 440×312）原样搬过来，界面直接铺这张图；标题对齐基准的 (7,7)，搜索框去掉原版黑底、改成面板上的纯文字输入并补占位符「搜索…」。控件矩形与基准 JSON 本来就逐项相同，位置没有改动。
