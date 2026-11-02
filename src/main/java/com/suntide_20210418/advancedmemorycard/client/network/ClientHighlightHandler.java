@@ -52,6 +52,16 @@ public final class ClientHighlightHandler {
      * 客户端本地点亮一台 P2P（用于传送落地后的目标提示），不经过服务端。
      * 直接复用 {@link #findPart}：维度必须用 id 字符串，和同步包 map 键一致。
      */
+    /**
+     * 目标部件是否已经在客户端世界里可查（区块已加载、部件已下发）。
+     * 传送刚落地时坐标可能先到、区块后到；只判坐标会在 findPart 拿到 null 时
+     * 把高亮静默丢掉，所以延迟任务要把这个条件一起等。
+     */
+    public static boolean canHighlight(P2PInfo info) {
+        if (info == null) return false;
+        return findPart(new P2PPosition(info.position(), info.direction(), String.valueOf(info.dimensionId()))) != null;
+    }
+
     public static void highlight(P2PInfo info) {
         if (info == null) return;
         PartP2PTunnel part = findPart(
