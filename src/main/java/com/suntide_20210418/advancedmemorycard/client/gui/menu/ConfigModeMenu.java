@@ -283,6 +283,9 @@ public class ConfigModeMenu extends Container implements ConfigModeActionPacket.
         double z = pos.getZ() + 0.5;
         current.setPositionAndUpdate(x, y, z);
         current.connection.setPlayerLocation(x, y, z, current.rotationYaw, current.rotationPitch);
+
+        // 立刻发一次高亮包：同维度时客户端收到包即可绘制；跨维度由客户端落地任务兜底。
+        if (p2pManager != null) p2pManager.renderP2P(p2pPart);
     }
 
     // ==================== 构建并发送同步数据包 ====================
