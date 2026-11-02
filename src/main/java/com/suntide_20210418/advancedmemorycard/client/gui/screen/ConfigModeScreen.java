@@ -50,6 +50,8 @@ public class ConfigModeScreen extends GuiContainer {
     private GuiTextField searchField;
 
     private static final int UPDATE_ITEM_INFO_INTERVAL = 10;
+    /** 单次批量绑定的上限：服务端在同一个 tick 内逐台改网格并落盘，数量太大要拆批。 */
+    private static final int MAX_BATCH_BIND = 32;
     /** 传送后等落点同步的最长 tick 数（10 秒）：跨维度换维度 + 加载目标区块都在这个窗口里。 */
     private static final int TELEPORT_ARRIVAL_TIMEOUT_TICKS = 200;
     /** 落点判定半径的平方：玩家与设备的方块中心在 2 格内即认为已经站到了目标处。 */
@@ -432,6 +434,14 @@ public class ConfigModeScreen extends GuiContainer {
         if (pairBar == null || p2pTree == null || !pairBar.isReady()) return;
         String frequency = pairBar.getTargetFrequency();
         List<P2PInfo> candidates = p2pTree.getSourceCandidates();
+        if (candidates.size() > MAX_BATCH_BIND) {
+            EntityPlayer p = Minecraft.getMinecraft().thePlayer;
+            if (p != null) {
+                p.addChatMessage(
+                    new net.minecraft.util.ChatComponentText(TranslateHelper.Chat.batchTooMany(MAX_BATCH_BIND)));
+            }
+            return;
+        }
         if (candidates.size() > 1) {
             // 多选批量绑定：payload = "频段;位置1;位置2;…"
             StringBuilder payload = new StringBuilder(frequency);
@@ -516,7 +526,9 @@ public class ConfigModeScreen extends GuiContainer {
             return;
         }
         lastNavigatedP2P = pendingBind;
-        navigateToP2P(pendingBind);
+        // 跟随配对源用 revealP2P：只在目标不在可视区时滚动，不强制居中。
+        // 玩家手动滚到别处时，同步包每 0.5 秒来一次，用 navigateToP2P 会把人拽回去。
+        p2pTree.revealP2P(pendingBind);
     }
 
     @Override

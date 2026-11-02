@@ -26,10 +26,10 @@ import cpw.mods.fml.relauncher.SideOnly;
 @SideOnly(Side.CLIENT)
 public class P2PRenderer {
 
-    /** 描边线宽：2.0 太细，3.5 在方块边缘上明显可见。 */
-    private static final float LINE_WIDTH = 3.5F;
+    /** 描边线宽 */
+    private static final float LINE_WIDTH = 5.0F;
     /** 基色向白色混合的比例：纯红/纯绿也能显得更亮。 */
-    private static final float BRIGHTEN = 0.35F;
+    private static final float BRIGHTEN = 0.0F;
     /** 亮度脉冲周期（毫秒）：0.5 秒一档，50% / 100% 交替。 */
     private static final long PULSE_INTERVAL_MS = 500L;
 

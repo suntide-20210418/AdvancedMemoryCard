@@ -120,6 +120,7 @@ public class TranslateHelper {
 
         public static final String CHAT_PREFIX = GUI_PREFIX + "advanced_memory_card.chat.";
         public static final String CHAT_NO_P2P = CHAT_PREFIX + "no_p2p";
+        public static final String CHAT_BATCH_TOO_MANY = CHAT_PREFIX + "batch_too_many";
         public static final String CHAT_LOCATION_INFO = CHAT_PREFIX + "location_info";
         public static final String CHAT_CLICK_TO_TELEPORT = CHAT_PREFIX + "click_to_teleport";
         public static final String CHAT_TELEPORT_HOVER = CHAT_PREFIX + "teleport_hover";
@@ -447,6 +448,10 @@ public class TranslateHelper {
 
         public static String noP2PFound() {
             return translate(Keys.CHAT_NO_P2P);
+        }
+
+        public static String batchTooMany(int max) {
+            return translate(Keys.CHAT_BATCH_TOO_MANY, max);
         }
 
         public static String locationInfo(Object... args) {
