@@ -7,7 +7,7 @@
 | 分支 | `suntide/1.7.10-GTNH` |
 | 加载器 / Java | GTNH Forge 10.13.4.1614 / JDK 25 + jabel（编译到 Java 8 字节码） |
 | AE2 | GTNH rv3 fork |
-| 版本 | `1.1.0-1.7.10-GTNH` → `1.2.2-1.7.10-GTNH`（已发布；语言键修复未发版，见第七节） |
+| 版本 | `1.1.0-1.7.10-GTNH` → `1.2.0-1.7.10-GTNH`（原 1.2.0/1.2.1/1.2.2 已合并为单次 1.2.0 发布，见第七节） |
 | 优先级 | **P3**，1.12.2 的契约层与树完成后实施（实际执行顺序与文档规划相反，见第七节第 2 条） |
 
 ---
@@ -57,10 +57,12 @@
 
 | 类别 | 内容 |
 | --- | --- |
-| 复用 1.12.2 | 输入接口、指针状态、`GuiDraw`、布局常量、配对条、操作条、`FlatButton`、`ActionStatus`、`P2PChannelUsage`、`TreeNode` |
+| 复用 1.12.2 | `GuiDraw`、布局常量、配对条、操作条、`FlatButton`、`ActionStatus`、`P2PChannelUsage`、`TreeNode`（`InputHandler` / `PointerState` 实际未落地，交互由 Screen 直接派发） |
 | 本版特化 | `P2PTreeWidget`（通道键 + 频段列文本 + 排序）、`DetailPanelWidget`（输入框字段名）、`P2PManager`、`ConfigModeMenu`、`ConfigModeSyncPacket` |
 | 已有可用 | 频段就地改名（本版已正确，1.12.2 的反而是坏的）、三列按钮网格、搜索、跟随选中 |
-| 现状缺陷 | `bind` 对 ME 跳过仲裁、不拒绝 freq 0；释放钩子误触发按钮（见第四节） |
+| 现状缺陷 | 开工时：`bind` 对 ME 跳过仲裁、不拒绝 freq 0；释放钩子误触发按钮。均已在 1.2.0 修复 |
+
+> **2026-11-02 更新**：上表是开工时的基线记录，不要按它判断当前状态。"现状缺陷"两项已在 1.2.0 修复；F6 跟随选中已改用 `revealP2P`（不强制居中）；R8 已加 32 台单次批量上限。`InputHandler` / `PointerState` 在两个老版中都不存在。
 
 ---
 
@@ -290,12 +292,16 @@ GTNH 约定会强制重排从 1.12.2 复制来的文件（import 顺序为 `java
 | 两语 `.lang` 键集合 | 完全一致 |
 | `spotlessCheck` | 通过 |
 
+> **实机验证记录（2026-11-02）**：已在真实客户端确认「高亮按钮能渲染描边」「传送会位移」「传送后 2 秒补发能点亮」；并据此修掉树点击、首次选中、批量只绑一台、右侧白色底块。最新一轮（立刻点亮、描边脉冲、F6、R8）尚未复测；§6.2 表中其余条目仍未逐条签字。
+
 ### 6.3 待验证
 
 | # | 待验证 | 为什么重要 | 方法 |
 | --- | --- | --- | --- |
 | V-5 | 零槽位容器是否真的触发 `NetHandlerPlayServer` 空指针 | 离屏槽位这个 hack 的依据只有代码注释，没有实测记录 | 临时注释掉槽位段，单机开界面一次、专服开一次，观察是否复现；确认后把结论写回本文档 |
 | V-6 | `MinecraftServer` 是否有可用的任务调度入口 | 决定批量绑定的线程安全写法（R1） | 在反编译产物里检索；编译一次；用一个 `LOGGER` 打印当前线程名确认是否已切主线程 |
+
+> V-6 已在 1.7.10 解决：该版本没有可用的 `MinecraftServer` 调度入口，改用自建 `ServerTaskQueue`（Netty 入队 → 服务端 tick 消费）；`ConfigModeActionPacket` 已走这条队列。V-5 仍未实测。
 
 补充：`output`/`freq` 在 rv3 是 **public 字段**，理论上可以直接赋值而不用反射。但为保持与 1.12.2 同构，建议保留一个包装方法（内部可改为直接赋值），不要在两版写出两套不同的访问方式。
 
@@ -308,11 +314,12 @@ GTNH 约定会强制重排从 1.12.2 复制来的文件（import 顺序为 `java
 | 初版 | 建立本版移植文档；确定 P3 优先级、频段显示规则、阶段 0（四处缺陷）/A–G、spotless 提交策略 |
 | 2026-11-01 | 阶段 0（`8619b75`）、自绘脚手架（`38b1d60`）、服务端语义与协议（`8ca5770`）、四列树（`a061228`）、界面总装（`2bd55ab`）全部完成。`2bd55ab` 把业务改动与 `spotlessApply` 放在同一提交，没有按 §4.1 拆成 `style:` + 业务两个提交 |
 | 2026-11-01 | 阶段 G 收尾：`README.md` / `README_en.md` 重写为 1.7.10 真实内容（原来是从 1.20.1 复制的错误版本）、新建 `CHANGELOG.md`、补 `shortFrequency()` 与频道键查找修复（见实施备注 3、4）、两语键集合一致（各 109 键）、`spotlessCheck` 通过、发版 `1.2.0-1.7.10-GTNH` |
-| 2026-11-01 | `1.2.1-1.7.10-GTNH`：实机打开配置模式界面即崩（`Ticking screen` / `NumberFormatException: For input string: "000001A13FF44AA4" under radix 16`，`P2PTreeWidget.buildDefaultTree` 的频道排序）。全部频段比较改为 64 位无符号（`ChannelInfo.compareFrequency`），服务端频段解析改 `Long.parseUnsignedLong`（见实施备注 7） |
-| 2026-11-01 | `1.2.2-1.7.10-GTNH`：再崩一次（`Rendering screen` / `ClassCastException: ResourceLocation cannot be cast to String`，`P2PTypeNames.resolveLangKey` 拿 `ResourceLocation` 查以 String 为键的 1.7.10 物品注册表）。类型名彻底改为查本模组语言键，并统一类型 token 与 `ME_TYPE`（见实施备注 8、§1.2 F10 行） |
-| 2026-11-01 | 未发版（待批准）：界面显示原始翻译键。`TranslateHelper.Keys` 拼出的是双份命名空间 `gui.advanced_memory_card.advanced_memory_card.<组>.*`，而 1.2.0 新加的 `action_bar` / `pair` / `status_line` / `p2p_type` 在语言文件里写成单份、`tree` 与 `tree_col` 缺失，共 39 个键对不上。两语统一为双份命名空间并补齐 10 条 `tree`/`tree_col` 键（见实施备注 9）。同时把 `c678908`（1.2.1）里误改的契约段 F7 措辞恢复成四仓一致的「检查器与 tooltip」——契约段禁止单仓修改，那次改动让本仓契约段 MD5 与另外三个仓对不上 |
-| 2026-11-01 | 未发版（待批准）：阶段 C 遗留的「没换贴图」补做。`textures/gui/config_mode_menu.png` 换成基准 1.21.1 那张（7538 字节），`ConfigModeScreen` 走 `Gui.func_146110_a` 铺 440×312，标题挪到 JSON 的 (7,7)，搜索框改成无底框 + 占位符（见实施备注 1） |
-| 2026-11-01 | 未发版（待批准）：树整块不可点击。`P2PTreeWidget.onClick` 没有调用者（基准靠 AE2 `AbstractWidget#mouseClicked` 派发，旧版 `Widget` 基类直接返回 false），现在由树的 `mouseClicked` 自己派发；同时把滚动条判定挪到树之前，否则滑块拖动被树的命中吃掉（见实施备注 10） |
+| 2026-11-01 | 并入 1.2.0：实机打开配置模式界面即崩（`Ticking screen` / `NumberFormatException: For input string: "000001A13FF44AA4" under radix 16`，`P2PTreeWidget.buildDefaultTree` 的频道排序）。全部频段比较改为 64 位无符号（`ChannelInfo.compareFrequency`），服务端频段解析改 `Long.parseUnsignedLong`（见实施备注 7） |
+| 2026-11-01 | 并入 1.2.0：再崩一次（`Rendering screen` / `ClassCastException: ResourceLocation cannot be cast to String`，`P2PTypeNames.resolveLangKey` 拿 `ResourceLocation` 查以 String 为键的 1.7.10 物品注册表）。类型名彻底改为查本模组语言键，并统一类型 token 与 `ME_TYPE`（见实施备注 8、§1.2 F10 行） |
+| 2026-11-01 | 并入 1.2.0：界面显示原始翻译键。`TranslateHelper.Keys` 拼出的是双份命名空间 `gui.advanced_memory_card.advanced_memory_card.<组>.*`，而 1.2.0 新加的 `action_bar` / `pair` / `status_line` / `p2p_type` 在语言文件里写成单份、`tree` 与 `tree_col` 缺失，共 39 个键对不上。两语统一为双份命名空间并补齐 10 条 `tree`/`tree_col` 键（见实施备注 9）。同时把 `c678908`（原 1.2.1 提交）里误改的契约段 F7 措辞恢复成四仓一致的「检查器与 tooltip」——契约段禁止单仓修改，那次改动让本仓契约段 MD5 与另外三个仓对不上 |
+| 2026-11-01 | 并入 1.2.0：阶段 C 遗留的「没换贴图」补做。`textures/gui/config_mode_menu.png` 换成基准 1.21.1 那张（7538 字节），`ConfigModeScreen` 走 `Gui.func_146110_a` 铺 440×312，标题挪到 JSON 的 (7,7)，搜索框改成无底框 + 占位符（见实施备注 1） |
+| 2026-11-01 | 并入 1.2.0：树整块不可点击。`P2PTreeWidget.onClick` 没有调用者（基准靠 AE2 `AbstractWidget#mouseClicked` 派发，旧版 `Widget` 基类直接返回 false），现在由树的 `mouseClicked` 自己派发；同时把滚动条判定挪到树之前，否则滑块拖动被树的命中吃掉（见实施备注 10） |
+| 2026-11-02 | 1.2.0 合并发布：删除旧的 1.2.0 / 1.2.1 / 1.2.2 三个标签，`CHANGELOG.md` 合并为单份 1.2.0；F6 跟随选中改用 `revealP2P`（不强制居中）；R8 增加 32 台单次批量上限与双语提示；高亮 `findPart` 改用客户端世界，按钮 / 传送高亮链路与时序修复（见 `CHANGELOG.md`） |
 
 ### 实施备注
 
@@ -321,7 +328,7 @@ GTNH 约定会强制重排从 1.12.2 复制来的文件（import 顺序为 `java
 3. **频段列此前会溢出**：树里直接画完整 16 位十六进制，而频段列只有 40px（`COL_FREQ_W`），文字会压到名称与汇总列。已补 `P2PTreeWidget.shortFrequency()`：宽度超一屏就只留 `…` + 末 6 位，完整值在检查器看，符合 §1.2 的 F7 降级。
 4. **频道键查找缺失（本次修复）**：`ConfigModeMenu` 的 `channelInfoMap` 以 `frequency|p2pType` 为键（`menu/ConfigModeMenu.java:474`），但树与检查器原先按纯频段查（`channelInfoMap.get(freq)`），永远命中不了 —— 设备行的频道占用数字、搜索树里的频道节点、检查器的频道别名全部取不到数据。新增 `ChannelInfo.find(map, frequency, p2pType)`（先查 `freq|type`、再退回纯频段），替换 `P2PTreeWidget`（搜索树频道节点、设备行汇总）与 `DetailPanelWidget`（`channelAlias`、就地改名回显）的四处查找。
 5. 36 个离屏背包槽位未动（禁改区）。
-6. **全程没有实机视觉验证**：`compileJava` 与 `spotlessCheck` 通过、CI 绿，但批量绑定后的状态点颜色、右键折叠（只在批量模式 + 频道行生效）、Ctrl 框选、跨维度传送、静止时 `syncVersion` 节流都只在代码层核对过。§6.3 的 V-5（零槽位容器是否真的触发空指针）与 V-6（`MinecraftServer` 任务调度入口）仍未实测。
+6. **实机验证（2026-11-02 更新）**：原记录「全程没有实机视觉验证」已过时。用户在实际客户端确认了高亮渲染、传送位移、传送后补发点亮，并据此修掉树点击、首次选中、批量只绑一台、右侧白色底块等问题。仍未做的是 §6.2 的逐条签字（批量 6 台不丢台、角色重进保留、跨维度传送、零槽位容器、专服启动）与 V-5；V-6 已由 `ServerTaskQueue` 解决。
 7. **频段比较必须按 64 位无符号（`1.2.1` 崩溃根因）**：1.7.10 的频段是 `long`，服务端以 `String.format("%016X", freq)` 下发，最长 16 位十六进制。树里原先用 `Integer.parseInt(frequency, 16)` 排序频道，遇到 `000001A13FF44AA4` 直接抛 `NumberFormatException`，而这条排序正好在界面 tick 的 `updateScreen` → `tryAutoNavigateToPendingBind` → `navigateToP2P` → `rebuildTree` 链上，于是客户端 `Ticking screen` 崩溃。现在统一走 `ChannelInfo.compareFrequency`（`Long.parseUnsignedLong` + `Long.compareUnsigned`，脏数据退化为长度 + 字典序）；`P2PManager.parseFrequency` 也改成 `Long.parseUnsignedLong`，最高位为 1 的频段不再被误判为「未绑定」。**后续任何按频段数值排序/解析的地方都必须用无符号 64 位**，不能用 `int`。
 8. **类型 token 不是注册表路径（`1.2.2` 崩溃根因）**：`P2PTypeNames` 原先照抄基准，用 `new ResourceLocation("ae2", typePath)` 查 `Item.itemRegistry` 再取物品译名。1.7.10 的注册表键是 **String**，`RegistryNamespaced.getObject(Object)` 会先强转 `(String)`，于是渲染类型行时直接 `ClassCastException`（`Rendering screen` 崩溃）；即便不崩，rv3 的 P2P 隧道是 `ItemMultiPart` 的多个 damage，AE2 的语言文件里只有一条通用 `item.appliedenergistics2.ItemPart.P2PTunnel.name`，按变体查也查不到。现在 `P2PTypeNames` 只查 `gui.advanced_memory_card.advanced_memory_card.p2p_type.<小写 token>`（14 条，中英各一份），查不到退回原始 token；`P2PManager.getP2PType` 同时剥掉 `PartP2PTunnel` 与 `PartP2P` 两个前缀（否则界面上会出现 `PartP2PRedstone` 这种类名）；`P2PChannelUsage.ME_TYPE` 从 `me_p2p_tunnel` 改成 `ME`，ME 频道的占用数字与 `DetailPanelWidget.isMEP2P` 才重新有效。**后续任何「类型 → 显示名」的实现都不能碰 1.7.10 的物品注册表。**
 9. **语言键是双份命名空间（本次修原始键根因）**：`TranslateHelper.Keys` 的 `GUI_PREFIX` 已经是 `gui.advanced_memory_card.`，各组又写成 `GUI_PREFIX + "advanced_memory_card.<组>."`，最终键形如 `gui.advanced_memory_card.advanced_memory_card.action_bar.bind`。语言文件里历史组一直是这个双份形式，所以能对上；但 1.2.0 新加的 `action_bar`（6 条）/ `pair`（7 条）/ `status_line`（16 条）/ `p2p_type`（14 条）写成了单份，`tree`（7 条）与 `tree_col`（3 条）根本没写，一共 39 个键在界面上按原样显示。现在两语文件统一为双份命名空间，并补齐 `tree_col.{name,frequency,summary}` 与 `tree.summary_channel` / `tree.summary_channel_plain` / `tree.summary_type` / `tree.role_input` / `tree.role_output` / `tree.prefix_input` / `tree.prefix_output`，两语各 133 键、键集合一致。**新增语言键时先看 `Keys` 里怎么拼，再用 `StatCollector.canTranslate` 验证，不要手写单份前缀。**
