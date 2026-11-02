@@ -12,6 +12,7 @@
 
 ### 修复
 
+- **界面显示原始翻译键**：`TranslateHelper.Keys` 拼出的是双前缀 `gui.advanced_memory_card.advanced_memory_card.*`，而 `pair` / `action_bar` / `status_line` 写成了单前缀、`tree` / `tree_col` 缺失，共 39 个键对不上。现在 29 条改为双前缀，补齐 10 条 `tree` / `tree_col` 键，en / zh 各 123 键、键集合一致。
 - **树整块点不动**：基准里「鼠标命中控件 → 调 `onClick`」是 AE2 `AbstractWidget#mouseClicked` 干的活，旧版 `Widget` 基类的 `mouseClicked` 只返回 `false`，于是 `P2PTreeWidget.onClick` 从头到尾没有调用者 —— 点设备行不选中、点频段行不展开、Ctrl 多选与框选起手也都没了。现在树的 `mouseClicked` 自己派发：左键落在树矩形内就调 `onClick` 并返回 `true`。
 - **滚动条被树吃掉点击**：滚动条的矩形压在树右缘的 14px 留白上，而事件的派发顺序是「树 → 滚动条」，树开始消费点击之后滑块就再也拖不动了。现在滚动条先于树判定。
 - **批量模式多选只绑定一台**：多选集合的键 `positionKey` 用 `info.dimension()`（维度名，如 `overworld`）拼 `P2PPosition`，而 `p2pInfoMap` 的键用的是 `String.valueOf(dimensionId)`（如 `0`）；`P2PPosition.equals` 又把 dimension 纳入比较，于是 `p2pInfoMap.get(key)` 全部落空，`getSourceCandidates()` 退回单选的 `selectedP2PInfo`，`doBind()` 只发 `bind_frequency` 而不是 `bind_frequency_batch`。现在 `positionKey` 统一用维度 id 字符串，多选反查能拿全所有设备。
@@ -23,7 +24,7 @@
 
 ### 改动
 
-- **配置界面去掉代码绘制矩形**：整块 `0xFFC7CCDA` 的 `fillRect` 换成基准 `config_mode_menu.png`（512×512，取左上 440×312）；检查器的 `paletteSurface` 填充移除；搜索框关闭原版黑底并补占位符，标题对齐 (7,7)。
+- **配置界面去掉代码绘制矩形**：整块 `0xFFC7CCDA` 的 `fillRect` 换成基准 `config_mode_menu.png`（从 1.21.1 原样复制，md5 `0a4cb6e7bcc09d2fdcb4dfcc94c1f639`，512×512，取左上 440×312）；检查器的 `paletteSurface` 填充移除；搜索框关闭原版黑底并补占位符，标题对齐 (7,7)。`copy_mode_menu.png` 与 1.21.1 本来就一致。
 - **高亮描边更醒目**：线宽从 `2.0` 提到 `3.5`；基色先向白色混合 35% 提亮，再按 0.5 秒周期在 50% / 100% 亮度之间脉冲。「高亮」按钮与传送共用同一个 `P2PRenderer`，两处同时生效。
 - **传送后立刻点亮**：服务端传送完成后立即发一次 `HighlightPacket`，客户端关界面后也立刻本地尝试一次，同维度时无需等待。
 
