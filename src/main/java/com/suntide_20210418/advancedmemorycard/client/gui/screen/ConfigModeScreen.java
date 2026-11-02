@@ -134,7 +134,11 @@ public class ConfigModeScreen extends GuiContainer {
 
             @Override
             public void onTeleportP2P(P2PInfo p2pInfo) {
+                // 先发包再关界面：传送由服务端执行，界面留着会挡住落点，
+                // 玩家会以为按钮没反应。基准 1.21.1 的 doTeleport 同样在这里关界面。
                 actionTeleportP2P(p2pInfo);
+                Minecraft.getMinecraft()
+                    .displayGuiScreen(null);
             }
 
             @Override

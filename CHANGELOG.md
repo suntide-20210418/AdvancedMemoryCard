@@ -28,6 +28,7 @@
 - **高亮发包后立刻关界面会丢动作**：动作包被延迟到下一个服务端 tick 执行，而关容器的包先到，执行时 `player.openContainer` 已回到玩家背包，`instanceof IActionMenu` 失败、动作被丢弃。现在动作包处理器在收到包时就抓住菜单实例，菜单关掉后仍持有 `p2pManager` 与玩家背包，动作照常执行。
 - **远程 / 未加载区块的传送与高亮静默失败**：`parsingP2P` 只走世界侧 `getTileEntity`，区块未加载或朝向索引对不上时返回 `null`。改名早已用 `findP2PByPositionString` 兜底，传送 / 高亮 / 切换输入端 / 设配对源现在统一走 `resolveP2P`，失败时同样退回已分析部件表。
 - **同维度传送白跑一次维度转移**：1.7.10 的 `transferPlayerToDimension` 不判断 `j == dimension`，会把玩家 danger-remove 再传回。现在只在维度不同时调用。
+- **传送后界面不关**：服务端已经完成位移，客户端还对着 GUI，玩家会以为按钮没反应。现在发包后立即关界面，与基准 1.21.1 的 `doTeleport` 一致。
 
 ### 改动
 
