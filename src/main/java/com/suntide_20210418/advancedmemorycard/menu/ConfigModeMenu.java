@@ -168,7 +168,7 @@ public class ConfigModeMenu extends Container implements ConfigModeActionPacket.
                 setP2PAlias(param);
                 break;
             case SET_PENDING_BIND: {
-                PartP2PTunnel p2p = parsingP2P(param);
+                PartP2PTunnel p2p = resolveP2P(param);
                 setPendingBind(p2p);
                 break;
             }
@@ -194,7 +194,7 @@ public class ConfigModeMenu extends Container implements ConfigModeActionPacket.
                 handleTeleportP2P(param);
                 break;
             case HIGHLIGHT_P2P: {
-                PartP2PTunnel p2p = parsingP2P(param);
+                PartP2PTunnel p2p = resolveP2P(param);
                 highlightP2P(p2p);
                 break;
             }
@@ -264,7 +264,7 @@ public class ConfigModeMenu extends Container implements ConfigModeActionPacket.
      * 顺序由 {@code P2PManager.switchToInput} 保证（先降级、再提升），这里立刻重扫一次。
      */
     private void handleSwitchToInput(String positionData) {
-        PartP2PTunnel p2p = parsingP2P(positionData);
+        PartP2PTunnel p2p = resolveP2P(positionData);
         P2PManager.RoleResult result = p2pManager.switchToInput(p2p);
         statusParam = p2p == null ? "" : String.format("%016X", p2p.freq);
         if (result == P2PManager.RoleResult.OK) {
@@ -285,7 +285,7 @@ public class ConfigModeMenu extends Container implements ConfigModeActionPacket.
             // 按钮只在允许时显示，但包可以伪造：服务端必须自己再判一次。
             return;
         }
-        teleportTo(parsingP2P(positionData));
+        teleportTo(resolveP2P(positionData));
     }
 
     /**
@@ -306,8 +306,12 @@ public class ConfigModeMenu extends Container implements ConfigModeActionPacket.
         int y = tile.yCoord;
         int z = tile.zCoord;
 
-        player.mcServer.getConfigurationManager()
-            .transferPlayerToDimension(player, targetDim);
+        // 同维度不要走 transferPlayerToDimension：1.7.10 的实现不判断 j == dimension，
+        // 会先把玩家 danger-remove 再传回，白跑一遍重生/区块流程，还可能冲掉落点。
+        if (player.dimension != targetDim) {
+            player.mcServer.getConfigurationManager()
+                .transferPlayerToDimension(player, targetDim);
+        }
         player.setPositionAndUpdate(x + 0.5D, y + 1.0D, z + 0.5D);
         player.playerNetServerHandler
             .setPlayerLocation(x + 0.5D, y + 1.0D, z + 0.5D, player.rotationYaw, player.rotationPitch);
@@ -552,12 +556,7 @@ public class ConfigModeMenu extends Container implements ConfigModeActionPacket.
         }
         String positionData = parts[0];
         String alias = parts[1];
-        PartP2PTunnel p2p = parsingP2P(positionData);
-        if (p2p == null && p2pManager != null) {
-            // 世界侧查找失败时（维度未加载/朝向索引对不上）退化为按坐标在已分析的部件里找，
-            // 否则改名会静默失败。
-            p2p = p2pManager.findP2PByPositionString(positionData);
-        }
+        PartP2PTunnel p2p = resolveP2P(positionData);
         if (p2p != null && p2pManager != null) {
             p2pManager.renameP2P(p2p, alias);
             updateItemInfo();
@@ -597,6 +596,19 @@ public class ConfigModeMenu extends Container implements ConfigModeActionPacket.
             }
         }
         return null;
+    }
+
+    /**
+     * 位置串 → 部件。先走世界侧 {@code getTileEntity}；区块未加载或朝向索引对不上时，
+     * 退回已分析部件表。改名早就这样兜底了，传送 / 高亮 / 切换输入端同理 ——
+     * 否则这些操作会静默失败，玩家只看到按钮没反应。
+     */
+    private PartP2PTunnel resolveP2P(String data) {
+        PartP2PTunnel p2p = parsingP2P(data);
+        if (p2p == null && p2pManager != null) {
+            p2p = p2pManager.findP2PByPositionString(data);
+        }
+        return p2p;
     }
 
     private void setPendingBind(PartP2PTunnel p2p) {

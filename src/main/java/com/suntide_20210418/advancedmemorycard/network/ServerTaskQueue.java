@@ -30,6 +30,14 @@ public final class ServerTaskQueue {
 
     private static final Queue<Runnable> TASKS = new ConcurrentLinkedQueue<>();
 
+    /**
+     * 必须有实例可注册。1.7.10 的 FML {@code EventBus} 只有 {@code register(Object)}，
+     * 没有 {@code register(Class<?>)} 重载；传 {@code ServerTaskQueue.class} 时，
+     * {@code register} 会去扫描 {@code java.lang.Class} 自己的方法，{@code onServerTick}
+     * 一个都不会被注册，队列从此无人消费 —— 表现就是所有 action 包静默失效。
+     */
+    private static final ServerTaskQueue INSTANCE = new ServerTaskQueue();
+
     private ServerTaskQueue() {}
 
     /** 由 Netty 线程调用；只入队，不执行。 */
@@ -41,11 +49,11 @@ public final class ServerTaskQueue {
     public static void register() {
         FMLCommonHandler.instance()
             .bus()
-            .register(ServerTaskQueue.class);
+            .register(INSTANCE);
     }
 
     @SubscribeEvent
-    public static void onServerTick(TickEvent.ServerTickEvent event) {
+    public void onServerTick(TickEvent.ServerTickEvent event) {
         if (event.phase != TickEvent.Phase.END || TASKS.isEmpty()) {
             return;
         }

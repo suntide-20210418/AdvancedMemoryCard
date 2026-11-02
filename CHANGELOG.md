@@ -4,7 +4,7 @@
 
 ---
 
-## 未发布（待批准）：界面译名、底图与树点击
+## 未发布（待批准）：界面译名、底图、树点击与操作失效
 
 **Minecraft** 1.7.10 · **Forge** 10.13.4.1614 · **AE2** GTNH Applied-Energistics-2-Unofficial rv3
 
@@ -19,6 +19,15 @@
 
 - **界面显示原始翻译键**：`TranslateHelper.Keys` 里的键都是 `GUI_PREFIX + "advanced_memory_card.<组>."`，拼出来是双份命名空间的 `gui.advanced_memory_card.advanced_memory_card.<组>.*`。历史组（复制模式、检查器、按钮、状态、树、聊天、tooltip）的语言文件一直是双份，能对上；但 1.2.0 新加的 `action_bar` / `pair` / `status_line` / `p2p_type` 写成了单份，`tree` 与 `tree_col` 干脆没有写，于是这 39 个键在游戏里按原样显示。现在两语文件统一为双份命名空间，并补齐 `tree_col.{name,frequency,summary}` 与 `tree.{summary_channel,summary_channel_plain,summary_type,role_input,role_output,prefix_input,prefix_output}` 共 10 条新键。
 - **P2P 类型名的键前缀**：`P2PTypeNames` 的 `LANG_PREFIX` 同步改成双份命名空间，与其余各组保持一致。
+
+### 修复（操作按钮与高亮）
+
+- **配置界面所有操作按钮失效（绑定 / 改名 / 传送 / 高亮 / 刷新）**：`ServerTaskQueue.register()` 把 `ServerTaskQueue.class` 传给了 FML 的 `EventBus.register(Object)`。1.7.10 的 `EventBus` 只有 `register(Object)`，没有 `register(Class<?>)` 重载，它扫描的是 `target.getClass().getMethods()` —— 传 `Class` 对象时扫描的是 `java.lang.Class` 自己的方法，`onServerTick` 一个都没注册。于是动作包全部入队、队列从未被消费，所有服务端 action 静默失效。现在注册单例实例，并把 `onServerTick` 改成实例方法。
+- **客户端延迟任务同样不执行**：`ClientTickTasks.register()` 有同样的 `register(Class)` 误用。传送后的到达等待、延迟高亮都挂在这个队列上，队列不跑，这些收尾动作也就不会发生。同样改为注册实例。
+- **高亮不关界面、不渲染、不刷聊天栏**：界面从未在 `onHighlightP2P` / `onHighlightChannel` 里关闭；现在按基准 1.21.1 的顺序执行「发包 → 关界面 → 转头」，并补上频段高亮时转向第一台输入端的逻辑。
+- **高亮发包后立刻关界面会丢动作**：动作包被延迟到下一个服务端 tick 执行，而关容器的包先到，执行时 `player.openContainer` 已回到玩家背包，`instanceof IActionMenu` 失败、动作被丢弃。现在动作包处理器在收到包时就抓住菜单实例，菜单关掉后仍持有 `p2pManager` 与玩家背包，动作照常执行。
+- **远程 / 未加载区块的传送与高亮静默失败**：`parsingP2P` 只走世界侧 `getTileEntity`，区块未加载或朝向索引对不上时返回 `null`。改名早已用 `findP2PByPositionString` 兜底，传送 / 高亮 / 切换输入端 / 设配对源现在统一走 `resolveP2P`，失败时同样退回已分析部件表。
+- **同维度传送白跑一次维度转移**：1.7.10 的 `transferPlayerToDimension` 不判断 `j == dimension`，会把玩家 danger-remove 再传回。现在只在维度不同时调用。
 
 ### 改动
 
