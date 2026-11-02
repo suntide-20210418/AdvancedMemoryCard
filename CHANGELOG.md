@@ -16,6 +16,7 @@
 - **滚动条被树吃掉点击**：滚动条的矩形压在树右缘的 14px 留白上，而事件的派发顺序是「树 → 滚动条」，树开始消费点击之后滑块就再也拖不动了。现在滚动条先于树判定。
 - **批量模式多选只绑定一台**：多选集合的键 `positionKey` 用 `info.dimension()`（维度名，如 `overworld`）拼 `P2PPosition`，而 `p2pInfoMap` 的键用的是 `String.valueOf(dimensionId)`（如 `0`）；`P2PPosition.equals` 又把 dimension 纳入比较，于是 `p2pInfoMap.get(key)` 全部落空，`getSourceCandidates()` 退回单选的 `selectedP2PInfo`，`doBind()` 只发 `bind_frequency` 而不是 `bind_frequency_batch`。现在 `positionKey` 统一用维度 id 字符串，多选反查能拿全所有设备。
 - **客户端延迟任务不执行**：`ClientTickTasks.register()` 把 `ClientTickTasks.class` 传给 FML 的 `EventBus.register(Object)`；1.12.2 没有 `register(Class<?>)` 重载，扫描的是 `java.lang.Class` 的方法，`onClientTick` 从未注册。改为注册单例实例。传送落地后的点亮就依赖这个队列。
+- **高亮始终不渲染（客户端找不到部件）**：`ClientHighlightHandler.findPart` 用 `DimensionManager.getWorld(dimId)`。1.12.2 的 `DimensionManager` 是服务端注册表，`setWorld` 只在 `WorldServer` / `MinecraftServer` 里调用，客户端 `loadWorld` 不会注册 `ClientWorld`：专用服务器客户端上 `getWorld` 恒为 `null`，单机拿到的是服务端 `ServerWorld` 及其部件，都不是渲染用的那一份。现在改用 `Minecraft.world`，并且只处理当前维度。
 
 ### 新增
 

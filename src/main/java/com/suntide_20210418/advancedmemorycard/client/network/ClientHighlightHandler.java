@@ -9,7 +9,6 @@ import com.suntide_20210418.advancedmemorycard.p2p.P2PPosition;
 import net.minecraft.client.Minecraft;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
-import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
@@ -69,8 +68,13 @@ public final class ClientHighlightHandler {
     private static PartP2PTunnel findPart(P2PPosition p) {
         try {
             int dimId = Integer.parseInt(p.dimension);
-            World world = DimensionManager.getWorld(dimId);
-            if (world == null) {
+            // 必须用客户端当前世界。DimensionManager 是服务端注册表（setWorld 只在
+            // WorldServer/MinecraftServer 里调用），客户端 loadWorld 不会把 ClientWorld
+            // 注册进去：专用服务器客户端上 getWorld 恒为 null，单机则拿到服务端的
+            // ServerWorld 与其部件 —— 两者都不是渲染用的那一份，高亮会静默不显示。
+            // 跨维度的部件本来就看不见，这里只处理当前维度。
+            World world = Minecraft.getMinecraft().world;
+            if (world == null || world.provider.getDimension() != dimId) {
                 return null;
             }
             TileEntity te = world.getTileEntity(p.position);
