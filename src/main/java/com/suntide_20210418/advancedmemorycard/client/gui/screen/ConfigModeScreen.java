@@ -120,13 +120,24 @@ public class ConfigModeScreen extends GuiContainer {
 
             @Override
             public void onHighlightP2P(P2PInfo p2pInfo) {
+                // 顺序固定：先发包，再关界面，最后转头。
+                // 关界面会立刻发容器关闭包，之后发出的 action 可能丢失；
+                // 基准 1.21.1 的 doHighlightP2P 也是这个顺序。
                 actionHighlightP2P(p2pInfo);
+                Minecraft.getMinecraft()
+                    .displayGuiScreen(null);
                 if (ModConfigs.getClientConfig().rotateHeadOnHighlight) rotatePlayerTowardsP2P(p2pInfo);
             }
 
             @Override
             public void onHighlightChannel(String frequency) {
                 actionHighlightP2PTunnel(frequency);
+                Minecraft.getMinecraft()
+                    .displayGuiScreen(null);
+                if (ModConfigs.getClientConfig().rotateHeadOnHighlight) {
+                    P2PInfo firstInput = firstInputOfChannel(frequency);
+                    if (firstInput != null) rotatePlayerTowardsP2P(firstInput);
+                }
             }
 
             @Override
@@ -336,6 +347,18 @@ public class ConfigModeScreen extends GuiContainer {
         double dz = mc.player.posZ - (info.position()
             .getZ() + 0.5);
         return dx * dx + dy * dy + dz * dz <= TELEPORT_ARRIVAL_DIST_SQR;
+    }
+
+    /** 频段节点没有自己的位置：取该频段的第一台输入端用于转头。 */
+    private P2PInfo firstInputOfChannel(String frequency) {
+        if (frequency == null) return null;
+        ChannelInfo info = menu.getClientChannelInfoMap()
+            .get(frequency);
+        if (info == null || info.p2pInfoList() == null) return null;
+        for (P2PInfo p : info.p2pInfoList()) {
+            if (!p.isOutput()) return p;
+        }
+        return null;
     }
 
     private void rotatePlayerTowardsP2P(P2PInfo p2pInfo) {
