@@ -352,7 +352,7 @@ severity 只有四个取值：`NEUTRAL / OK / WARN / ERROR`，用于状态点与
 ### 实施备注
 
 1. **实际执行顺序与规划相反**：1.7.10 线先跑到阶段 G，本版的 C/D/E/F 是在 1.7.10 之后按它的实现回补的。控件（`PairBarWidget`、`ActionBarWidget`、重写的 `DetailPanelWidget`）先写好、Screen 后接线，中途工作树一度编译不过（旧 `ConfigModeScreen` 仍在调 `detailPanel.draw(FontRenderer,int,int)` 与 `setPendingBindP2P(...)`，新控件已换成 `render(double,double,float)` 与 `setSelectedNode(...)`）。
-2. **皮肤自绘**：面板走 `GuiDraw.fillRect(guiLeft, guiTop, PANEL_WIDTH, PANEL_HEIGHT, 0xFFC7CCDA)` + 自绘控件，不读贴图；`textures/gui/config_mode_menu.png` 保持旧图（7399 字节），与 1.7.10 的处理一致。440×312 的槽位数值来自 `ConfigUiLayout`，与基准 JSON 对齐。
+2. **皮肤改用基准贴图（2026-11-02 更新）**：面板不再走 `GuiDraw.fillRect(...0xFFC7CCDA)`，改为 `Gui.drawModalRectWithCustomSizedTexture` 铺 `textures/gui/config_mode_menu.png`（512×512，取左上 440×312）；检查器的 `paletteSurface` 填充移除；搜索框关闭原版黑底并补占位符，标题对齐 (7,7)。原记录中的「保持旧图、不读贴图」已作废。440×312 的槽位数值仍来自 `ConfigUiLayout`，与基准 JSON 对齐。
 3. **平台差异**：频段用 `%04X` 四位十六进制直出，不做 1.7.10 的「`…` + 末 6 位」降级（4 位放得下 40px 列宽）；通道 map 在本版以**纯频段**为键（`client/gui/menu/ConfigModeMenu.java:420` `channelInfoMap.put(frequency, channelInfo)`），因此不存在 1.7.10 那条 `ChannelInfo.find(freq, type)` 的键不匹配问题；`mouseReleased(int,int,int)` 取代 `mouseMovedOrUp`；Java 8 语法（无 var / record / 箭头 switch）。
 4. **主动偏离**：树新增 `mouseScrolled` 覆写（滚轮一格三行）——1.7.10 那份实现里滚轮在树上是失效的，只能拖滚动条；本版把两条路径都留了。
 5. **语言文件是小写** `en_us.lang` / `zh_cn.lang`（不是 1.7.10 的 `en_US` / `zh_CN`），各 113 键、键集合与 1.7.10 对拍零缺失；`ru_ru.lang` 未补（本就缺这些键且编码异常），按「只保证 en/zh」处理。
