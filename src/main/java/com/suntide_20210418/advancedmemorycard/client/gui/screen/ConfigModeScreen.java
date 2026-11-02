@@ -146,7 +146,10 @@ public class ConfigModeScreen extends GuiContainer {
                 actionTeleportP2P(p2pInfo);
                 Minecraft.getMinecraft()
                     .displayGuiScreen(null);
-                // 不能紧接着点亮：发包时坐标还是旧的，跨维度时新维度的区块也还没加载，
+                // 同维度时目标区块已经加载，立刻点亮，不必等落地判定；
+                // 跨维度时这里会找不到部件，由下面的延迟任务与服务端补发兜底。
+                ClientHighlightHandler.highlight(p2pInfo);
+                // 不能只靠上面这一下：发包时坐标还是旧的，跨维度时新维度的区块也还没加载，
                 // 这时 findPart 拿不到部件。交给客户端 tick 任务，真正落地后再点亮。
                 ClientTickTasks
                     .when(mc -> hasArrivedAt(mc, p2pInfo) && ClientHighlightHandler.canHighlight(p2pInfo), () -> {

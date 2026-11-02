@@ -26,6 +26,13 @@ import cpw.mods.fml.relauncher.SideOnly;
 @SideOnly(Side.CLIENT)
 public class P2PRenderer {
 
+    /** 描边线宽：2.0 太细，3.5 在方块边缘上明显可见。 */
+    private static final float LINE_WIDTH = 3.5F;
+    /** 基色向白色混合的比例：纯红/纯绿也能显得更亮。 */
+    private static final float BRIGHTEN = 0.35F;
+    /** 亮度脉冲周期（毫秒）：0.5 秒一档，50% / 100% 交替。 */
+    private static final long PULSE_INTERVAL_MS = 500L;
+
     // 存储每个 P2P 部件的渲染开始时间和持续时间
     private final Map<PartP2PTunnel, RenderInfo> renderTimes = new WeakHashMap<>();
 
@@ -110,7 +117,7 @@ public class P2PRenderer {
         GL11.glDisable(GL11.GL_TEXTURE_2D);
         GL11.glEnable(GL11.GL_BLEND);
         GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-        GL11.glLineWidth(2.0F);
+        GL11.glLineWidth(LINE_WIDTH);
 
         tessellator.startDrawing(GL11.GL_LINES);
 
@@ -131,7 +138,9 @@ public class P2PRenderer {
                 continue;
             }
 
-            performRender(tessellator, p2pPart, info.color);
+            // 全局时钟做脉冲：所有描边同步呼吸，重发高亮也不会重置相位。
+            float brightness = ((currentTime / PULSE_INTERVAL_MS) & 1L) == 0L ? 1.0F : 0.5F;
+            performRender(tessellator, p2pPart, info.color, brightness);
         }
 
         tessellator.draw();
@@ -143,7 +152,7 @@ public class P2PRenderer {
     /**
      * 实际的渲染实现
      */
-    private void performRender(Tessellator tessellator, PartP2PTunnel p2pPart, int color) {
+    private void performRender(Tessellator tessellator, PartP2PTunnel p2pPart, int color, float brightness) {
         List<AxisAlignedBB> boxes = new ArrayList<>();
         BusCollisionHelper collisionHelper = new BusCollisionHelper(boxes, p2pPart.getSide(), null, false);
         p2pPart.getBoxes(collisionHelper);
@@ -153,14 +162,19 @@ public class P2PRenderer {
         TileEntity te = p2pPart.getTile();
         BlockPos p2pPos = new BlockPos(te.xCoord, te.yCoord, te.zCoord);
 
-        float red = ((color >> 16) & 0xFF) / 255.0F;
-        float green = ((color >> 8) & 0xFF) / 255.0F;
-        float blue = (color & 0xFF) / 255.0F;
+        // 先向白色混合提亮，再按 50% / 100% 脉冲缩放。
+        float red = brighten(((color >> 16) & 0xFF) / 255.0F) * brightness;
+        float green = brighten(((color >> 8) & 0xFF) / 255.0F) * brightness;
+        float blue = brighten((color & 0xFF) / 255.0F) * brightness;
 
         for (AxisAlignedBB box : boxes) {
             AxisAlignedBB localBox = box.offset(p2pPos.getX(), p2pPos.getY(), p2pPos.getZ());
             drawBox(tessellator, localBox, red, green, blue);
         }
+    }
+
+    private static float brighten(float channel) {
+        return channel + (1.0F - channel) * BRIGHTEN;
     }
 
     /**

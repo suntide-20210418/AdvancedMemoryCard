@@ -317,6 +317,9 @@ public class ConfigModeMenu extends Container implements ConfigModeActionPacket.
         player.playerNetServerHandler
             .setPlayerLocation(x + 0.5D, y + 1.0D, z + 0.5D, player.rotationYaw, player.rotationPitch);
 
+        // 立刻发一次：同维度时客户端收到包就能画；跨维度时下面 2 秒 / 4 秒的补发兜底。
+        if (p2pManager != null) p2pManager.renderP2P(p2pPart);
+
         // 客户端渲染高亮要等目标区块加载；传送刚完成时可能还没到。2 秒 / 4 秒各补发
         // 一次 HighlightPacket —— 走的是与「高亮」按钮完全相同的路径，不依赖客户端 tick 任务。
         final PartP2PTunnel target = p2pPart;
