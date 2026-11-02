@@ -29,3 +29,6 @@ forge*changelog.txt
 
 # CodeBuddy (可选，存放AI记忆文件)
 .codebuddy/
+
+# 发布工作流生成的临时日志（内容取自 CHANGELOG.md）
+CHANGELOG_LATEST.md

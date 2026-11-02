@@ -4,37 +4,11 @@
 
 ---
 
-## 未发布（待批准）
+## 1.2.0-1.12.2 — 2026-11-02
 
 **Minecraft** 1.12.2 · **Forge** 14.23.5.2860 或更高 · **AE2** AE2 Extended Life（`570458:6302098`）
 
-> 版本号与发布暂缓，等实机确认后再定版。
-
-### 修复
-
-- **界面显示原始翻译键**：`TranslateHelper.Keys` 拼出的是双前缀 `gui.advanced_memory_card.advanced_memory_card.*`，而 `pair` / `action_bar` / `status_line` 写成了单前缀、`tree` / `tree_col` 缺失，共 39 个键对不上。现在 29 条改为双前缀，补齐 10 条 `tree` / `tree_col` 键，en / zh 各 123 键、键集合一致。
-- **俄语语言文件补齐**：`ru_ru.lang` 从 78 键补到 123 键，与 en / zh 键集合一致；新增内容覆盖配对条、操作条、状态行、树列与快捷键，占位符数量与英文逐条对齐。
-- **树整块点不动**：基准里「鼠标命中控件 → 调 `onClick`」是 AE2 `AbstractWidget#mouseClicked` 干的活，旧版 `Widget` 基类的 `mouseClicked` 只返回 `false`，于是 `P2PTreeWidget.onClick` 从头到尾没有调用者 —— 点设备行不选中、点频段行不展开、Ctrl 多选与框选起手也都没了。现在树的 `mouseClicked` 自己派发：左键落在树矩形内就调 `onClick` 并返回 `true`。
-- **滚动条被树吃掉点击**：滚动条的矩形压在树右缘的 14px 留白上，而事件的派发顺序是「树 → 滚动条」，树开始消费点击之后滑块就再也拖不动了。现在滚动条先于树判定。
-- **批量模式多选只绑定一台**：多选集合的键 `positionKey` 用 `info.dimension()`（维度名，如 `overworld`）拼 `P2PPosition`，而 `p2pInfoMap` 的键用的是 `String.valueOf(dimensionId)`（如 `0`）；`P2PPosition.equals` 又把 dimension 纳入比较，于是 `p2pInfoMap.get(key)` 全部落空，`getSourceCandidates()` 退回单选的 `selectedP2PInfo`，`doBind()` 只发 `bind_frequency` 而不是 `bind_frequency_batch`。现在 `positionKey` 统一用维度 id 字符串，多选反查能拿全所有设备。
-- **高亮始终不渲染（客户端找不到部件）**：`ClientHighlightHandler.findPart` 用 `DimensionManager.getWorld(dimId)`。1.12.2 的 `DimensionManager` 是服务端注册表，`setWorld` 只在 `WorldServer` / `MinecraftServer` 里调用，客户端 `loadWorld` 不会注册 `ClientWorld`：专用服务器客户端上 `getWorld` 恒为 `null`，单机拿到的是服务端 `ServerWorld` 及其部件，都不是渲染用的那一份。现在改用 `Minecraft.world`，并且只处理当前维度。
-- **高亮不关闭界面**：`onHighlightP2P` / `onHighlightChannel` 只发了高亮包，GUI 一直留在屏幕上，世界里的描边被界面挡住。现在按 C4 执行「发包 → 关界面 → 转头」，频段高亮转向该频段第一台输入端。
-
-### 新增
-
-- **传送落地后点亮目标 P2P**：传送发包后界面立即关闭，但此时坐标还是旧的，跨维度时新维度的区块也还没加载，直接点亮会拿不到部件。现在用 `ClientTickTasks` 每 tick 探一次「落点 + 目标部件可查」（客户端世界维度一致、距方块中心 2 格内、`findPart` 能找到部件），真正到达并加载后再点亮目标，并在 `rotateHeadOnHighlight` 开启时转头；10 秒超时。只判坐标会在"坐标先到、区块后到"的窗口里把高亮静默丢掉，这是上一次修复后传送仍不显示的原因。
-
-### 改动
-
-- **配置界面去掉代码绘制矩形**：整块 `0xFFC7CCDA` 的 `fillRect` 换成基准 `config_mode_menu.png`（从 1.21.1 原样复制，md5 `0a4cb6e7bcc09d2fdcb4dfcc94c1f639`，512×512，取左上 440×312）；检查器的 `paletteSurface` 填充移除；搜索框关闭原版黑底并补占位符，标题对齐 (7,7)。`copy_mode_menu.png` 与 1.21.1 本来就一致。
-- **高亮描边更醒目**：线宽从 `2.0` 提到 `3.5`；基色先向白色混合 35% 提亮，再按 0.5 秒周期在 50% / 100% 亮度之间脉冲。「高亮」按钮与传送共用同一个 `P2PRenderer`，两处同时生效。
-- **传送后立刻点亮**：服务端传送完成后立即发一次 `HighlightPacket`，客户端关界面后也立刻本地尝试一次，同维度时无需等待。
-
-## 1.2.0-1.12.2 — 2026-11-01
-
-**Minecraft** 1.12.2 · **Forge** 14.23.5.2860 或更高 · **AE2** AE2 Extended Life（`570458:6302098`）
-
-把配置模式界面按 1.21.1 基准重做：面板放大到 440×312，树改成四列并支持多选与框选，顶部加配对条、底部加操作条，绑定频段与批量的路径都收在同一条交互线上。
+把配置模式界面按 1.21.1 基准重做，并完成 64 位频段、操作按钮、高亮与传送链路的收尾；面板直接使用基准贴图。复制模式与七项粘贴选项保持原有行为。
 
 ### 新增
 
@@ -44,23 +18,32 @@
 - **顶部配对条**：「源 → 目标」一屏可见，点开频段下拉即可选目标频段，一次点击完成绑定；多选时显示「N 个源」。
 - **底部操作条与状态行**：「绑定」主按钮 + 批量模式开关，右侧常驻一行状态提示，16 种状态（绑定成功 / 无目标 / 频段非法 / 无网络 / 批量部分成功 / 切换失败等）按等级上色。
 - **右侧检查器**：类型、频段、输入/输出状态、连接状态，就地提供改名、切换为输入端、传送、高亮等按钮。
+- **传送落地后点亮目标 P2P**：传送发包后界面立即关闭；同维度时客户端立刻尝试点亮，跨维度时由 `ClientTickTasks` 等「落点 + 目标部件可查」，并在 `rotateHeadOnHighlight` 开启时转头；10 秒超时。
 
 ### 改进
 
 - **搜索与滚轮**：滚动条拖动与鼠标滚轮都能滚树列表（滚轮一格三行），搜索框内容变化才重新过滤，不再每帧重扫。
 - **同步节流**：服务端数据版本号没变时不重灌频道列表与状态码，界面的稳定性和手感的抖动都随之改善。
 - **绑定后的自动导航**：配对源发生变化时才把界面滚到那个 P2P，不再每帧重复定位。
+- **高亮描边更醒目**：线宽从 `2.0` 提到 `3.5`；基色先向白色混合 35% 提亮，再按 0.5 秒周期在 50% / 100% 亮度之间脉冲。「高亮」按钮与传送共用同一个 `P2PRenderer`。
+- **传送后立刻点亮**：服务端传送完成后立即发一次 `HighlightPacket`，客户端关界面后也立刻本地尝试一次，同维度时无需等待。
+- **配置界面去掉代码绘制矩形**：整块 `0xFFC7CCDA` 的 `fillRect` 换成基准 `config_mode_menu.png`（从 1.21.1 原样复制，md5 `0a4cb6e7bcc09d2fdcb4dfcc94c1f639`，512×512，取左上 440×312）；检查器的 `paletteSurface` 填充移除；搜索框关闭原版黑底并补占位符，标题对齐 (7,7)。
 
 ### 修复
 
 - **状态行不再空白**：底部操作条现在会显示 16 种状态提示（绑定成功 / 无目标 / 频段非法 / 无网络 / 批量部分成功 / 切换失败等），此前界面里没有这一行，绑定结果只能靠聊天栏猜。
+- **界面显示原始翻译键**：`TranslateHelper.Keys` 拼出的是双前缀 `gui.advanced_memory_card.advanced_memory_card.*`，而 `pair` / `action_bar` / `status_line` 写成了单前缀、`tree` / `tree_col` 缺失，共 39 个键对不上。现在 29 条改为双前缀，补齐 10 条 `tree` / `tree_col` 键，en / zh 各 123 键、键集合一致。
+- **俄语语言文件补齐**：`ru_ru.lang` 从 78 键补到 123 键，与 en / zh 键集合一致；新增内容覆盖配对条、操作条、状态行、树列与快捷键，占位符数量与英文逐条对齐。
+- **树整块点不动**：基准里「鼠标命中控件 → 调 `onClick`」是 AE2 `AbstractWidget#mouseClicked` 干的活，旧版 `Widget` 基类的 `mouseClicked` 只返回 `false`，于是 `P2PTreeWidget.onClick` 从头到尾没有调用者 —— 点设备行不选中、点频段行不展开、Ctrl 多选与框选起手也都没了。现在树的 `mouseClicked` 自己派发：左键落在树矩形内就调 `onClick` 并返回 `true`。
+- **滚动条被树吃掉点击**：滚动条的矩形压在树右缘的 14px 留白上，而事件的派发顺序是「树 → 滚动条」，树开始消费点击之后滑块就再也拖不动了。现在滚动条先于树判定。
+- **批量模式多选只绑定一台**：多选集合的键 `positionKey` 用 `info.dimension()`（维度名，如 `overworld`）拼 `P2PPosition`，而 `p2pInfoMap` 的键用的是 `String.valueOf(dimensionId)`（如 `0`）；`P2PPosition.equals` 又把 dimension 纳入比较，于是 `p2pInfoMap.get(key)` 全部落空，`getSourceCandidates()` 退回单选的 `selectedP2PInfo`，`doBind()` 只发 `bind_frequency` 而不是 `bind_frequency_batch`。现在 `positionKey` 统一用维度 id 字符串，多选反查能拿全所有设备。
+- **高亮始终不渲染（客户端找不到部件）**：`ClientHighlightHandler.findPart` 用 `DimensionManager.getWorld(dimId)`。1.12.2 的 `DimensionManager` 是服务端注册表，`setWorld` 只在 `WorldServer` / `MinecraftServer` 里调用，客户端 `loadWorld` 不会注册 `ClientWorld`：专用服务器客户端上 `getWorld` 恒为 `null`，单机拿到的是服务端 `ServerWorld` 及其部件，都不是渲染用的那一份。现在改用 `Minecraft.world`，并且只处理当前维度。
+- **高亮不关闭界面**：`onHighlightP2P` / `onHighlightChannel` 只发了高亮包，GUI 一直留在屏幕上，世界里的描边被界面挡住。现在按 C4 执行「发包 → 关界面 → 转头」，频段高亮转向该频段第一台输入端。
 
 ### 已知限制
 
-- 本版界面与 1.21.1 基准的布局常量一致，但美术仍是自绘扁平面板（`GuiDraw` 填充），没有换成 AE2 的 ScreenStyle 贴图 —— 1.12.2 没有那套槽位机制。
+- 本版界面与 1.21.1 基准的布局常量一致，面板直接使用基准 `config_mode_menu.png` 贴图；1.12.2 没有 AE2 的 ScreenStyle 槽位机制，控件仍为自绘。
 - 与 1.7.10 版一致，本版没有做「鼠标悬停 tooltip」。
-
----
 
 ## 1.1.0-1.12.2 — 2026-10-27
 
@@ -117,7 +100,7 @@
 
 ---
 
-## 1.1.0 (English)
+## 1.1.0-1.12.2 (English)
 
 **Minecraft** 1.12.2 · **Forge** 14.23.5.2860+ · **AE2** AE2 Extended Life (`570458:6302098`)
 
