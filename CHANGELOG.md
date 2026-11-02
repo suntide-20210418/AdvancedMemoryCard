@@ -29,6 +29,7 @@
 - **远程 / 未加载区块的传送与高亮静默失败**：`parsingP2P` 只走世界侧 `getTileEntity`，区块未加载或朝向索引对不上时返回 `null`。改名早已用 `findP2PByPositionString` 兜底，传送 / 高亮 / 切换输入端 / 设配对源现在统一走 `resolveP2P`，失败时同样退回已分析部件表。
 - **同维度传送白跑一次维度转移**：1.7.10 的 `transferPlayerToDimension` 不判断 `j == dimension`，会把玩家 danger-remove 再传回。现在只在维度不同时调用。
 - **传送后界面不关**：服务端已经完成位移，客户端还对着 GUI，玩家会以为按钮没反应。现在发包后立即关界面，与基准 1.21.1 的 `doTeleport` 一致。
+- **高亮始终不渲染（客户端找不到部件）**：`ClientHighlightHandler.findPart` 用 `DimensionManager.getWorld(dimId)`。1.7.10 的 `DimensionManager` 是服务端注册表，`setWorld` 只在 `WorldServer` / `MinecraftServer` 里调用，客户端 `loadWorld` 不会注册 `WorldClient`：专用服务器客户端上 `getWorld` 恒为 `null`，单机拿到的是服务端 `WorldServer` 及其部件，都不是渲染用的那一份。现在改用 `Minecraft.theWorld`，并且只处理当前维度（跨维度的部件本来就看不见）。
 
 ### 修复（选中态与检查器底色）
 
