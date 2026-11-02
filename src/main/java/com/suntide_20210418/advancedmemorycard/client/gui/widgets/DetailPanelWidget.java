@@ -214,7 +214,9 @@ public class DetailPanelWidget extends Widget {
         if (!visible) return;
         FontRenderer font = GuiDraw.font();
 
-        GuiDraw.fillRect(x, y, width, height, ModConfigs.getClientConfig().paletteSurface);
+        // 不铺整块底色：1.7.10 的 ConfigModeScreen 已经画了基准的 config_mode_menu.png，
+        // 面板区域由贴图本身提供；再 fillRect 一块 paletteSurface 会在右侧盖出一个
+        // 明显的浅色矩形。1.21.1 基准用 ScreenStyle 的面板底，不做二次填充。
 
         if (selectedNode == null) {
             String hint = TranslateHelper.DetailPanel.placeholder();

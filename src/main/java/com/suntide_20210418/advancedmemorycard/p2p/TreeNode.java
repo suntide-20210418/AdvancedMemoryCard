@@ -66,14 +66,19 @@ public class TreeNode {
     }
 
     /**
-     * 生成 P2P 节点的稳定标识：维度 + 坐标 + 朝向。与名字 / 频段 / 连接状态无关。
-     * 1.7.10 的 dimension 是维度 id 字符串。
+     * 生成 P2P 节点的稳定标识，必须与 {@link #getNodeId()} 的 P2P 分支逐字一致：
+     * 维度 id + 坐标 + 朝向 + 频段。
+     *
+     * <p>
+     * 不能再用 {@code dimension()}（维度名）或省掉 {@code :frequency}：自动导航时
+     * 这里拼出的 id 会拿去和重建后节点的 {@code getNodeId()} 比对，对不上就把选中态
+     * 当成"节点已消失"清掉 —— 表现为第一次点击选中后立刻取消，再点一次才选上。
      */
     public static String p2pNodeId(P2PInfo info) {
         if (info == null) {
-            return "p2p:null";
+            return null;
         }
-        return "p2p:" + info.dimension()
+        return "p2p:" + info.dimensionId()
             + "@"
             + info.position()
                 .getX()
@@ -85,6 +90,8 @@ public class TreeNode {
                 .getZ()
             + ":"
             + info.direction()
-                .ordinal();
+                .ordinal()
+            + ":"
+            + info.frequency();
     }
 }
