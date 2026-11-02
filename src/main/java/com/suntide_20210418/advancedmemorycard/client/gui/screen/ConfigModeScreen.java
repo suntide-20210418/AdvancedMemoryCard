@@ -47,8 +47,8 @@ public class ConfigModeScreen extends GuiContainer {
     private GuiTextField searchField;
 
     private static final int UPDATE_ITEM_INFO_INTERVAL = 10;
-    /** 传送后等落点同步的最长 tick 数（5 秒）：跨维度换维度 + 加载区块都在这个窗口里。 */
-    private static final int TELEPORT_ARRIVAL_TIMEOUT_TICKS = 100;
+    /** 传送后等落点同步的最长 tick 数（10 秒）：跨维度换维度 + 加载目标区块都在这个窗口里。 */
+    private static final int TELEPORT_ARRIVAL_TIMEOUT_TICKS = 200;
     /** 落点判定半径的平方：玩家与设备的方块中心在 2 格内即认为已经站到了目标处。 */
     private static final double TELEPORT_ARRIVAL_DIST_SQR = 4.0;
     private int updateItemInfoCooldown = 0;
@@ -130,7 +130,9 @@ public class ConfigModeScreen extends GuiContainer {
                     .displayGuiScreen(null);
                 // 不能紧接着点亮：发包时坐标还是旧的，跨维度时新维度的区块也还没加载，
                 // 这时 findPart 拿不到部件。交给客户端 tick 任务，真正落地后再点亮。
-                ClientTickTasks.when(mc -> hasArrivedAt(mc, p2pInfo), () -> {
+                ClientTickTasks.when(
+                    mc -> hasArrivedAt(mc, p2pInfo) && ClientHighlightHandler.canHighlight(p2pInfo),
+                    () -> {
                     ClientHighlightHandler.highlight(p2pInfo);
                     if (ModConfigs.getClientConfig().rotateHeadOnHighlight) {
                         rotatePlayerTowardsP2P(p2pInfo);
@@ -307,7 +309,9 @@ public class ConfigModeScreen extends GuiContainer {
      */
     private static boolean hasArrivedAt(Minecraft mc, P2PInfo info) {
         if (mc == null || mc.player == null || info == null) return false;
-        if (mc.player.dimension != info.dimensionId()) return false;
+        // 用客户端世界判维度，而不是 player.dimension：跨维度时世界对象已切换、
+        // 玩家实体可能还在替换过程中，世界维度才是渲染时真正会用到的那一份。
+        if (mc.world == null || mc.world.provider.getDimension() != info.dimensionId()) return false;
         double dx = mc.player.posX - (info.position()
             .getX() + 0.5);
         double dy = mc.player.posY - info.position()
