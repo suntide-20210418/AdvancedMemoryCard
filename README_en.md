@@ -2,14 +2,14 @@
 
 ![Minecraft Version](https://img.shields.io/badge/Minecraft-1.12.2-blue)
 ![Forge Version](https://img.shields.io/badge/Forge-14.23.5.2860-orange)
-![Mod Version](https://img.shields.io/badge/Version-1.1.0--1.12.2-green)
+![Mod Version](https://img.shields.io/badge/Version-1.2.0--1.12.2-green)
 ![License](https://img.shields.io/badge/License-GPL--3.0-green)
 
 **English** | [简体中文](README.md)
 
 An Applied Energistics 2 (AE2) add-on for Minecraft 1.12.2 that supercharges the AE2 Memory Card with two features: **bulk configuration copying** and **advanced P2P tunnel management**.
 
-> **Current version: `1.1.0-1.12.2`** · Minecraft 1.12.2 / Forge 14.23.5.2860
+> **Current version: `1.2.0-1.12.2`** · Minecraft 1.12.2 / Forge 14.23.5.2860
 > See [CHANGELOG.md](CHANGELOG.md) for details.
 
 ## 🌟 Features
@@ -51,10 +51,13 @@ The mode is stored in the item's NBT and can be switched at any time:
 
 ### 🕸 Config Mode
 
-Right-click any **P2P tunnel part** to open the GUI:
+Right-click any **P2P tunnel part** to open the GUI. Size and widget placement match the 1.21.1 baseline (440×312 panel: pair bar on top, four-column tree in the middle, inspector on the right, action bar at the bottom):
 
-- **P2P tree** — scans the network and groups tunnels by type / channel, with expand-collapse and search filtering.
-- **Detail panel** — type, frequency, role (input/output) and connection state of the selected node.
+- **Four-column P2P tree** — status dot, name (with chevron), frequency and summary columns, with a pinned column header; grouped by type / channel, with expand-collapse, search filtering and mouse-wheel scrolling.
+- **Multi-select and drag-select** — `Ctrl` + click appends another device of the same type, `Ctrl` + drag marquees a range; while more than one device is selected the action bar turns into **Batch bind**.
+- **Pair bar** — source → target visible at once; pick the target frequency from the dropdown and bind with a single button. Shows "N sources" when several are selected.
+- **Action bar** — current source, target frequency and a status line (16 states — bind ok / no target / invalid frequency / no grid / batch partial … — each with its own colour).
+- **Inspector** — type, frequency, role and connection state of the selected node, plus inline rename, switch-to-input, teleport and highlight buttons.
 - **Rename / alias** — rename a single tunnel or an entire channel (the channel's input side); names are saved immediately.
 - **Bind frequency** — bind to a 4-digit hex frequency (e.g. `0A1B`). If the frequency already has another input, the device becomes an output; `0000` (unbound) is rejected.
 - **Assign new channel** — allocate a fresh free frequency and make the selected tunnel its input.
@@ -86,7 +89,7 @@ Right-click any **P2P tunnel part** to open the GUI:
 
 ### Steps
 
-1. Download `advanced_memory_card-1.1.0-1.12.2.jar` from the releases page.
+1. Download `advanced_memory_card-1.2.0-1.12.2.jar` from the releases page.
 2. Drop it into the `mods` folder.
 3. Install the dependencies listed above.
 4. Launch the game — the item is available in the "Advanced Memory Card" creative tab.

@@ -25,6 +25,13 @@ import java.util.WeakHashMap;
 
 @Mod.EventBusSubscriber(modid = AdvancedMemoryCardMod.MOD_ID, value = Side.CLIENT)
 public class P2PRenderer {
+    /** 描边线宽：2.0 太细，3.5 在方块边缘上明显可见。 */
+    private static final float LINE_WIDTH = 3.5F;
+    /** 基色向白色混合的比例：纯红/纯绿也能显得更亮。 */
+    private static final float BRIGHTEN = 0.35F;
+    /** 亮度脉冲周期（毫秒）：0.5 秒一档，50% / 100% 交替。 */
+    private static final long PULSE_INTERVAL_MS = 500L;
+
     // 存储每个 P2P 部件的渲染开始时间和持续时间
     private final Map<PartP2PTunnel, RenderInfo> renderTimes = new WeakHashMap<>();
 
@@ -109,7 +116,7 @@ public class P2PRenderer {
         GlStateManager.disableTexture2D();
         GlStateManager.enableBlend();
         GlStateManager.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
-        GlStateManager.glLineWidth(2.0F);
+        GlStateManager.glLineWidth(LINE_WIDTH);
 
         // 复制一份快照，避免遍历时 WeakHashMap 被其他线程修改导致 ConcurrentModificationException
         List<Map.Entry<PartP2PTunnel, RenderInfo>> entries = new ArrayList<>(renderTimes.entrySet());
@@ -127,7 +134,9 @@ public class P2PRenderer {
                 continue;
             }
 
-            performRender(buffer, tessellator, p2pPart, info.color);
+            // 全局时钟做脉冲：所有描边同步呼吸，重发高亮也不会重置相位。
+            float brightness = ((currentTime / PULSE_INTERVAL_MS) & 1L) == 0L ? 1.0F : 0.5F;
+            performRender(buffer, tessellator, p2pPart, info.color, brightness);
         }
 
         GlStateManager.disableBlend();
@@ -138,7 +147,8 @@ public class P2PRenderer {
     /**
      * 实际的渲染实现
      */
-    private void performRender(BufferBuilder buffer, Tessellator tessellator, PartP2PTunnel p2pPart, int color) {
+    private void performRender(BufferBuilder buffer, Tessellator tessellator, PartP2PTunnel p2pPart, int color,
+                               float brightness) {
         List<AxisAlignedBB> boxes = new ArrayList<>();
         BusCollisionHelper collisionHelper = new BusCollisionHelper(boxes, p2pPart.getSide(), null, false);
         p2pPart.getBoxes(collisionHelper);
@@ -147,15 +157,20 @@ public class P2PRenderer {
 
         BlockPos p2pPos = p2pPart.getTile().getPos();
 
-        float red = ((color >> 16) & 0xFF) / 255.0F;
-        float green = ((color >> 8) & 0xFF) / 255.0F;
-        float blue = (color & 0xFF) / 255.0F;
+        // 先向白色混合提亮，再按 50% / 100% 脉冲缩放。
+        float red = brighten(((color >> 16) & 0xFF) / 255.0F) * brightness;
+        float green = brighten(((color >> 8) & 0xFF) / 255.0F) * brightness;
+        float blue = brighten((color & 0xFF) / 255.0F) * brightness;
         float alpha = 1.0F;
 
         for (AxisAlignedBB box : boxes) {
             AxisAlignedBB localBox = box.offset(p2pPos);
             drawBox(buffer, tessellator, localBox, red, green, blue, alpha);
         }
+    }
+
+    private static float brighten(float channel) {
+        return channel + (1.0F - channel) * BRIGHTEN;
     }
 
     /**

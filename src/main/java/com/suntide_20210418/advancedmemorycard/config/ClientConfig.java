@@ -20,6 +20,28 @@ public class ClientConfig {
     public final int treeChannelWarningThreshold;
     public final int treeP2PNameMaxLength;
 
+    // 语义色板（client.palette.*，与 1.20.1 / 1.21.1 同名同默认值）
+    public final int paletteTextPrimary;
+    public final int paletteTextSecondary;
+    public final int paletteTextTertiary;
+    public final int paletteAccent;
+    public final int paletteAccentText;
+    public final int paletteRowSelected;
+    public final int paletteRowHover;
+    public final int paletteSurface;
+    public final int paletteSurfaceHover;
+    public final int paletteDivider;
+    public final int paletteStatusOk;
+    public final int paletteStatusWarn;
+    public final int paletteStatusDanger;
+    public final int paletteChipOkBg;
+    public final int paletteChipAccentBg;
+    public final int paletteChipWarnBg;
+    public final int paletteChipDangerBg;
+    public final int paletteOverlayBg;
+    public final int paletteOverlayBorder;
+    public final int paletteOverlayShadow;
+
     // 详情面板颜色
     public final int panelColorBg;
     public final int panelColorTitle;
@@ -83,12 +105,36 @@ public class ClientConfig {
         treeColorHover = config.getInt("hover", "client.treeColors", 0xFF3A5A8A, Integer.MIN_VALUE, Integer.MAX_VALUE, "悬停行背景色");
 
         config.addCustomCategoryComment("client.treeLayout", "P2P 树控件布局设置");
-        treeIndentWidth = config.getInt("indentWidth", "client.treeLayout", 2, 0, 100, "每级缩进像素");
-        treeRowHeight = config.getInt("rowHeight", "client.treeLayout", 12, 4, 64, "每行高度（像素）");
+        treeIndentWidth = config.getInt("indentWidth", "client.treeLayout", 10, 0, 100, "每级缩进像素");
+        treeRowHeight = config.getInt("rowHeight", "client.treeLayout", 14, 4, 64, "每行高度（像素）");
         treeIconTextSpacing = config.getInt("iconTextSpacing", "client.treeLayout", 4, 0, 32, "图标与文字间距（像素）");
         treeExpandIconWidth = config.getInt("expandIconWidth", "client.treeLayout", 2, 0, 16, "展开/收起图标宽度（像素）");
         treeChannelWarningThreshold = config.getInt("channelWarningThreshold", "client.treeLayout", 8, 0, 128, "频道剩余数低于此值显示黄色警告");
-        treeP2PNameMaxLength = config.getInt("p2pNameMaxLength", "client.treeLayout", 20, 5, 100, "P2P 设备名称最大显示长度（超出截断）");
+        treeP2PNameMaxLength = config.getInt("p2pNameMaxLength", "client.treeLayout", 14, 5, 100, "P2P 设备名称最大显示长度（超出截断）");
+
+        // 语义色板：默认值已在 SINK #ADB0C4 / CARD #CBCCD4 上验证对比度 >= 4.5:1。
+        // 旧的 treeColors / panelColors / buttonColors 在新界面里不再读取，收敛留给后续阶段。
+        config.addCustomCategoryComment("client.palette", "GUI 语义色（ARGB）");
+        paletteTextPrimary = config.getInt("textPrimary", "client.palette", 0xFF16191F, Integer.MIN_VALUE, Integer.MAX_VALUE, "主文本（名称、取值）");
+        paletteTextSecondary = config.getInt("textSecondary", "client.palette", 0xFF3B4152, Integer.MIN_VALUE, Integer.MAX_VALUE, "次要文本（频段、计数、表头）");
+        paletteTextTertiary = config.getInt("textTertiary", "client.palette", 0xFF4A5265, Integer.MIN_VALUE, Integer.MAX_VALUE, "辅助文本（属性标签、占位提示）");
+        paletteAccent = config.getInt("accent", "client.palette", 0xFF1B4483, Integer.MIN_VALUE, Integer.MAX_VALUE, "强调色（主按钮底、当前可编辑字段）");
+        paletteAccentText = config.getInt("accentText", "client.palette", 0xFFFFFFFF, Integer.MIN_VALUE, Integer.MAX_VALUE, "强调色上的文字");
+        paletteRowSelected = config.getInt("rowSelected", "client.palette", 0xFF2E4F86, Integer.MIN_VALUE, Integer.MAX_VALUE, "选中行底色");
+        paletteRowHover = config.getInt("rowHover", "client.palette", 0xFFBEC3D4, Integer.MIN_VALUE, Integer.MAX_VALUE, "悬停行底色");
+        paletteSurface = config.getInt("surface", "client.palette", 0xFFDDE1EA, Integer.MIN_VALUE, Integer.MAX_VALUE, "输入框 / 槽位底色");
+        paletteSurfaceHover = config.getInt("surfaceHover", "client.palette", 0xFFE8EBF2, Integer.MIN_VALUE, Integer.MAX_VALUE, "输入框 / 槽位悬停底色");
+        paletteDivider = config.getInt("divider", "client.palette", 0xFF8C93A6, Integer.MIN_VALUE, Integer.MAX_VALUE, "分隔线 / 细描边");
+        paletteStatusOk = config.getInt("statusOk", "client.palette", 0xFF084D1C, Integer.MIN_VALUE, Integer.MAX_VALUE, "状态：连通");
+        paletteStatusWarn = config.getInt("statusWarn", "client.palette", 0xFF5C3800, Integer.MIN_VALUE, Integer.MAX_VALUE, "状态：降级 / 未连通");
+        paletteStatusDanger = config.getInt("statusDanger", "client.palette", 0xFF7A0F0F, Integer.MIN_VALUE, Integer.MAX_VALUE, "状态：异常 / 破坏性操作");
+        paletteChipOkBg = config.getInt("chipOkBg", "client.palette", 0xFFD6E8DA, Integer.MIN_VALUE, Integer.MAX_VALUE, "chip 底色：正常");
+        paletteChipAccentBg = config.getInt("chipAccentBg", "client.palette", 0xFFD5E0F2, Integer.MIN_VALUE, Integer.MAX_VALUE, "chip 底色：强调");
+        paletteChipWarnBg = config.getInt("chipWarnBg", "client.palette", 0xFFEDE2CC, Integer.MIN_VALUE, Integer.MAX_VALUE, "chip 底色：警告");
+        paletteChipDangerBg = config.getInt("chipDangerBg", "client.palette", 0xFFF2DCDC, Integer.MIN_VALUE, Integer.MAX_VALUE, "chip 底色：危险");
+        paletteOverlayBg = config.getInt("overlayBg", "client.palette", 0xFFE7EBF3, Integer.MIN_VALUE, Integer.MAX_VALUE, "浮层底色（频段下拉）");
+        paletteOverlayBorder = config.getInt("overlayBorder", "client.palette", 0xFF5E6678, Integer.MIN_VALUE, Integer.MAX_VALUE, "浮层描边");
+        paletteOverlayShadow = config.getInt("overlayShadow", "client.palette", 0x40000000, Integer.MIN_VALUE, Integer.MAX_VALUE, "浮层投影（含透明度）");
 
         config.addCustomCategoryComment("client.panelColors", "详情面板颜色设置 (ARGB)");
         panelColorBg = config.getInt("bg", "client.panelColors", 0xFF9A9FB4, Integer.MIN_VALUE, Integer.MAX_VALUE, "面板背景色");
