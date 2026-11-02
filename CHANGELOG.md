@@ -39,6 +39,10 @@
 
 - **批量模式多选只绑定一台**：多选集合的键 `positionKey` 用 `info.dimension()`（维度名，如 `Overworld`）拼 `P2PPosition`，而 `p2pInfoMap` 的键用的是 `String.valueOf(dimensionId)`（如 `0`）；`P2PPosition.equals` 又把 dimension 纳入比较，于是 `p2pInfoMap.get(key)` 全部落空，`getSourceCandidates()` 退回单选的 `selectedP2PInfo`，`doBind()` 只发 `bind_frequency` 而不是 `bind_frequency_batch`。现在 `positionKey` 统一用维度 id 字符串，多选反查能拿全所有设备。
 
+### 新增
+
+- **传送落地后点亮目标 P2P**：传送发包后界面立即关闭，但此时坐标还是旧的，跨维度时新维度的区块也还没加载，直接点亮会拿不到部件。现在用 `ClientTickTasks` 每 tick 探一次落点（维度一致 + 距方块中心 2 格内），真正到达后再点亮目标，并在 `rotateHeadOnHighlight` 开启时转头；5 秒未到达则自动放弃。
+
 ### 改动
 
 - **配置模式界面换上基准底图**：1.2.0 交付时面板是纯色自绘的（`GuiDraw.fillRect` 刷一块 `0xFFC7CCDA`），基准 1.21.1 的那张 `guis/config_mode_menu.png` 从没被打包进来。现在把基准图集（512×512，取左上 440×312）原样搬过来，界面直接铺这张图；标题对齐基准的 (7,7)，搜索框去掉原版黑底、改成面板上的纯文字输入并补占位符「搜索…」。控件矩形与基准 JSON 本来就逐项相同，位置没有改动。
